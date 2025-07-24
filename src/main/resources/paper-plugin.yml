@@ -1,0 +1,30 @@
+name: MCEFramework
+version: '1.0-SNAPSHOT'
+main: mcevent.MCEFramework.MCEMainController
+api-version: '1.21'
+depend: [Multiverse-Core]
+
+permissions:
+    shuffleteam.use:
+        description: "允许使用随机分队指令"
+        default: op
+    launch.use:
+        description: "允许使用启动游戏指令"
+        default: op
+    suspend.use:
+        description: "允许使用暂停游戏指令"
+        default: op
+    resume.use:
+        description: "允许使用恢复游戏指令"
+        default: op
+    sendInfo.use:
+        description: "允许使用发布消息指令"
+        default: op
+    pktSelectChaser.use:
+        description: "允许使用选择抓捕者指令"
+        default: op
+    party.use:
+        description: "允许使用队伍管理指令"
+        default: op
+
+game-mechanics:
