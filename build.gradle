@@ -21,10 +21,14 @@ repositories {
     }
     maven { url = uri("https://repo.aikar.co/content/groups/aikar/") }
     maven { url = "https://repo.onarandombox.com/content/groups/public/" }
+    maven { url "https://repo.dmulloy2.net/repository/public/" }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+
+    // protocol lib
+    compileOnly 'com.comphenix.protocol:ProtocolLib:5.3.0'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok:1.18.34'

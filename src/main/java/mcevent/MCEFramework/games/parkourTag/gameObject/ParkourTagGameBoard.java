@@ -35,11 +35,9 @@ public class ParkourTagGameBoard extends MCEGameBoard {
         int second = seconds % 60;
         String time = String.format("%02d:%02d", minute, second);
         for (Player player : Bukkit.getOnlinePlayers()) {
+            Team opponentTeam = pkt.getOpponentTeam(MCETeamUtils.getTeam(player));
+
             FastBoard board = new FastBoard(player);
-
-            int teamPos = pkt.getTeamId(MCETeamUtils.getTeam(player));
-            Team opponentTeam = teamPos % 2 == 0 ? pkt.getActiveTeams().get(teamPos + 1) : pkt.getActiveTeams().get(teamPos - 1);
-
             board.updateTitle(MiniMessage.miniMessage().deserialize(getMainTitle()));
             board.updateLines(
                     MiniMessage.miniMessage().deserialize(" "),

@@ -31,7 +31,6 @@ public class ParkourTagFuncImpl {
     protected static void resetSurvivePlayerTot() {
         pkt.survivePlayerTot.clear();
         for (int i = 0; i < pkt.getActiveTeams().size(); i++) {
-            MCEMessenger.sendGlobalInfo(pkt.getActiveTeams().get(i).getName());
             pkt.survivePlayerTot.add(MCETeamUtils.getTeamOnlinePlayers(pkt.getActiveTeams().get(i)) - 1);
         }
     }
@@ -39,17 +38,11 @@ public class ParkourTagFuncImpl {
     // 全局发送回合对阵标题
     protected static void sendCurrentRoundMatchTitle() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            for (Team team : pkt.getActiveTeams())
-                if (team.hasEntry(player.getName())) {
-                    int teamPos = pkt.getTeamId(team);
-                    Team opponentTeam = teamPos % 2 == 0 ? pkt.getActiveTeams().get(teamPos + 1) : pkt.getActiveTeams().get(teamPos - 1);
-                    MCEMessenger.sendMatchTitleToPlayer(player, team.getName(), opponentTeam.getName(), pkt.getCurrentRound());
-                    break;
-                }
+            Team team = MCETeamUtils.getTeam(player);
+            Team opponentTeam = pkt.getOpponentTeam(team);
+            if (team != null) MCEMessenger.sendMatchTitleToPlayer(player, team.getName(), opponentTeam.getName(), pkt.getCurrentRound());
         }
     }
-
-    // 获取队伍ID
 
     // 传送玩家到开始房间
     protected static void globalTeleportToChoiceRoom() {
@@ -115,6 +108,7 @@ public class ParkourTagFuncImpl {
 
     // 发送当前回合对局结果信息
     protected static void sendCurrentMatchState() {
+        MCEMessenger.sendGlobalTitle("<red><bold>游戏结束！</bold></red>", null);
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getScoreboardTags().contains("chaser") &&
                     pkt.getTeamCompleteTime(MCETeamUtils.getTeam(player)) == 0) {

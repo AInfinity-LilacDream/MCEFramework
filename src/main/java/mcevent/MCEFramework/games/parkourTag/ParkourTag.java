@@ -3,6 +3,7 @@ package mcevent.MCEFramework.games.parkourTag;
 import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.MCEMainController;
+import mcevent.MCEFramework.games.parkourTag.customHandler.OpponentTeamGlowingHandler;
 import mcevent.MCEFramework.games.parkourTag.customHandler.PlayerCaughtHandler;
 import mcevent.MCEFramework.games.parkourTag.gameObject.ParkourTagGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
@@ -12,6 +13,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
@@ -47,9 +49,11 @@ public class ParkourTag extends MCEGame {
 
     // 玩家被抓住事件监听器
     PlayerCaughtHandler playerCaughtHandler = new PlayerCaughtHandler();
+    OpponentTeamGlowingHandler opponentTeamGlowingHandler = new OpponentTeamGlowingHandler();
 
     public ParkourTag(String title, int id, String mapName, boolean isMultiGame) {
         super(title, id, mapName, isMultiGame);
+        MCETimerUtils.setFramedTask(opponentTeamGlowingHandler::toggleGlowing);
     }
 
     @Override
@@ -79,11 +83,11 @@ public class ParkourTag extends MCEGame {
     @Override
     public void onPreparation() {
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
-        playerCaughtHandler.start();
     }
 
     @Override
     public void onCyclePreparation() {
+        playerCaughtHandler.start();
         clearMatchCompleteState();
         getGameBoard().setStateTitle("<red><bold> 选择结束：</bold></red>");
         getGameBoard().updateRoundTitle(getCurrentRound());
@@ -100,6 +104,7 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onCycleStart() {
+        opponentTeamGlowingHandler.setToggled(true);
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
         resetChoiceRoom();
         showSurvivePlayer = true;
@@ -124,6 +129,7 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onCycleEnd() {
+        opponentTeamGlowingHandler.setToggled(false);
         showSurvivePlayer = false;
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 下一回合：</bold></red>");
@@ -131,6 +137,7 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onEnd() {
+        opponentTeamGlowingHandler.setToggled(false);
         showSurvivePlayer = false;
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
@@ -159,5 +166,11 @@ public class ParkourTag extends MCEGame {
 
     public int getTeamId(Team team) {
         return pkt.getActiveTeams().indexOf(team);
+    }
+
+    // 获取当前回合的敌对队伍
+    public Team getOpponentTeam(Team team) {
+        int teamPos = getTeamId(team);
+        return teamPos % 2 == 0 ? pkt.getActiveTeams().get(teamPos + 1) : pkt.getActiveTeams().get(teamPos - 1);
     }
 }

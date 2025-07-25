@@ -2,7 +2,7 @@ name: MCEFramework
 version: '1.0-SNAPSHOT'
 main: mcevent.MCEFramework.MCEMainController
 api-version: '1.21'
-depend: [Multiverse-Core]
+depend: [Multiverse-Core, ProtocolLib]
 
 permissions:
     shuffleteam.use:
@@ -26,5 +26,3 @@ permissions:
     party.use:
         description: "允许使用队伍管理指令"
         default: op
-
-game-mechanics:

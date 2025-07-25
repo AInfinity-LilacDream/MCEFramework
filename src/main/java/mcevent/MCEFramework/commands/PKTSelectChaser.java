@@ -40,6 +40,8 @@ public class PKTSelectChaser extends BaseCommand {
         Location blockLocation = commandBlock.getLocation();
 
         Player nearestPlayer = findNearestPlayer(blockLocation);
+        if (nearestPlayer.getScoreboardTags().contains("chaser")) return;
+
         MCEPlayerUtils.clearTag(nearestPlayer);
         nearestPlayer.addScoreboardTag("chaser");
 
@@ -47,7 +49,7 @@ public class PKTSelectChaser extends BaseCommand {
         ArrayList<Team> activeTeam = pkt.getActiveTeams();
 
         int teamPos = activeTeam.indexOf(ownTeam);
-        Team opponentTeam = teamPos % 2 == 0 ? activeTeam.get(teamPos + 1) : activeTeam.get(teamPos - 1);
+        Team opponentTeam = pkt.getOpponentTeam(ownTeam);
 
         int offset = teamPos / 2;
         Location locDown, locUp;

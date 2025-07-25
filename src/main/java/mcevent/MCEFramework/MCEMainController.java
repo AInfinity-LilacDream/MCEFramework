@@ -1,6 +1,8 @@
 package mcevent.MCEFramework;
 
 import co.aikar.commands.PaperCommandManager;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
 import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.commands.*;
