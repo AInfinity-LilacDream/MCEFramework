@@ -22,6 +22,7 @@ public class MCETimeline {
     }
 
     public void addTimelineNode(MCETimelineNode node) {
+        if (node.getMaxDurationSeconds() == 0) return;
         timelineState.add(node);
     }
 

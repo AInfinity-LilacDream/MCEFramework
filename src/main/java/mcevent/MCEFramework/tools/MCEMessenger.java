@@ -40,11 +40,10 @@ public class MCEMessenger {
         }
     }
 
-    public static void sendIntroText(int GameID, String gameName) {
+    public static void sendIntroText(String gameName, ArrayList<Component> introTexts) {
         MCEMessenger.sendGlobalTitle("<gradient:red:gold:yellow>" + gameName + "</gradient>", null);
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            ArrayList<Component> introTexts = IntroTexts.introTextList.get(GameID);
             for (int i = 0; i < introTexts.size(); i++) {
                 Component text = introTexts.get(i);
 
@@ -134,5 +133,13 @@ public class MCEMessenger {
             }
         };
         task.runTaskTimer(Constants.plugin, 0L, 20L);
+    }
+
+    // 向所有玩家发送动作栏信息
+    public static void sendGlobalActionBarMessage(String message) {
+        Component parsed = MiniMessage.miniMessage().deserialize(message);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendActionBar(parsed);
+        }
     }
 }

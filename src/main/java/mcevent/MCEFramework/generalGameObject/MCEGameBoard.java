@@ -32,5 +32,10 @@ public class MCEGameBoard {
         this.roundTitle = "<green><bold> 回合：</bold></green>1/" + this.totalRound;
     }
 
+    public MCEGameBoard(String gameName, String mapName) {
+        this.gameTitle = "<aqua><bold> 游戏：</bold></aqua>" + gameName;
+        this.mapTitle = "<aqua><bold> 地图：</bold></aqua>" + mapName;
+    }
+
     public void globalDisplay() {}
 }

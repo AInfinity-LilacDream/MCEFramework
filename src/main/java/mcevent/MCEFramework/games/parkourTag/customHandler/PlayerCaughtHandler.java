@@ -34,7 +34,9 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
         if (Objects.requireNonNull(MCETeamUtils.getTeam(catcher)).getName()
                 .equals(Objects.requireNonNull(MCETeamUtils.getTeam(runner)).getName())) return;
         if (catcher.getScoreboardTags().contains("runner")) return;
+        if (runner.getScoreboardTags().contains("caught")) return;
 
+        runner.addScoreboardTag("caught");
         runner.setGameMode(GameMode.SPECTATOR);
 
         Team runnerTeam = MCETeamUtils.getTeam(runner);
@@ -66,7 +68,9 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
             }
         }
 
-        if (pkt.completeMatchesTot == pkt.getActiveTeams().size())
+        if (pkt.completeMatchesTot == pkt.getActiveTeams().size()) {
+            pkt.completeMatchesTot = 0; // 防止重复触发nextState
             pkt.getTimeline().nextState();
+        }
     }
 }

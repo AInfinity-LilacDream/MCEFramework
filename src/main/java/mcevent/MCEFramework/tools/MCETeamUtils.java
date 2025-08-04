@@ -31,13 +31,11 @@ public class MCETeamUtils {
 
     // 获得当前队伍列表
     public static ArrayList<Team> getActiveTeams() {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         ArrayList<Team> teams = new ArrayList<>();
 
-        for (Team team : scoreboard.getTeams()) {
-            if (!team.getEntries().isEmpty()) {
-                teams.add(team);
-            }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Team team = MCETeamUtils.getTeam(player);
+            if (!teams.contains(team)) teams.add(team);
         }
 
         return teams;

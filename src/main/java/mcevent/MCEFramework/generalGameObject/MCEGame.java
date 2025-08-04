@@ -2,16 +2,23 @@ package mcevent.MCEFramework.generalGameObject;
 
 import lombok.Data;
 import mcevent.MCEFramework.MCEMainController;
+import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCETeamUtils;
+import net.kyori.adventure.text.Component;
 import org.bukkit.scoreboard.Team;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+
+import static mcevent.MCEFramework.miscellaneous.Constants.discoFever;
 
 /*
 MCEGame: 游戏基类，定义通用游戏接口属性与游戏流程框架
  */
 @Data
 public class MCEGame {
+    private ArrayList<Component> introTextList = new ArrayList<>();
+
     private String title;
     private int id;
 
@@ -23,59 +30,92 @@ public class MCEGame {
 
     private MCEGameBoard gameBoard;
 
+    private String configFileName;
+
     private int round = 0;
     private int currentRound = 0;
     private boolean isMultiGame = false;
 
-    public MCEGame(String title, int id, String worldName, int round, boolean isMultiGame) {
+    private int launchDuration;
+    private int introDuration;
+    private int preparationDuration;
+    private int cyclePreparationDuration;
+    private int cycleStartDuration;
+    private int cycleEndDuration;
+    private int endDuration;
+
+    public MCEGame(String title, int id, String worldName, int round, boolean isMultiGame, String configFileName,
+                   int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration, int cycleStartDuration, int cycleEndDuration, int endDuration) {
         setTitle(title);
         setId(id);
         setWorldName(worldName);
         setMultiGame(isMultiGame);
         setRound(round);
+        setConfigFileName(configFileName);
+        setLaunchDuration(launchDuration);
+        setIntroDuration(introDuration);
+        setPreparationDuration(preparationDuration);
+        setCyclePreparationDuration(cyclePreparationDuration);
+        setCycleStartDuration(cycleStartDuration);
+        setCycleEndDuration(cycleEndDuration);
+        setEndDuration(endDuration);
     }
 
-    public MCEGame(String title, int id, String worldName, boolean isMultiGame) {
+    public MCEGame(String title, int id, String worldName, boolean isMultiGame, String configFileName
+    , int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration, int cycleStartDuration, int cycleEndDuration, int endDuration) {
         setTitle(title);
         setId(id);
         setWorldName(worldName);
         setMultiGame(isMultiGame);
+        setConfigFileName(configFileName);
+        setLaunchDuration(launchDuration);
+        setIntroDuration(introDuration);
+        setPreparationDuration(preparationDuration);
+        setCyclePreparationDuration(cyclePreparationDuration);
+        setCycleStartDuration(cycleStartDuration);
+        setCycleEndDuration(cycleEndDuration);
+        setEndDuration(endDuration);
     }
 
     public void init(boolean intro) {
         this.initGameBoard();
         this.setCurrentRound(1);
 
+
         this.setTimeline(new MCETimeline());
         this.getTimeline().addTimelineNode(
-                new MCETimelineNode(5, false, this::onLaunch, this.getTimeline(), this.getGameBoard())
+                new MCETimelineNode(launchDuration, false, this::onLaunch, this.getTimeline(), this.getGameBoard())
         );
         if (intro) {
             this.getTimeline().addTimelineNode(
-                    new MCETimelineNode(35, false, this::intro, this.getTimeline(), this.getGameBoard())
+                    new MCETimelineNode(introDuration, false, this::intro, this.getTimeline(), this.getGameBoard())
             );
         }
         this.getTimeline().addTimelineNode(
-                new MCETimelineNode(15, true, this::onPreparation, this.getTimeline(), this.getGameBoard())
+                new MCETimelineNode(preparationDuration, true, this::onPreparation, this.getTimeline(), this.getGameBoard())
         );
 
         for (int i = 1; i <= round; ++i) {
             this.getTimeline().addTimelineNode(
-                    new MCETimelineNode(15, true, this::onCyclePreparation, this.getTimeline(), this.getGameBoard())
+                    new MCETimelineNode(cyclePreparationDuration, true, this::onCyclePreparation, this.getTimeline(), this.getGameBoard())
             );
             this.getTimeline().addTimelineNode(
-                    new MCETimelineNode(70, false, this::onCycleStart, this.getTimeline(), this.getGameBoard())
+                    new MCETimelineNode(cycleStartDuration, false, this::onCycleStart, this.getTimeline(), this.getGameBoard())
             );
             if (i < round) {
                 this.getTimeline().addTimelineNode(
-                        new MCETimelineNode(25, true, this::onCycleEnd, this.getTimeline(), this.getGameBoard())
+                        new MCETimelineNode(cycleEndDuration, true, this::onCycleEnd, this.getTimeline(), this.getGameBoard())
                 );
             }
         }
 
         this.getTimeline().addTimelineNode(
-                new MCETimelineNode(25, false, this::onEnd, this.getTimeline(), this.getGameBoard())
+                new MCETimelineNode(endDuration, false, this::onEnd, this.getTimeline(), this.getGameBoard())
         );
+    }
+
+    public int getTeamId(Team team) {
+        return activeTeams.indexOf(team);
     }
 
     public void start() {
@@ -85,8 +125,13 @@ public class MCEGame {
     }
 
     public void onLaunch() {}
-    public void intro() {}
-    public void onPreparation() {}
+
+    public void intro() {
+        this.getGameBoard().setStateTitle("<red><bold> 游戏介绍：</bold></red>");
+        MCEMessenger.sendIntroText(getTitle(), getIntroTextList());
+    }
+
+    public void onPreparation() { this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>"); }
     public void onCyclePreparation() {}
     public void onCycleStart() {}
     public void onCycleEnd() {}

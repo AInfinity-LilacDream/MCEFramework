@@ -1,5 +1,6 @@
 package mcevent.MCEFramework.tools;
 
+import mcevent.MCEFramework.MCEMainController;
 import org.bukkit.Location;
 
 /*
@@ -15,5 +16,13 @@ public class MCEWorldUtils {
                 baseLoc.getY() + offsetLoc.getY() * offset,
                 baseLoc.getZ() + offsetLoc.getZ() * offset
         );
+    }
+
+    public static void enablePVP() {
+        MCEMainController.getGlobalPVPHandler().suspend();
+    }
+
+    public static void disablePVP() {
+        MCEMainController.getGlobalPVPHandler().start();
     }
 }

@@ -6,6 +6,7 @@ import com.comphenix.protocol.ProtocolManager;
 import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.commands.*;
+import mcevent.MCEFramework.customHandler.GlobalPVPHandler;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
@@ -30,16 +31,24 @@ public final class MCEMainController extends JavaPlugin {
     @Getter @Setter
     private static boolean isRunningGame = false;
 
+    @Getter
+    private static GlobalPVPHandler globalPVPHandler;
+
     @Override
     public void onEnable() {
 
         // 初始化全局游戏单例
-        pkt = new ParkourTag("瓮中捉鳖", 0, mapNames[0], true);
-        discoFever = new DiscoFever("色盲派对", 1, "world", 1, false);
+        pkt = new ParkourTag("瓮中捉鳖", 0, mapNames[0], true, "MCEConfig/ParkourTag.cfg",
+                5, 35, 15, 15, 70, 25, 25);
+        discoFever = new DiscoFever("色盲狂热", 1, mapNames[1], 1, false, "MCEConfig/DiscoFever.cfg",
+                5, 55, 15, 0, 215, 25, 25);
 
         // 初始化游戏列表
         gameList.add(Constants.pkt);
         gameList.add(Constants.discoFever);
+
+        // 注册全局事件监听器
+        globalPVPHandler = new GlobalPVPHandler();
 
         // ACF command manager
         PaperCommandManager commandManager = new PaperCommandManager(this);
@@ -50,6 +59,7 @@ public final class MCEMainController extends JavaPlugin {
         commandManager.registerCommand(new SendInfo()); // sendInfo
         commandManager.registerCommand(new PKTSelectChaser()); // pktselectchaser
         commandManager.registerCommand(new Party()); // party
+        commandManager.registerCommand(new TogglePVP()); // togglepvp
         
         getLogger().info("合合启动了");
     }

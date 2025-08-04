@@ -9,6 +9,8 @@ import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import lombok.Setter;
 import mcevent.MCEFramework.MCEMainController;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
+
+import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
 import mcevent.MCEFramework.tools.MCETeamUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -21,10 +23,7 @@ import java.util.List;
 /*
 敌对队伍发光处理器
  */
-public class OpponentTeamGlowingHandler {
-    @Setter
-    private boolean toggled = false;
-
+public class OpponentTeamGlowingHandler extends MCEResumableEventHandler {
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
 
     private void setGlowing(Player target, Player viewer) {
@@ -49,7 +48,7 @@ public class OpponentTeamGlowingHandler {
     }
 
     public void toggleGlowing() {
-        if (!toggled) return;
+        if (isSuspended()) return;
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             Team team = MCETeamUtils.getTeam(player);

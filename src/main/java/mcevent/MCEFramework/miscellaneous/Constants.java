@@ -6,6 +6,8 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 /*
 Constants: 存放全局静态常量
@@ -31,12 +33,12 @@ public class Constants {
     // 游戏地图名称
     public static String[] mapNames = new String[] {
             "pkt_concrete",
-            "disco_fever_classic"
+            "discofever_classic"
     };
 
     // 全局的游戏单例
-    public static ParkourTag pkt = new ParkourTag("瓮中捉鳖", 0, mapNames[0], true);
-    public static DiscoFever discoFever = new DiscoFever("色盲派对", 1, "world", 1, false);
+    public static ParkourTag pkt;
+    public static DiscoFever discoFever;
 
     public static Location pktTeamLocation1 = new Location(Bukkit.getWorld(mapNames[0]), -11.5, -43, -24.5);
     public static Location pktTeamLocation2 = new Location(Bukkit.getWorld(mapNames[0]), -11.5, -43, 14.5);
@@ -48,4 +50,15 @@ public class Constants {
 
     public static Location pktChaserStartLocation = new Location(Bukkit.getWorld(mapNames[0]), -17.5, -55, 60.5);
     public static Location pktRunnerStartLocation = new Location(Bukkit.getWorld(mapNames[0]), -12, -55, 31);
+
+    public static Location discoFeverPlatformLocation = new Location(Bukkit.getWorld(mapNames[1]), 4, 6, 0);
+
+    public static PotionEffect saturation = new PotionEffect(
+            PotionEffectType.SATURATION,
+            Integer.MAX_VALUE,
+            255,
+            true,
+            false,
+            false
+    );
 }

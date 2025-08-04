@@ -27,14 +27,6 @@ import static mcevent.MCEFramework.games.parkourTag.ParkourTagFuncImpl.*;
 ParkourTag: pkt的完整实现
  */
 public class ParkourTag extends MCEGame {
-    PotionEffect saturation = new PotionEffect(
-            PotionEffectType.SATURATION,
-            Integer.MAX_VALUE,
-            255,
-            true,
-            false,
-            false
-    );
 
     public int completeMatchesTot = 0;
 
@@ -51,8 +43,12 @@ public class ParkourTag extends MCEGame {
     PlayerCaughtHandler playerCaughtHandler = new PlayerCaughtHandler();
     OpponentTeamGlowingHandler opponentTeamGlowingHandler = new OpponentTeamGlowingHandler();
 
-    public ParkourTag(String title, int id, String mapName, boolean isMultiGame) {
-        super(title, id, mapName, isMultiGame);
+    ParkourTagConfigParser parkourTagConfigParser = new ParkourTagConfigParser();
+
+    public ParkourTag(String title, int id, String mapName, boolean isMultiGame, String configFileName,
+                      int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration, int cycleStartDuration, int cycleEndDuration, int endDuration) {
+        super(title, id, mapName, isMultiGame, configFileName,
+                launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration, cycleEndDuration, endDuration);
         MCETimerUtils.setFramedTask(opponentTeamGlowingHandler::toggleGlowing);
     }
 
@@ -60,6 +56,8 @@ public class ParkourTag extends MCEGame {
     public void onLaunch() {
         // 先关闭事件监听器
         playerCaughtHandler.suspend();
+        setIntroTextList(parkourTagConfigParser.openAndParse(getConfigFileName()));
+        MCEWorldUtils.disablePVP();
         MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
         MCEPlayerUtils.globalHideNameTag();
 
@@ -75,24 +73,15 @@ public class ParkourTag extends MCEGame {
     }
 
     @Override
-    public void intro() {
-        this.getGameBoard().setStateTitle("<red><bold> 游戏介绍：</bold></red>");
-        MCEMessenger.sendIntroText(this.getId(), this.getTitle());
-    }
-
-    @Override
-    public void onPreparation() {
-        this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
-    }
-
-    @Override
     public void onCyclePreparation() {
         playerCaughtHandler.start();
+        MCEWorldUtils.enablePVP();
         clearMatchCompleteState();
         getGameBoard().setStateTitle("<red><bold> 选择结束：</bold></red>");
         getGameBoard().updateRoundTitle(getCurrentRound());
         resetSurvivePlayerTot();
 
+        MCEPlayerUtils.clearGlobalTags();
         MCEPlayerUtils.globalGrantTag("runner");
         MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
 
@@ -104,7 +93,7 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onCycleStart() {
-        opponentTeamGlowingHandler.setToggled(true);
+        opponentTeamGlowingHandler.start();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
         resetChoiceRoom();
         showSurvivePlayer = true;
@@ -129,7 +118,7 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onCycleEnd() {
-        opponentTeamGlowingHandler.setToggled(false);
+        opponentTeamGlowingHandler.suspend();
         showSurvivePlayer = false;
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 下一回合：</bold></red>");
@@ -137,7 +126,7 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onEnd() {
-        opponentTeamGlowingHandler.setToggled(false);
+        opponentTeamGlowingHandler.suspend();
         showSurvivePlayer = false;
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
@@ -162,10 +151,6 @@ public class ParkourTag extends MCEGame {
     public int getTeamCompleteTime(Team team) {
         int teamPos = getTeamId(team);
         return completeTime[teamPos];
-    }
-
-    public int getTeamId(Team team) {
-        return pkt.getActiveTeams().indexOf(team);
     }
 
     // 获取当前回合的敌对队伍
