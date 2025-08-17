@@ -11,6 +11,9 @@ permissions:
     launch.use:
         description: "允许使用启动游戏指令"
         default: op
+    stop.use:
+        description: "允许使用停止游戏指令"
+        default: op
     suspend.use:
         description: "允许使用暂停游戏指令"
         default: op

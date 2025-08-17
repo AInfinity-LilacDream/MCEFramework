@@ -32,8 +32,11 @@ public class MCETimeline {
     }
 
     public void suspend() {
-        timelineState.get(currentState).suspend();
+        if (hasStarted && currentState < timelineState.size()) {
+            timelineState.get(currentState).stop();
+        }
         isSuspended = true;
+        hasStarted = false;
     }
 
     public void resume() {

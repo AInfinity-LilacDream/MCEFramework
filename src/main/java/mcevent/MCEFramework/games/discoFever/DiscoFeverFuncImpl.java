@@ -1,5 +1,6 @@
 package mcevent.MCEFramework.games.discoFever;
 
+import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.discoFever.gameObject.DiscoFeverGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.MCEMessenger;
@@ -62,14 +63,14 @@ public class DiscoFeverFuncImpl {
     }
 
     // 更新平台，保留指定方块，后部塌陷
-    protected static void updatePlatform(Location baseLoc, Material material) {
+    protected static void updatePlatform(Location baseLoc, Material material, String worldName) {
         int x = baseLoc.getBlockX();
         int y = baseLoc.getBlockY();
         int z = baseLoc.getBlockZ();
 
         for (int i = x; i < x + 20; ++i) {
             for (int j = z; j < z + 20; ++j) {
-                Location loc = new Location(Bukkit.getWorld(mapNames[1]), i, y, j);
+                Location loc = new Location(Bukkit.getWorld(worldName), i, y, j);
                 Block block = loc.getBlock();
                 if (block.getType() != material)
                     block.setType(Material.AIR);
@@ -78,7 +79,7 @@ public class DiscoFeverFuncImpl {
 
         for (int i = x - 4; i < x; ++i) {
             for (int j = z; j < z + 20; ++j) {
-                Location loc = new Location(Bukkit.getWorld(mapNames[1]), i, y, j);
+                Location loc = new Location(Bukkit.getWorld(worldName), i, y, j);
                 Block block = loc.getBlock();
                 block.setType(Material.LIGHT_GRAY_CONCRETE_POWDER);
             }
@@ -96,8 +97,8 @@ public class DiscoFeverFuncImpl {
         ));
     }
 
-    protected static void resetPlatform() {
-        Location baseLoc = discoFeverPlatformLocation;
+    protected static void resetPlatform(String worldName) {
+        Location baseLoc = new Location(Bukkit.getWorld(worldName), 4, 6, 0); // 使用传入的世界名称
 
         int x = baseLoc.getBlockX();
         int y = baseLoc.getBlockY();
@@ -105,7 +106,7 @@ public class DiscoFeverFuncImpl {
 
         for (int i = x; i < x + 300; ++i) {
             for (int j = z; j < z + 20; ++j) {
-                Location loc = new Location(Bukkit.getWorld(mapNames[1]), i, y, j);
+                Location loc = new Location(Bukkit.getWorld(worldName), i, y, j);
                 Block block = loc.getBlock();
                 block.setType(Material.AIR);
             }
@@ -113,7 +114,7 @@ public class DiscoFeverFuncImpl {
 
         for (int i = x - 4; i < x; ++i) {
             for (int j = z; j < z + 20; ++j) {
-                Location loc = new Location(Bukkit.getWorld(mapNames[1]), i, y, j);
+                Location loc = new Location(Bukkit.getWorld(worldName), i, y, j);
                 Block block = loc.getBlock();
                 block.setType(Material.LIGHT_GRAY_CONCRETE);
             }
@@ -148,7 +149,7 @@ public class DiscoFeverFuncImpl {
         gameBoard.updateTeamRemainTitle(null);
     }
 
-    // 发送获胜消息
+    // 发送获胜消息，并退出游戏
     protected static void sendWinningMessage() {
         StringBuilder message = new StringBuilder();
         boolean isFirst = true;
@@ -164,5 +165,7 @@ public class DiscoFeverFuncImpl {
         if (isFirst) message.append("<red>所有玩家已被团灭！</red>");
         else message.append("<dark_aqua>是最后存活的玩家！</dark_aqua>");
         MCEMessenger.sendGlobalInfo(message.toString());
+
+        MCEMainController.setRunningGame(false);
     }
 }

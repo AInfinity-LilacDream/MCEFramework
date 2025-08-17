@@ -4,6 +4,7 @@ import static mcevent.MCEFramework.miscellaneous.Constants.*;
 import static mcevent.MCEFramework.tools.MCETeamUtils.*;
 import static mcevent.MCEFramework.tools.MCEWorldUtils.teleportLocation;
 
+import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCETeamUtils;
 import mcevent.MCEFramework.tools.MCETimerUtils;
@@ -31,7 +32,7 @@ public class ParkourTagFuncImpl {
     protected static void resetSurvivePlayerTot() {
         pkt.survivePlayerTot.clear();
         for (int i = 0; i < pkt.getActiveTeams().size(); i++) {
-            pkt.survivePlayerTot.add(MCETeamUtils.getTeamOnlinePlayers(pkt.getActiveTeams().get(i)) - 1);
+            pkt.survivePlayerTot.add(MCETeamUtils.getTeamOnlinePlayers(pkt.getActiveTeams().get(i)));
         }
     }
 
@@ -45,7 +46,7 @@ public class ParkourTagFuncImpl {
     }
 
     // 传送玩家到开始房间
-    protected static void globalTeleportToChoiceRoom() {
+    protected static void globalTeleportToChoiceRoom(ParkourTagConfigParser config) {
         int teamTotal = MCETeamUtils.getActiveTeamCount();
         for (int i = 0; i < teamTotal; i += 2) {
             int offset = i / 2;
@@ -55,13 +56,23 @@ public class ParkourTagFuncImpl {
             ArrayList<Player> team1Players = MCETeamUtils.getPlayers(team1);
             ArrayList<Player> team2Players = MCETeamUtils.getPlayers(team2);
 
+            Location pktTeamLocation1 = config.getLocation("pktTeamLocation1");
+            Location pktTeamLocation2 = config.getLocation("pktTeamLocation2");
+            Location pktOffset = config.getLocation("pktOffset");
+
             for (Player player : team1Players) player.teleport(teleportLocation(pktTeamLocation1, pktOffset, offset));
             for (Player player : team2Players) player.teleport(teleportLocation(pktTeamLocation2, pktOffset, offset));
         }
     }
 
     // 重置选择抓捕者房间
-    protected static void resetChoiceRoom() {
+    protected static void resetChoiceRoom(ParkourTagConfigParser config) {
+        Location pktDoorLocation1down = config.getLocation("pktDoorLocation1down");
+        Location pktDoorLocation1up = config.getLocation("pktDoorLocation1up");
+        Location pktDoorLocation2down = config.getLocation("pktDoorLocation2down");
+        Location pktDoorLocation2up = config.getLocation("pktDoorLocation2up");
+        Location pktOffset = config.getLocation("pktOffset");
+        
         for (int offset = 0; offset < 20; ++offset) {
             Location loc1Down = MCEWorldUtils.teleportLocation(pktDoorLocation1down, pktOffset, offset);
             Location loc1Up = MCEWorldUtils.teleportLocation(pktDoorLocation1up, pktOffset, offset);
@@ -81,7 +92,11 @@ public class ParkourTagFuncImpl {
     }
 
     // 传送玩家到比赛场地并且开始游戏
-    protected static void globalTeleportToStadium() {
+    protected static void globalTeleportToStadium(ParkourTagConfigParser config) {
+        Location pktChaserStartLocation = config.getLocation("pktChaserStartLocation");
+        Location pktRunnerStartLocation = config.getLocation("pktRunnerStartLocation");
+        Location pktOffset = config.getLocation("pktOffset");
+        
         int teamTotal = MCETeamUtils.getActiveTeamCount();
         for (int i = 0; i < teamTotal; i += 2) {
             Team team1 = pkt.getActiveTeams().get(i);
@@ -141,6 +156,8 @@ public class ParkourTagFuncImpl {
                 if (pkt.getSurvivePlayerTot().get(i) > 0)
                     MCEMessenger.sendGlobalText("     " + getActiveTeams().get(i).getName() + "<newline>");
         });
+
+        MCEMainController.setRunningGame(false);
     }
 
     // 开启对方逃脱者发光

@@ -40,7 +40,7 @@ public class DiscoFever extends MCEGame {
     private int currentState = 0;
     private int maxState = 0;
 
-    private Location currentPlatformLocation = discoFeverPlatformLocation;
+    private Location currentPlatformLocation;
     private BossBar bossBar = Bukkit.createBossBar(
             "平台时间",
             BarColor.GREEN,
@@ -56,7 +56,8 @@ public class DiscoFever extends MCEGame {
 
     @Override
     public void onLaunch() {
-        resetPlatform();
+        currentPlatformLocation = getDiscoFeverPlatformLocation(this.getWorldName());
+        resetPlatform(this.getWorldName());
         loadConfig();
         World world = Bukkit.getWorld(this.getWorldName());
         if (world != null) world.setGameRule(GameRule.FALL_DAMAGE, false);
@@ -82,7 +83,7 @@ public class DiscoFever extends MCEGame {
         resetGameBoard();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
 
-        currentPlatformLocation = discoFeverPlatformLocation;
+        currentPlatformLocation = getDiscoFeverPlatformLocation(this.getWorldName());
         playerFallHandler.setInGame(true);
         actionBarMessageHandler.start();
 
@@ -107,7 +108,7 @@ public class DiscoFever extends MCEGame {
                 bossBarTasks.add(MCETimerUtils.setDelayedTask(time, () -> {
                     fillPlayerInventoryWithBlock(Material.AIR);
                     MCETimerUtils.showGlobalDurationOnBossBar(bossBar, 2, true);
-                    updatePlatform(currentPlatformLocation, material);
+                    updatePlatform(currentPlatformLocation, material, this.getWorldName());
                     updateCurrentPlatformLocation();
                 }));
                 time += 2;
@@ -126,12 +127,20 @@ public class DiscoFever extends MCEGame {
         playerFallHandler.suspend();
         sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
-        MCEMainController.setRunningGame(false);
     }
 
     @Override
     public void initGameBoard() {
         setGameBoard(new DiscoFeverGameBoard(getTitle(), getWorldName()));
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        bossBar.removeAll();
+        clearBossBarTask();
+        actionBarMessageHandler.suspend();
+        playerFallHandler.suspend();
     }
 
     public void clearBossBarTask() {

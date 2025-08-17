@@ -8,11 +8,15 @@ import lombok.Setter;
 import mcevent.MCEFramework.commands.*;
 import mcevent.MCEFramework.customHandler.GlobalPVPHandler;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
+import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCETimeline;
 import mcevent.MCEFramework.miscellaneous.Constants;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.nio.file.Path;
+import java.util.List;
 import java.util.ArrayList;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
@@ -31,21 +35,33 @@ public final class MCEMainController extends JavaPlugin {
     @Getter @Setter
     private static boolean isRunningGame = false;
 
+    @Getter @Setter
+    private static MCEGame currentRunningGame = null;
+
     @Getter
     private static GlobalPVPHandler globalPVPHandler;
 
     @Override
     public void onEnable() {
 
-        // 初始化全局游戏单例
-        pkt = new ParkourTag("瓮中捉鳖", 0, mapNames[0], true, "MCEConfig/ParkourTag.cfg",
+        // 初始化全局游戏单例 - 只读取地图名称，完整配置将在onLaunch时读取
+        // 先读取配置文件获取地图名称
+        String pktMapName = readMapNameFromConfig("MCEConfig/ParkourTag.cfg", mapNames[0]);
+        String dfMapName = readMapNameFromConfig("MCEConfig/DiscoFever.cfg", mapNames[1]); 
+        String mdMapName = readMapNameFromConfig("MCEConfig/MusicDodge.cfg", mapNames[2]);
+        
+        // 使用配置文件中的地图名称创建游戏实例
+        pkt = new ParkourTag("瓮中捉鳖", 0, pktMapName, true, "MCEConfig/ParkourTag.cfg",
                 5, 35, 15, 15, 70, 25, 25);
-        discoFever = new DiscoFever("色盲狂热", 1, mapNames[1], 1, false, "MCEConfig/DiscoFever.cfg",
+        discoFever = new DiscoFever("色盲狂热", 1, dfMapName, 1, false, "MCEConfig/DiscoFever.cfg",
+                5, 55, 15, 0, 215, 25, 25);
+        musicDodge = new MusicDodge("跃动音律", 2, mdMapName, 1, false, "MCEConfig/MusicDodge.cfg",
                 5, 55, 15, 0, 215, 25, 25);
 
         // 初始化游戏列表
-        gameList.add(Constants.pkt);
-        gameList.add(Constants.discoFever);
+        gameList.add(pkt);
+        gameList.add(discoFever);
+        gameList.add(musicDodge);
 
         // 注册全局事件监听器
         globalPVPHandler = new GlobalPVPHandler();
@@ -54,6 +70,7 @@ public final class MCEMainController extends JavaPlugin {
         PaperCommandManager commandManager = new PaperCommandManager(this);
         commandManager.registerCommand(new ShuffleTeam()); // shuffleteam
         commandManager.registerCommand(new Launch()); // launch
+        commandManager.registerCommand(new Stop()); // stop
         commandManager.registerCommand(new Suspend()); // suspend
         commandManager.registerCommand(new Resume()); // resume
         commandManager.registerCommand(new SendInfo()); // sendInfo
@@ -62,6 +79,45 @@ public final class MCEMainController extends JavaPlugin {
         commandManager.registerCommand(new TogglePVP()); // togglepvp
         
         getLogger().info("合合启动了");
+    }
+
+    /**
+     * 从配置文件中快速读取地图名称，不进行完整配置解析
+     */
+    private String readMapNameFromConfig(String configFileName, String defaultMapName) {
+        try {
+            Path configPath = plugin.getDataPath().resolve(configFileName);
+            
+            // 如果配置文件不存在，使用默认值
+            if (!java.nio.file.Files.exists(configPath)) {
+                return defaultMapName;
+            }
+            
+            List<String> lines = java.nio.file.Files.readAllLines(configPath);
+            boolean inMapNameSection = false;
+            
+            for (String line : lines) {
+                String trimmedLine = line.trim();
+                
+                if (trimmedLine.equals("[map_name]")) {
+                    inMapNameSection = true;
+                    continue;
+                }
+                
+                if (trimmedLine.startsWith("[") && trimmedLine.endsWith("]")) {
+                    inMapNameSection = false;
+                    continue;
+                }
+                
+                if (inMapNameSection && !trimmedLine.isEmpty()) {
+                    return trimmedLine;
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("读取地图名称失败: " + configFileName + ", 使用默认值: " + defaultMapName);
+        }
+        
+        return defaultMapName;
     }
 
     @Override
@@ -75,6 +131,7 @@ public final class MCEMainController extends JavaPlugin {
 
     public static void immediateLaunchGame(int gameID, boolean intro) {
         MCEGame nextGame = gameList.get(gameID);
+        setCurrentRunningGame(nextGame);
         nextGame.init(intro); // 在开始游戏之前，先初始化游戏的时间线
 
         nextGame.start();
@@ -93,5 +150,16 @@ public final class MCEMainController extends JavaPlugin {
     public static boolean checkGameRunning() {
         return isRunningGame();
 //        return currentTimeline != null && currentTimeline == eventTimeline;
+    }
+
+    // 停止当前运行的游戏
+    public static boolean stopCurrentGame() {
+        if (currentRunningGame != null && isRunningGame()) {
+            currentRunningGame.stop();
+            setRunningGame(false);
+            setCurrentRunningGame(null);
+            return true;
+        }
+        return false;
     }
 }

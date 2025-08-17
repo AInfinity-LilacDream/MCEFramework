@@ -7,6 +7,7 @@ import co.aikar.commands.annotation.Default;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import mcevent.MCEFramework.tools.MCETeamUtils;
+import mcevent.MCEFramework.games.parkourTag.ParkourTagConfigParser;
 import mcevent.MCEFramework.tools.MCEWorldUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -52,12 +53,21 @@ public class PKTSelectChaser extends BaseCommand {
         Team opponentTeam = pkt.getOpponentTeam(ownTeam);
 
         int offset = teamPos / 2;
+        
+        // 从配置文件获取位置信息
+        ParkourTagConfigParser config = pkt.getParkourTagConfigParser();
+        Location pktOffset = config.getLocation("pktOffset");
+        
         Location locDown, locUp;
         if (teamPos % 2 == 0) {
+            Location pktDoorLocation1down = config.getLocation("pktDoorLocation1down");
+            Location pktDoorLocation1up = config.getLocation("pktDoorLocation1up");
             locDown = MCEWorldUtils.teleportLocation(pktDoorLocation1down, pktOffset, offset);
             locUp = MCEWorldUtils.teleportLocation(pktDoorLocation1up, pktOffset, offset);
         }
         else {
+            Location pktDoorLocation2down = config.getLocation("pktDoorLocation2down");
+            Location pktDoorLocation2up = config.getLocation("pktDoorLocation2up");
             locDown = MCEWorldUtils.teleportLocation(pktDoorLocation2down, pktOffset, offset);
             locUp = MCEWorldUtils.teleportLocation(pktDoorLocation2up, pktOffset, offset);
         }

@@ -21,11 +21,13 @@ public class DiscoFeverConfigParser extends MCEConfigParser {
     private List<Double> timeList = new ArrayList<>();
     private List<Material> materialList = new ArrayList<>();
     private int maxState = 0;
+    private String mapName = "";
 
     public void parse() {
         timeList.clear();
         materialList.clear();
         maxState = 0;
+        mapName = "";
 
         try {
             lines = Files.readAllLines(configPath);
@@ -61,6 +63,10 @@ public class DiscoFeverConfigParser extends MCEConfigParser {
                         break;
                     case "max_state":
                         maxState = Integer.parseInt(trimmedLine);
+                        currentSection = null;
+                        break;
+                    case "map_name":
+                        mapName = trimmedLine;
                         currentSection = null;
                         break;
                 }

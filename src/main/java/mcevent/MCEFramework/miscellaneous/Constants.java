@@ -1,6 +1,7 @@
 package mcevent.MCEFramework.miscellaneous;
 
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
+import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -33,25 +34,21 @@ public class Constants {
     // 游戏地图名称
     public static String[] mapNames = new String[] {
             "pkt_concrete",
-            "discofever_classic"
+            "discofever_classic",
+            "musicdodge_classic",
     };
 
     // 全局的游戏单例
     public static ParkourTag pkt;
     public static DiscoFever discoFever;
+    public static MusicDodge musicDodge;
 
-    public static Location pktTeamLocation1 = new Location(Bukkit.getWorld(mapNames[0]), -11.5, -43, -24.5);
-    public static Location pktTeamLocation2 = new Location(Bukkit.getWorld(mapNames[0]), -11.5, -43, 14.5);
-    public static Location pktDoorLocation1down = new Location(Bukkit.getWorld(mapNames[0]), -12, -43, -26);
-    public static Location pktDoorLocation1up = new Location(Bukkit.getWorld(mapNames[0]), -12, -42, -26);
-    public static Location pktDoorLocation2down = new Location(Bukkit.getWorld(mapNames[0]), -12, -43, 15);
-    public static Location pktDoorLocation2up = new Location(Bukkit.getWorld(mapNames[0]), -12, -42, 15);
-    public static Location pktOffset = new Location(Bukkit.getWorld(mapNames[0]), 0, 0, 51);
+    // ParkourTag位置现在从配置文件动态获取，不再使用硬编码
 
-    public static Location pktChaserStartLocation = new Location(Bukkit.getWorld(mapNames[0]), -17.5, -55, 60.5);
-    public static Location pktRunnerStartLocation = new Location(Bukkit.getWorld(mapNames[0]), -12, -55, 31);
-
-    public static Location discoFeverPlatformLocation = new Location(Bukkit.getWorld(mapNames[1]), 4, 6, 0);
+    // DiscoFever平台位置现在动态获取，不再使用硬编码地图名称
+    public static Location getDiscoFeverPlatformLocation(String worldName) {
+        return new Location(Bukkit.getWorld(worldName), 4, 6, 0);
+    }
 
     public static PotionEffect saturation = new PotionEffect(
             PotionEffectType.SATURATION,

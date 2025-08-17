@@ -36,7 +36,7 @@ public class Launch extends BaseCommand {
         else MCEMainController.immediateLaunchGame(pkt.getId(), false);
     }
 
-    @Subcommand("discofever")
+    @Subcommand("discoFever")
     public void launchDiscoFever(CommandSender sender) {
         if (checkGameRunning()) {
             if (sender instanceof Player)
@@ -45,13 +45,31 @@ public class Launch extends BaseCommand {
         else MCEMainController.immediateLaunchGame(discoFever.getId(), true);
     }
 
-    @Subcommand("discofeverNoIntro")
+    @Subcommand("discoFeverNoIntro")
     public void launchDiscoFeverNoIntro(CommandSender sender) {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
         }
         else MCEMainController.immediateLaunchGame(discoFever.getId(), false);
+    }
+
+    @Subcommand("musicDodge")
+    public void launchMusicDodge(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(musicDodge.getId(), true);
+    }
+
+    @Subcommand("musicDodgeNoIntro")
+    public void launchMusicDodgeNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(musicDodge.getId(), false);
     }
 
     private boolean checkGameRunning() {

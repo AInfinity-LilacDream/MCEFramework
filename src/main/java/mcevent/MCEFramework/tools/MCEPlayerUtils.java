@@ -2,6 +2,7 @@ package mcevent.MCEFramework.tools;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Scoreboard;
@@ -63,6 +64,18 @@ public class MCEPlayerUtils {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         for (Team team : scoreboard.getTeams()) {
             team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
+        }
+    }
+
+    public static void globalPlaySound(String music) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.playSound(
+                    player.getLocation(),
+                    music,
+                    SoundCategory.AMBIENT,
+                    1.0f,
+                    1.0f
+            );
         }
     }
 }

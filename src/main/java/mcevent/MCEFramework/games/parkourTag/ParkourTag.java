@@ -43,6 +43,7 @@ public class ParkourTag extends MCEGame {
     PlayerCaughtHandler playerCaughtHandler = new PlayerCaughtHandler();
     OpponentTeamGlowingHandler opponentTeamGlowingHandler = new OpponentTeamGlowingHandler();
 
+    @Getter
     ParkourTagConfigParser parkourTagConfigParser = new ParkourTagConfigParser();
 
     public ParkourTag(String title, int id, String mapName, boolean isMultiGame, String configFileName,
@@ -88,17 +89,17 @@ public class ParkourTag extends MCEGame {
         setActiveTeams(MCETeamUtils.rotateTeam(this.getActiveTeams())); // 更新本回合队伍匹配列表
         sendCurrentRoundMatchTitle();
 
-        globalTeleportToChoiceRoom();
+        globalTeleportToChoiceRoom(parkourTagConfigParser);
     }
 
     @Override
     public void onCycleStart() {
         opponentTeamGlowingHandler.start();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
-        resetChoiceRoom();
+        resetChoiceRoom(parkourTagConfigParser);
         showSurvivePlayer = true;
 
-        globalTeleportToStadium();
+        globalTeleportToStadium(parkourTagConfigParser);
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             Objects.requireNonNull(player.getAttribute(Attribute.MOVEMENT_SPEED)).setBaseValue(0);
@@ -130,7 +131,6 @@ public class ParkourTag extends MCEGame {
         showSurvivePlayer = false;
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
-        MCEMainController.setRunningGame(false);
 
         // 结束游戏后停止监听器
         playerCaughtHandler.suspend();
@@ -141,6 +141,15 @@ public class ParkourTag extends MCEGame {
     public void initGameBoard() {
         setRound(MCETeamUtils.getActiveTeamCount() - 1);
         setGameBoard(new ParkourTagGameBoard(getTitle(), getWorldName(), getRound()));
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        opponentTeamGlowingHandler.suspend();
+        playerCaughtHandler.suspend();
+        showSurvivePlayer = false;
+        MCEPlayerUtils.globalShowNameTag();
     }
 
     public void setTeamCompleteTime(Team team, int seconds) {

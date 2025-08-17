@@ -5,6 +5,7 @@ import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCETeamUtils;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Material;
 import org.bukkit.scoreboard.Team;
 
 import java.lang.reflect.Array;
@@ -122,6 +123,13 @@ public class MCEGame {
         MCEMainController.setRunningGame(true);
         MCEMainController.setCurrentTimeline(this.getTimeline());
         timeline.start();
+    }
+
+    public void stop() {
+        MCEMainController.setRunningGame(false);
+        if (timeline != null) {
+            timeline.suspend();
+        }
     }
 
     public void onLaunch() {}
