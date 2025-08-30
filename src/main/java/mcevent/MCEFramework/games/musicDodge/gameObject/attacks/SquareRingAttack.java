@@ -59,7 +59,7 @@ public class SquareRingAttack extends MCEAttack {
     
     private void startAttackPhase() {
         // Play sound when switching from alert to attack phase
-        playAttackSound("block.note_block.pling");
+        playAttackSound("entity.wither.shoot");
         
         // Phase 2: Red square ring cylinder for attack duration
         new BukkitRunnable() {

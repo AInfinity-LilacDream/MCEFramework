@@ -7,9 +7,12 @@ import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.commands.*;
 import mcevent.MCEFramework.customHandler.GlobalPVPHandler;
+import mcevent.MCEFramework.games.captureCenter.CaptureCenter;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
+import mcevent.MCEFramework.games.football.Football;
 import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
+import mcevent.MCEFramework.games.sandRun.SandRun;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCETimeline;
 import mcevent.MCEFramework.miscellaneous.Constants;
@@ -49,6 +52,9 @@ public final class MCEMainController extends JavaPlugin {
         String pktMapName = readMapNameFromConfig("MCEConfig/ParkourTag.cfg", mapNames[0]);
         String dfMapName = readMapNameFromConfig("MCEConfig/DiscoFever.cfg", mapNames[1]); 
         String mdMapName = readMapNameFromConfig("MCEConfig/MusicDodge.cfg", mapNames[2]);
+        String srMapName = readMapNameFromConfig("MCEConfig/SandRun.cfg", mapNames[3]);
+        String ccMapName = readMapNameFromConfig("MCEConfig/CaptureCenter.cfg", mapNames[4]);
+        String footballMapName = readMapNameFromConfig("MCEConfig/Football.cfg", mapNames[5]);
         
         // 使用配置文件中的地图名称创建游戏实例
         pkt = new ParkourTag("瓮中捉鳖", 0, pktMapName, true, "MCEConfig/ParkourTag.cfg",
@@ -57,11 +63,20 @@ public final class MCEMainController extends JavaPlugin {
                 5, 55, 15, 0, 215, 25, 25);
         musicDodge = new MusicDodge("跃动音律", 2, mdMapName, 1, false, "MCEConfig/MusicDodge.cfg",
                 5, 55, 15, 0, 215, 25, 25);
+        sandRun = new SandRun("落沙漫步", 3, srMapName, 1, false, "MCEConfig/SandRun.cfg",
+                5, 55, 15, 0, 180, 25, 25);
+        captureCenter = new CaptureCenter("占山为王", 4, ccMapName, 1, false, "MCEConfig/CaptureCenter.cfg",
+                5, 55, 15, 0, 180, 25, 25);
+        football = new Football("少林足球", 5, footballMapName, 1, false, "MCEConfig/Football.cfg",
+                3, 25, 10, 5, Integer.MAX_VALUE, 15, 20);
 
         // 初始化游戏列表
         gameList.add(pkt);
         gameList.add(discoFever);
         gameList.add(musicDodge);
+        gameList.add(sandRun);
+        gameList.add(captureCenter);
+        gameList.add(football);
 
         // 注册全局事件监听器
         globalPVPHandler = new GlobalPVPHandler();
@@ -69,6 +84,7 @@ public final class MCEMainController extends JavaPlugin {
         // ACF command manager
         PaperCommandManager commandManager = new PaperCommandManager(this);
         commandManager.registerCommand(new ShuffleTeam()); // shuffleteam
+        commandManager.registerCommand(new DivideTeams()); // divideteams
         commandManager.registerCommand(new Launch()); // launch
         commandManager.registerCommand(new Stop()); // stop
         commandManager.registerCommand(new Suspend()); // suspend

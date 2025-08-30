@@ -107,6 +107,12 @@ public class RandomAttack extends MCEAttack {
         }
     }
     
+    @Override
+    public double getFirstInternalAttackStartOffset() {
+        // RandomAttack的第一个内部攻击（第一个CircleAttack）在RandomAttack开始后立即生成
+        // 第一个CircleAttack有自己的预警时间，所以总的偏移时间是第一个Circle的预警时间
+        return circleAlertMeasures;
+    }
 
     @Override
     protected boolean isPlayerInAttackRange(Player player) {

@@ -70,12 +70,24 @@ public class MCEPlayerUtils {
     public static void globalPlaySound(String music) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.playSound(
-                    player.getLocation(),
+                    player,
                     music,
                     SoundCategory.AMBIENT,
                     1.0f,
                     1.0f
             );
+        }
+    }
+
+    public static void globalStopAllSounds() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.stopAllSounds();
+        }
+    }
+
+    public static void globalStopMusic() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.stopSound(SoundCategory.MUSIC);
         }
     }
 }

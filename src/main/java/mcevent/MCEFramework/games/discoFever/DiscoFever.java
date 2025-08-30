@@ -2,7 +2,6 @@ package mcevent.MCEFramework.games.discoFever;
 
 import lombok.Getter;
 import lombok.Setter;
-import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.discoFever.customHandler.ActionBarMessageHandler;
 import mcevent.MCEFramework.games.discoFever.customHandler.PlayerFallHandler;
 import mcevent.MCEFramework.games.discoFever.gameObject.DiscoFeverGameBoard;
@@ -12,9 +11,7 @@ import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +80,9 @@ public class DiscoFever extends MCEGame {
         resetGameBoard();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
 
+        // 播放背景音乐
+        MCEPlayerUtils.globalPlaySound("minecraft:disco_fever");
+
         currentPlatformLocation = getDiscoFeverPlatformLocation(this.getWorldName());
         playerFallHandler.setInGame(true);
         actionBarMessageHandler.start();
@@ -121,6 +121,9 @@ public class DiscoFever extends MCEGame {
 
     @Override
     public void onEnd() {
+        // 停止背景音乐
+        MCEPlayerUtils.globalStopMusic();
+
         bossBar.removeAll();
         discoFever.clearBossBarTask();
         actionBarMessageHandler.suspend();
@@ -137,6 +140,10 @@ public class DiscoFever extends MCEGame {
     @Override
     public void stop() {
         super.stop();
+
+        // 停止背景音乐
+        MCEPlayerUtils.globalStopMusic();
+
         bossBar.removeAll();
         clearBossBarTask();
         actionBarMessageHandler.suspend();

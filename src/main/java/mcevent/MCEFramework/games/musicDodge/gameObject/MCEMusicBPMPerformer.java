@@ -28,21 +28,21 @@ public class MCEMusicBPMPerformer {
     }
 
     public void play() {
-        MCEPlayerUtils.globalPlaySound("minecraft.music_dodge_why_do_i");
+        MCEPlayerUtils.globalPlaySound(musicPath);
         
         // 依次触发所有攻击
         scheduleAttacks();
     }
     
     public void playWithSync(List<AttackConfig> attackConfigs) {
-        MCEPlayerUtils.globalPlaySound("minecraft.music_dodge_why_do_i");
+        MCEPlayerUtils.globalPlaySound(musicPath);
         
         // 使用同步信息触发攻击
         scheduleAttacksWithSync(attackConfigs);
     }
 
     public void stop() {
-
+        MCEPlayerUtils.globalStopMusic();
     }
 
     public void loadAttack(MCEAttack attack) {
@@ -96,48 +96,59 @@ public class MCEMusicBPMPerformer {
     }
     
     /**
-     * 按顺序调度所有攻击（支持同步）
-     * 规则：标记为sync的攻击与前一个攻击同时触发
+     * 按顺序调度所有攻击（支持时间偏移）
+     * 规则：每个攻击在上一个攻击从预警转为攻击之后指定的时间偏移后开始从预警转为攻击
      * @param attackConfigs 攻击配置列表
      */
     private void scheduleAttacksWithSync(List<AttackConfig> attackConfigs) {
-        double currentDelay = 0.0; // 当前累积延迟（秒）
-        double lastNonSyncStartTime = 0.0; // 最后一个非同步攻击的开始时间
+        if (attackConfigs.isEmpty()) return;
+        
+        // 找到所有攻击的最早开始时间，确保没有负数延迟
+        double earliestStartTime = 0.0;
+        double lastAttackStartTime = 0.0;
+        
+        // 第一次遍历：计算所有时间点
+        List<Double> attackStartTimes = new ArrayList<>();
+        List<Double> triggerTimes = new ArrayList<>();
         
         for (int i = 0; i < attackConfigs.size(); i++) {
             AttackConfig config = attackConfigs.get(i);
             MCEAttack attack = config.attack;
-            boolean sync = config.sync;
+            double attackStartOffsetBeats = config.attackStartOffset;
+            double attackStartOffsetSeconds = attackStartOffsetBeats * 4 * 60.0 / BPM;
+            double firstInternalAttackStartOffsetSeconds = attack.getFirstInternalAttackStartOffset() * 4 * 60.0 / BPM;
             
-            // 计算这个攻击的预警时间和攻击时间（转换为秒）
-            double alertDurationSeconds = attack.getAlertDurationBeats() * 4 * 60.0 / BPM;
-            double attackDurationSeconds = attack.getAttackDurationBeats() * 4 * 60.0 / BPM;
+            double actualAttackStartTime;
+            double triggerTime;
             
-            double triggerDelay;
-            
-            if (!sync || i == 0) {
-                // 非同步攻击或第一个攻击：在当前时间点开始预警
-                triggerDelay = currentDelay;
-                
-                // 记录这个非同步攻击的预警开始时间
-                lastNonSyncStartTime = triggerDelay;
-                
-                // 推进时间到此攻击完全结束后
-                currentDelay = triggerDelay + alertDurationSeconds + attackDurationSeconds;
+            if (i == 0) {
+                // 第一个攻击：第一个内部攻击在指定时间转为攻击
+                actualAttackStartTime = firstInternalAttackStartOffsetSeconds;
+                triggerTime = 0.0;
             } else {
-                // 同步攻击：与最后一个非同步攻击同时开始预警阶段
-                triggerDelay = lastNonSyncStartTime;
-                
-                // 如果同步攻击比主攻击长，需要延长总时间
-                double syncAttackEndTime = triggerDelay + alertDurationSeconds + attackDurationSeconds;
-                if (syncAttackEndTime > currentDelay) {
-                    currentDelay = syncAttackEndTime;
-                }
+                // 后续攻击：在上一个攻击的第一个内部攻击转为攻击后，加上指定偏移时间
+                actualAttackStartTime = lastAttackStartTime + attackStartOffsetSeconds;
+                triggerTime = actualAttackStartTime - firstInternalAttackStartOffsetSeconds;
             }
+            
+            attackStartTimes.add(actualAttackStartTime);
+            triggerTimes.add(triggerTime);
+            lastAttackStartTime = actualAttackStartTime;
+            
+            // 更新最早开始时间
+            if (triggerTime < earliestStartTime) {
+                earliestStartTime = triggerTime;
+            }
+        }
+        
+        // 第二次遍历：调度所有攻击，调整负数延迟
+        for (int i = 0; i < attackConfigs.size(); i++) {
+            MCEAttack attack = attackConfigs.get(i).attack;
+            double adjustedTriggerDelay = triggerTimes.get(i) - earliestStartTime;
             
             // 设置定时任务触发攻击
             final MCEAttack currentAttack = attack;
-            MCETimerUtils.setDelayedTask(triggerDelay, new MCETimerFunction() {
+            MCETimerUtils.setDelayedTask(adjustedTriggerDelay, new MCETimerFunction() {
                 @Override
                 public void run() {
                     currentAttack.toggle();

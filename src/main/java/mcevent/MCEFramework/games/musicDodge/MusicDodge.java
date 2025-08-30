@@ -29,7 +29,7 @@ import static mcevent.MCEFramework.miscellaneous.Constants.*;
 public class MusicDodge extends MCEGame {
 
     private MusicDodgeConfigParser musicDodgeConfigParser = new MusicDodgeConfigParser();
-    private MCEMusicBPMPerformer musicBPMPerformer = new MCEMusicBPMPerformer("minecraft.music_dodge_why_do_i", 100);
+    private MCEMusicBPMPerformer musicBPMPerformer = new MCEMusicBPMPerformer("minecraft:music_dodge_why_do_i", 200);
     private TeleportOrb teleportOrb;
     private SpecialItemInteractionHandler itemHandler;
     
@@ -128,11 +128,8 @@ public class MusicDodge extends MCEGame {
      */
     private void distributeTeleportOrbs() {
         for (Team team : getActiveTeams()) {
-            for (String playerName : team.getEntries()) {
-                Player player = Bukkit.getPlayer(playerName);
-                if (player != null && player.isOnline()) {
-                    player.getInventory().addItem(teleportOrb.createItem());
-                }
+            for (Player player : MCETeamUtils.getPlayers(team)) {
+                player.getInventory().addItem(teleportOrb.createItem());
             }
         }
     }
@@ -142,12 +139,9 @@ public class MusicDodge extends MCEGame {
      */
     private void clearTeleportOrbs() {
         for (Team team : getActiveTeams()) {
-            for (String playerName : team.getEntries()) {
-                Player player = Bukkit.getPlayer(playerName);
-                if (player != null && player.isOnline()) {
-                    player.getInventory().clear();
-                    teleportOrb.clearCooldown(player);
-                }
+            for (Player player : MCETeamUtils.getPlayers(team)) {
+                player.getInventory().clear();
+                teleportOrb.clearCooldown(player);
             }
         }
     }

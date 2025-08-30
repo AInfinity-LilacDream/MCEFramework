@@ -123,7 +123,7 @@ public class MusicDodgeConfigParser extends MCEConfigParser {
     }
     
     /**
-     * 解析单行攻击配置（包含同步信息）
+     * 解析单行攻击配置（包含时间偏移信息）
      * @param line 配置行
      * @param worldName 世界名称
      * @param spawnLocation 生成位置
@@ -134,18 +134,27 @@ public class MusicDodgeConfigParser extends MCEConfigParser {
         String[] parts = line.split(",");
         if (parts.length == 0) return null;
         
-        // 检查最后一个参数是否为"sync"
-        boolean sync = false;
+        // 提取最后一个参数作为时间偏移（如果存在且为数字）
+        double attackStartOffset = 0.0; // 默认偏移为0
         String[] attackParts = parts;
-        if (parts.length > 1 && parts[parts.length - 1].trim().equalsIgnoreCase("sync")) {
-            sync = true;
-            // 移除sync参数，只保留攻击参数
-            attackParts = new String[parts.length - 1];
-            System.arraycopy(parts, 0, attackParts, 0, parts.length - 1);
+        
+        if (parts.length > 1) {
+            String lastPart = parts[parts.length - 1].trim();
+            try {
+                // 尝试解析最后一个参数为数字
+                attackStartOffset = Double.parseDouble(lastPart);
+                // 移除时间偏移参数，只保留攻击参数
+                attackParts = new String[parts.length - 1];
+                System.arraycopy(parts, 0, attackParts, 0, parts.length - 1);
+            } catch (NumberFormatException e) {
+                // 如果最后一个参数不是数字，则认为没有时间偏移参数
+                attackStartOffset = 0.0;
+                attackParts = parts;
+            }
         }
         
         MCEAttack attack = parseAttackFromParts(attackParts, worldName, spawnLocation, bpm);
-        return attack != null ? new AttackConfig(attack, sync) : null;
+        return attack != null ? new AttackConfig(attack, attackStartOffset) : null;
     }
     
     /**
@@ -175,13 +184,6 @@ public class MusicDodgeConfigParser extends MCEConfigParser {
         String attackType = parts[0].trim();
         
         switch (attackType) {
-            case "Void":
-                if (parts.length >= 2) {
-                    double duration = Double.parseDouble(parts[1].trim());
-                    return new VoidAttack(duration, bpm);
-                }
-                break;
-                
             case "SquareRing":
                 if (parts.length >= 5) {
                     double alertDuration = Double.parseDouble(parts[1].trim());

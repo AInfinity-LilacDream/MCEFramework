@@ -1,8 +1,11 @@
 package mcevent.MCEFramework.miscellaneous;
 
+import mcevent.MCEFramework.games.captureCenter.CaptureCenter;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
+import mcevent.MCEFramework.games.football.Football;
 import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
+import mcevent.MCEFramework.games.sandRun.SandRun;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -36,12 +39,18 @@ public class Constants {
             "pkt_concrete",
             "discofever_classic",
             "musicdodge_classic",
+            "sand_run_classic",
+            "capture_classic",
+            "football_field",
     };
 
     // 全局的游戏单例
     public static ParkourTag pkt;
     public static DiscoFever discoFever;
     public static MusicDodge musicDodge;
+    public static SandRun sandRun;
+    public static CaptureCenter captureCenter;
+    public static Football football;
 
     // ParkourTag位置现在从配置文件动态获取，不再使用硬编码
 

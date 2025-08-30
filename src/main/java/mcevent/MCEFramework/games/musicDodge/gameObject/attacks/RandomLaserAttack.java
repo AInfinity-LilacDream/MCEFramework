@@ -123,6 +123,13 @@ public class RandomLaserAttack extends MCEAttack {
     }
 
     @Override
+    public double getFirstInternalAttackStartOffset() {
+        // RandomLaserAttack的第一个内部攻击（第一个LaserAttack）在RandomLaserAttack开始后立即生成
+        // 第一个LaserAttack有自己的预警时间，所以总的偏移时间是第一个Laser的预警时间
+        return laserAlertMeasures;
+    }
+
+    @Override
     protected boolean isPlayerInAttackRange(Player player) {
         // RandomLaserAttack本身不直接造成伤害，伤害由生成的LaserAttack处理
         // 由于每个LaserAttack都是独立的，我们返回false

@@ -42,6 +42,17 @@ public abstract class MCEAttack {
 
     public void toggle() {}
 
+    /**
+     * 获取第一个内部攻击从预警转为攻击的时间偏移（以拍为单位）
+     * 对于简单攻击，返回自身的预警时间
+     * 对于复合攻击，返回第一个内部攻击从预警转为攻击的时间
+     * @return 时间偏移（拍）
+     */
+    public double getFirstInternalAttackStartOffset() {
+        // 默认实现：简单攻击返回自身的预警时间
+        return alertDurationBeats;
+    }
+
     protected void playAttackSound(String soundName) {
         MCEPlayerUtils.globalPlaySound(soundName);
     }

@@ -150,6 +150,14 @@ public class SideAttack extends MCEAttack {
     }
 
     @Override
+    public double getFirstInternalAttackStartOffset() {
+        // SideAttack的第一个内部攻击（第一个SquareRingAttack）在SideAttack开始后立即生成
+        // 第一个SquareRingAttack有自己的预警时间，所以总的偏移时间是：SideAttack的预警时间 + 第一个Ring的预警时间
+        // 但是SideAttack本身没有预警时间（alertDurationBeats = 0），所以只需要返回第一个Ring的预警时间
+        return ringAlertMeasures;
+    }
+
+    @Override
     protected boolean isPlayerInAttackRange(Player player) {
         // SideAttack 本身不直接造成伤害，伤害由生成的 SquareRingAttack 处理
         // 检查玩家是否在任何活动的正方形环范围内
