@@ -26,6 +26,18 @@ public class MCEPausableTimer {
     }
 
     public void start() {
+        // 如果持续时间为0，延迟1tick后跳到下一个状态（确保当前阶段的回调先执行）
+        if (maxDurationSeconds == 0) {
+            task = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    parentTimeline.nextState();
+                }
+            };
+            task.runTaskLater(Constants.plugin, 1L); // 1 tick 延迟
+            return;
+        }
+        
         task = new BukkitRunnable() {
 
             @Override

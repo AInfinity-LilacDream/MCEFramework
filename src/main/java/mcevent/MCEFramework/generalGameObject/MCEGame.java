@@ -3,6 +3,7 @@ package mcevent.MCEFramework.generalGameObject;
 import lombok.Data;
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.tools.MCEMessenger;
+import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import mcevent.MCEFramework.tools.MCETeamUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -122,11 +123,16 @@ public class MCEGame {
     public void start() {
         MCEMainController.setRunningGame(true);
         MCEMainController.setCurrentTimeline(this.getTimeline());
+        
         timeline.start();
     }
 
     public void stop() {
         MCEMainController.setRunningGame(false);
+        
+        // 清空所有玩家的scoreboard tags
+        MCEPlayerUtils.clearGlobalTags();
+        
         if (timeline != null) {
             timeline.suspend();
         }
@@ -139,8 +145,16 @@ public class MCEGame {
         MCEMessenger.sendIntroText(getTitle(), getIntroTextList());
     }
 
-    public void onPreparation() { this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>"); }
-    public void onCyclePreparation() {}
+    public void onPreparation() { 
+        this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
+        
+        // 给所有在线玩家添加Active标签，标记为活跃游戏玩家
+        MCEPlayerUtils.globalGrantTag("Active");
+    }
+    public void onCyclePreparation() {
+        // 确保Active标签存在（如果子类没有覆盖此方法）
+        MCEPlayerUtils.globalGrantTag("Active");
+    }
     public void onCycleStart() {}
     public void onCycleEnd() {}
     public void onEnd() {}

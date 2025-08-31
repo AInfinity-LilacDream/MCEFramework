@@ -39,8 +39,9 @@ public class PlayerFallHandler implements Listener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         
-        // 检查玩家是否掉落到虚空
-        if (player.getLocation().getY() <= -65 && player.getGameMode() == GameMode.ADVENTURE) {
+        // 检查玩家是否掉落到虚空（只处理活跃游戏玩家）
+        if (player.getLocation().getY() <= -65 && player.getGameMode() == GameMode.ADVENTURE && 
+            player.getScoreboardTags().contains("Active")) {
             // 玩家被击溃
             Team playerTeam = MCETeamUtils.getTeam(player);
             String teamName = playerTeam != null ? MCETeamUtils.getUncoloredTeamName(playerTeam) : "未知队伍";
@@ -56,9 +57,10 @@ public class PlayerFallHandler implements Listener {
     
     @EventHandler
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        // 处理PVP击杀奖励
+        // 处理PVP击杀奖励（只处理活跃游戏玩家）
         if (event.getEntity() instanceof Player victim && event.getDamager() instanceof Player attacker) {
-            if (victim.getGameMode() != GameMode.ADVENTURE || attacker.getGameMode() != GameMode.ADVENTURE) {
+            if (victim.getGameMode() != GameMode.ADVENTURE || attacker.getGameMode() != GameMode.ADVENTURE ||
+                !victim.getScoreboardTags().contains("Active") || !attacker.getScoreboardTags().contains("Active")) {
                 return;
             }
             

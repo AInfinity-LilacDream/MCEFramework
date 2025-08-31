@@ -2,6 +2,7 @@ package mcevent.MCEFramework.games.football;
 
 import lombok.Getter;
 import lombok.Setter;
+import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.football.customHandler.BallTrackingHandler;
 import mcevent.MCEFramework.games.football.customHandler.BallBounceHandler;
 import mcevent.MCEFramework.games.football.customHandler.KnockbackCooldownHandler;
@@ -9,6 +10,7 @@ import mcevent.MCEFramework.games.football.gameObject.FootballGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.*;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Armadillo;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -18,6 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static mcevent.MCEFramework.games.football.FootballFuncImpl.*;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
@@ -91,12 +94,21 @@ public class Football extends MCEGame {
         
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
         
+        // 设置玩家血量为10颗心（20.0血量）
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(20.0);
+            player.setHealth(20.0);
+        }
+        
         grantGlobalPotionEffect(saturation);
         MCEPlayerUtils.clearGlobalTags();
     }
 
     @Override
     public void onPreparation() {
+        // 给所有在线玩家添加Active标签，标记为活跃游戏玩家
+        MCEPlayerUtils.globalGrantTag("Active");
+        
         // 传送玩家到出生点
         teleportPlayersToSpawns();
         
@@ -149,6 +161,10 @@ public class Football extends MCEGame {
         
         sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
+        
+        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
+        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
+        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
     }
 
     @Override

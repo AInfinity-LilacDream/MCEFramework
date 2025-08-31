@@ -2,19 +2,23 @@ package mcevent.MCEFramework.games.discoFever;
 
 import lombok.Getter;
 import lombok.Setter;
+import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.discoFever.customHandler.ActionBarMessageHandler;
 import mcevent.MCEFramework.games.discoFever.customHandler.PlayerFallHandler;
 import mcevent.MCEFramework.games.discoFever.gameObject.DiscoFeverGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.*;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 import static mcevent.MCEFramework.games.discoFever.DiscoFeverFuncImpl.*;
@@ -69,6 +73,12 @@ public class DiscoFever extends MCEGame {
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
         MCETeleporter.globalSwapWorld(this.getWorldName());
+
+        // 设置玩家血量为10颗心（20.0血量）
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(20.0);
+            player.setHealth(20.0);
+        }
 
         grantGlobalPotionEffect(saturation);
 
@@ -130,6 +140,10 @@ public class DiscoFever extends MCEGame {
         playerFallHandler.suspend();
         sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
+        
+        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
+        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
+        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
     }
 
     @Override

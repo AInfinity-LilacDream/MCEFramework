@@ -67,6 +67,13 @@ public class ParkourTag extends MCEGame {
 
         World world = Bukkit.getWorld(this.getWorldName());
         if (world != null) world.setGameRule(GameRule.FALL_DAMAGE, false);
+        
+        // 设置玩家血量为10颗心（20.0血量）
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(20.0);
+            player.setHealth(20.0);
+        }
+        
         grantGlobalPotionEffect(saturation);
         this.setActiveTeams(MCETeamUtils.getActiveTeams());
 
@@ -83,6 +90,7 @@ public class ParkourTag extends MCEGame {
         resetSurvivePlayerTot();
 
         MCEPlayerUtils.clearGlobalTags();
+        MCEPlayerUtils.globalGrantTag("Active"); // 重新添加Active标签
         MCEPlayerUtils.globalGrantTag("runner");
         MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
 
@@ -135,6 +143,10 @@ public class ParkourTag extends MCEGame {
         // 结束游戏后停止监听器
         playerCaughtHandler.suspend();
         MCEPlayerUtils.globalShowNameTag();
+        
+        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
+        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
+        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
     }
 
     @Override

@@ -2,6 +2,7 @@ package mcevent.MCEFramework.games.musicDodge;
 
 import lombok.Getter;
 import lombok.Setter;
+import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.musicDodge.gameObject.MCEMusicBPMPerformer;
 import mcevent.MCEFramework.games.musicDodge.gameObject.MusicDodgeGameBoard;
 import mcevent.MCEFramework.games.musicDodge.gameObject.attacks.*;
@@ -14,6 +15,7 @@ import mcevent.MCEFramework.tools.*;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 import org.checkerframework.checker.units.qual.C;
@@ -59,6 +61,12 @@ public class MusicDodge extends MCEGame {
         MCETeleporter.globalSwapWorld(this.getWorldName());
         MCEWorldUtils.disablePVP();
         MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        // 设置玩家血量为10颗心（20.0血量）
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(20.0);
+            player.setHealth(20.0);
+        }
+
         grantGlobalPotionEffect(saturation);
         MCEPlayerUtils.clearGlobalTags();
 
@@ -107,6 +115,10 @@ public class MusicDodge extends MCEGame {
         // 停止监听器并清理物品
         itemHandler.suspend();
         clearTeleportOrbs();
+        
+        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
+        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
+        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
     }
 
     @Override

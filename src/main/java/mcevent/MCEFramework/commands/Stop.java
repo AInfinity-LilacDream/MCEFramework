@@ -11,7 +11,7 @@ import org.bukkit.entity.Player;
 Stop: 停止当前正在运行的游戏
 usage: stop
  */
-@CommandAlias("stop")
+@CommandAlias("stopgame")
 @CommandPermission("stop.use")
 public class Stop extends BaseCommand {
 

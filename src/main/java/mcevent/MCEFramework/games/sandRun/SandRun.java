@@ -2,6 +2,7 @@ package mcevent.MCEFramework.games.sandRun;
 
 import lombok.Getter;
 import lombok.Setter;
+import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.sandRun.customHandler.SandFallHandler;
 import mcevent.MCEFramework.games.sandRun.gameObject.SandRunGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
@@ -68,6 +69,8 @@ public class SandRun extends MCEGame {
         SandRunFuncImpl.resetGameBoard();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
         
+        MCEPlayerUtils.globalGrantTag("Active");
+        
         sandFallHandler.startSandFall();
         
         gameTask.add(MCETimerUtils.setDelayedTask(180, () -> {
@@ -81,6 +84,10 @@ public class SandRun extends MCEGame {
         sandFallHandler.stopSandFall();
         SandRunFuncImpl.sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
+        
+        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
+        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
+        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
     }
 
     @Override

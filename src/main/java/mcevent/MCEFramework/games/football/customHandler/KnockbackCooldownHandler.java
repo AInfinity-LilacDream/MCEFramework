@@ -77,7 +77,7 @@ public class KnockbackCooldownHandler implements Listener {
             player.setCooldown(Material.BLAZE_ROD, 100); // 5秒 = 100 ticks
             startCooldownTimer(player, Material.BLAZE_ROD, 5);
             
-        } else if (itemType == Material.BREEZE_ROD) {
+        } else {
             // 处理击退7旋风棒冷却
             if (!item.hasItemMeta() || item.getEnchantmentLevel(Enchantment.KNOCKBACK) != 7) return;
             

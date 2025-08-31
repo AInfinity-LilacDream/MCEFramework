@@ -196,16 +196,15 @@ public class CaptureCenterFuncImpl {
      * 给予玩家指定等级的击退棒
      */
     public static void giveKnockbackStick(int knockbackLevel) {
-        // 清除所有玩家的击退棒
+        // 清除所有活跃玩家的击退棒
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.ADVENTURE) {
+            if (player.getGameMode() == GameMode.ADVENTURE && player.getScoreboardTags().contains("Active")) {
                 player.getInventory().clear();
             }
         }
         
         // 如果击退等级为0或以下，不给击退棒
         if (knockbackLevel <= 0) {
-            plugin.getLogger().info("击退等级已降至0，不再给予击退棒");
             return;
         }
         
@@ -218,12 +217,10 @@ public class CaptureCenterFuncImpl {
         }
         
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.ADVENTURE) {
+            if (player.getGameMode() == GameMode.ADVENTURE && player.getScoreboardTags().contains("Active")) {
                 player.getInventory().addItem(knockbackStick);
             }
         }
-        
-        plugin.getLogger().info("给予所有玩家击退" + knockbackLevel + "等级的击退棒");
     }
     
     /**

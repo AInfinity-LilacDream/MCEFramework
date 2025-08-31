@@ -2,6 +2,7 @@ package mcevent.MCEFramework.games.captureCenter;
 
 import lombok.Getter;
 import lombok.Setter;
+import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.captureCenter.customHandler.PlayerFallHandler;
 import mcevent.MCEFramework.games.captureCenter.gameObject.CaptureCenterGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
@@ -68,6 +69,9 @@ public class CaptureCenter extends MCEGame {
         CaptureCenterFuncImpl.resetGameBoard();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
         
+        // 确保所有玩家都有Active标签
+        MCEPlayerUtils.globalGrantTag("Active");
+        
         // 开启全局PVP
         MCEWorldUtils.enablePVP();
         
@@ -100,6 +104,10 @@ public class CaptureCenter extends MCEGame {
         CaptureCenterFuncImpl.sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
         playerFallHandler.unregister();
+        
+        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
+        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
+        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
     }
     
     @Override

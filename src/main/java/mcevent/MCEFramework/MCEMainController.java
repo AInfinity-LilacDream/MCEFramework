@@ -7,15 +7,21 @@ import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.commands.*;
 import mcevent.MCEFramework.customHandler.GlobalPVPHandler;
+import mcevent.MCEFramework.customHandler.PlayerJoinHandler;
 import mcevent.MCEFramework.games.captureCenter.CaptureCenter;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
 import mcevent.MCEFramework.games.football.Football;
 import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
+import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCETimeline;
 import mcevent.MCEFramework.miscellaneous.Constants;
+import mcevent.MCEFramework.tools.MCEPlayerUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;
@@ -43,6 +49,9 @@ public final class MCEMainController extends JavaPlugin {
 
     @Getter
     private static GlobalPVPHandler globalPVPHandler;
+    
+    @Getter
+    private static PlayerJoinHandler playerJoinHandler;
 
     @Override
     public void onEnable() {
@@ -55,6 +64,7 @@ public final class MCEMainController extends JavaPlugin {
         String srMapName = readMapNameFromConfig("MCEConfig/SandRun.cfg", mapNames[3]);
         String ccMapName = readMapNameFromConfig("MCEConfig/CaptureCenter.cfg", mapNames[4]);
         String footballMapName = readMapNameFromConfig("MCEConfig/Football.cfg", mapNames[5]);
+        String votingMapName = mapNames[6]; // 投票系统直接使用lobby
         
         // 使用配置文件中的地图名称创建游戏实例
         pkt = new ParkourTag("瓮中捉鳖", 0, pktMapName, true, "MCEConfig/ParkourTag.cfg",
@@ -69,6 +79,8 @@ public final class MCEMainController extends JavaPlugin {
                 5, 55, 15, 0, 180, 25, 25);
         football = new Football("少林足球", 5, footballMapName, 1, false, "MCEConfig/Football.cfg",
                 3, 25, 10, 5, Integer.MAX_VALUE, 15, 20);
+        votingSystem = new VotingSystem("投票系统", 6, votingMapName, 1, false, "MCEConfig/VotingSystem.cfg",
+                2, 0, 0, 0, 30, 0, 3);
 
         // 初始化游戏列表
         gameList.add(pkt);
@@ -77,9 +89,14 @@ public final class MCEMainController extends JavaPlugin {
         gameList.add(sandRun);
         gameList.add(captureCenter);
         gameList.add(football);
+        gameList.add(votingSystem);
 
+        // 全面清理所有玩家状态（在线和离线）
+        cleanupAllPlayersOnStartup();
+        
         // 注册全局事件监听器
         globalPVPHandler = new GlobalPVPHandler();
+        playerJoinHandler = new PlayerJoinHandler();
 
         // ACF command manager
         PaperCommandManager commandManager = new PaperCommandManager(this);
@@ -152,6 +169,11 @@ public final class MCEMainController extends JavaPlugin {
 
         nextGame.start();
     }
+    
+    public static void launchVotingSystem() {
+        // 启动投票系统（游戏ID 6）
+        immediateLaunchGame(6, false);
+    }
 
     // 切换到子时间线之后会自动切换回主时间线
     public static void switchToTimeline(MCETimeline timeline, MCETimeline parentTimeline) {
@@ -177,5 +199,62 @@ public final class MCEMainController extends JavaPlugin {
             return true;
         }
         return false;
+    }
+    
+    /**
+     * 插件启动时全面清理所有玩家状态
+     * 清空效果、标签、物品栏
+     */
+    private void cleanupAllPlayersOnStartup() {
+        getLogger().info("开始清理所有玩家状态...");
+        
+        // 清理在线玩家
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            cleanupPlayer(player);
+        }
+        
+        // 清理离线玩家 - 获取所有曾经加入过服务器的玩家
+        OfflinePlayer[] offlinePlayers = Bukkit.getOfflinePlayers();
+        int cleanedCount = 0;
+        
+        for (OfflinePlayer offlinePlayer : offlinePlayers) {
+            if (offlinePlayer.hasPlayedBefore() && !offlinePlayer.isOnline()) {
+                // 对于离线玩家，我们主要清理可持久化的数据
+                Player player = offlinePlayer.getPlayer();
+                if (player != null) {
+                    cleanupPlayer(player);
+                    cleanedCount++;
+                }
+            }
+        }
+        
+        getLogger().info("清理完成！在线玩家: " + Bukkit.getOnlinePlayers().size() + 
+                        ", 离线玩家: " + cleanedCount);
+    }
+    
+    /**
+     * 清理单个玩家的状态
+     */
+    private void cleanupPlayer(Player player) {
+        // 清空药水效果
+        player.getActivePotionEffects().forEach(effect -> 
+            player.removePotionEffect(effect.getType())
+        );
+        
+        // 清空scoreboard标签
+        player.getScoreboardTags().clear();
+        
+        // 清空物品栏
+        player.getInventory().clear();
+        player.getEnderChest().clear();
+        
+        // 重置经验
+        player.setExp(0);
+        player.setLevel(0);
+        
+        // 重置食物和生命值
+        player.setFoodLevel(20);
+        player.setSaturation(20);
+        player.setHealth(player.getMaxHealth());
     }
 }

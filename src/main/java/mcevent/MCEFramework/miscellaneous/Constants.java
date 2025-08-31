@@ -6,6 +6,7 @@ import mcevent.MCEFramework.games.football.Football;
 import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
+import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -42,6 +43,7 @@ public class Constants {
             "sand_run_classic",
             "capture_classic",
             "football_field",
+            "lobby", // 投票系统使用主城
     };
 
     // 全局的游戏单例
@@ -51,6 +53,7 @@ public class Constants {
     public static SandRun sandRun;
     public static CaptureCenter captureCenter;
     public static Football football;
+    public static VotingSystem votingSystem;
 
     // ParkourTag位置现在从配置文件动态获取，不再使用硬编码
 

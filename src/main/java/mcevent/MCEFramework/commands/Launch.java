@@ -110,24 +110,6 @@ public class Launch extends BaseCommand {
         else MCEMainController.immediateLaunchGame(captureCenter.getId(), false);
     }
 
-    @Subcommand("tpCaptureCenter")
-    public void teleportToCaptureCenter(CommandSender sender) {
-        try {
-            MCETeleporter.globalSwapWorld("capture_classic");
-            if (sender instanceof Player) {
-                MCEMessenger.sendInfoToPlayer("<green>所有玩家已传送到占山为王世界的出生点！</green>", (Player) sender);
-            } else {
-                Bukkit.getLogger().info("所有玩家已传送到占山为王世界的出生点！");
-            }
-        } catch (Exception e) {
-            if (sender instanceof Player) {
-                MCEMessenger.sendInfoToPlayer("<red>传送失败：无法找到 capture_classic 世界！</red>", (Player) sender);
-            } else {
-                Bukkit.getLogger().warning("传送失败：无法找到 capture_classic 世界！");
-            }
-        }
-    }
-
     @Subcommand("football")
     public void launchFootball(CommandSender sender) {
         if (checkGameRunning()) {
@@ -144,6 +126,15 @@ public class Launch extends BaseCommand {
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
         }
         else MCEMainController.immediateLaunchGame(football.getId(), false);
+    }
+
+    @Subcommand("vote")
+    public void launchVoting(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.launchVotingSystem();
     }
 
     private boolean checkGameRunning() {

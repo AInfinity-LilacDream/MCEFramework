@@ -62,6 +62,7 @@ public class SandFallHandler implements Listener {
             sandFallTask.cancel();
         }
         
+        
         this.sandFallInterval = intervalTicks;
         sandFallTask = new BukkitRunnable() {
             @Override
@@ -86,10 +87,17 @@ public class SandFallHandler implements Listener {
     }
     
     private void spawnSandForAllPlayers() {
+        int activePlayerCount = 0;
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.ADVENTURE) {
+            if (player.getGameMode() == GameMode.ADVENTURE && player.getScoreboardTags().contains("Active")) {
+                activePlayerCount++;
                 spawnSandAbovePlayer(player);
             }
+        }
+        
+        if (activePlayerCount == 0) {
+            plugin.getLogger().warning("落沙漫步：没有找到Active玩家，停止沙子掉落");
+            stopSandFall();
         }
     }
     
@@ -119,6 +127,11 @@ public class SandFallHandler implements Listener {
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
+            // 只处理有Active标签的游戏玩家
+            if (!player.getScoreboardTags().contains("Active")) {
+                return;
+            }
+            
             if (event.getCause() == EntityDamageEvent.DamageCause.SUFFOCATION) {
                 // 检查玩家受到窒息伤害后是否会死亡
                 double finalHealth = player.getHealth() - event.getFinalDamage();
