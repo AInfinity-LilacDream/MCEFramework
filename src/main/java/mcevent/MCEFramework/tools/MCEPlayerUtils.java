@@ -7,7 +7,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import fr.mrmicky.fastboard.adventure.FastBoard;
 import java.util.Set;
+
+import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
 
 /*
 MCEPlayerUtils: 工具类，提供修改玩家属性及药水效果的方法
@@ -41,6 +44,31 @@ public class MCEPlayerUtils {
             player.setGameMode(gamemode);
         }
     }
+    
+    public static void globalSetGameModeDelayed(GameMode gamemode, long delayTicks) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.setGameMode(gamemode);
+            }
+        }, delayTicks);
+    }
+    
+    public static void globalClearScoreboard() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Scoreboard emptyBoard = Bukkit.getScoreboardManager().getNewScoreboard();
+            player.setScoreboard(emptyBoard);
+        }
+    }
+    
+    public static void globalClearFastBoard() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            // 创建一个空的 FastBoard 来清除现有的计分板
+            FastBoard board = new FastBoard(player);
+            board.updateTitle(net.kyori.adventure.text.Component.empty());
+            board.updateLines();
+            board.delete();
+        }
+    }
 
     public static String getColoredPlayerName(Player player) {
         String name = player.getName();
@@ -57,6 +85,13 @@ public class MCEPlayerUtils {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         for (Team team : scoreboard.getTeams()) {
             team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+        }
+    }
+
+    public static void globalChangeTeamNameTag() {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        for (Team team : scoreboard.getTeams()) {
+            team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
         }
     }
 
@@ -87,7 +122,13 @@ public class MCEPlayerUtils {
 
     public static void globalStopMusic() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.stopSound(SoundCategory.MUSIC);
+            player.stopSound(SoundCategory.AMBIENT);
+        }
+    }
+    
+    public static void globalClearInventory() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.getInventory().clear();
         }
     }
 }

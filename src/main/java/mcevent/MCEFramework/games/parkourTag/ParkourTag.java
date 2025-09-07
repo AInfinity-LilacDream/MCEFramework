@@ -54,16 +54,47 @@ public class ParkourTag extends MCEGame {
     }
 
     @Override
+    public void handlePlayerQuitDuringGame(org.bukkit.entity.Player player) {
+        // 更新存活玩家数
+        Team playerTeam = MCETeamUtils.getTeam(player);
+        if (playerTeam != null) {
+            int teamIndex = this.getActiveTeams().indexOf(playerTeam);
+            if (teamIndex >= 0 && teamIndex < survivePlayerTot.size()) {
+                survivePlayerTot.set(teamIndex, Math.max(0, survivePlayerTot.get(teamIndex) - 1));
+            }
+        }
+        
+        // 检查游戏结束条件
+        checkGameEndCondition();
+    }
+    
+    @Override
+    protected void checkGameEndCondition() {
+        // 检查是否有队伍的跑者全部出局
+        int activeTeamCount = 0;
+        for (int survivePlayers : survivePlayerTot) {
+            if (survivePlayers > 0) {
+                activeTeamCount++;
+            }
+        }
+        
+        if (activeTeamCount <= 1) {
+            // 只剩一队或没队了，游戏应该结束
+            // 让时间线自然过渡，不主动干预
+        }
+    }
+
+    @Override
     public void onLaunch() {
         // 先关闭事件监听器
         playerCaughtHandler.suspend();
         setIntroTextList(parkourTagConfigParser.openAndParse(getConfigFileName()));
+        MCETeleporter.globalSwapWorld(this.getWorldName());
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
         MCEPlayerUtils.globalHideNameTag();
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
-        MCETeleporter.globalSwapWorld(this.getWorldName());
 
         World world = Bukkit.getWorld(this.getWorldName());
         if (world != null) world.setGameRule(GameRule.FALL_DAMAGE, false);
@@ -135,18 +166,16 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onEnd() {
-        opponentTeamGlowingHandler.suspend();
-        showSurvivePlayer = false;
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
-
-        // 结束游戏后停止监听器
-        playerCaughtHandler.suspend();
-        MCEPlayerUtils.globalShowNameTag();
+        MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
         
-        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
-        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
-        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
+        // onEnd结束后立即清理展示板和资源，然后启动投票系统
+        setDelayedTask(getEndDuration(), () -> {
+            MCEPlayerUtils.globalClearFastBoard();
+            this.stop(); // 停止所有游戏资源
+            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+        });
     }
 
     @Override

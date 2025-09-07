@@ -53,6 +53,8 @@ public class BallTrackingHandler {
         if (System.currentTimeMillis() % 1000 < 50) { // 大约每秒输出一次
             plugin.getLogger().info("球的位置: " + String.format("%.2f, %.2f, %.2f", 
                 ballLocation.getX(), ballLocation.getY(), ballLocation.getZ()));
+            plugin.getLogger().info("红门范围: " + game.getRedGoalMin() + " 到 " + game.getRedGoalMax());
+            plugin.getLogger().info("蓝门范围: " + game.getBlueGoalMin() + " 到 " + game.getBlueGoalMax());
         }
         
         // 检查红队球门
@@ -80,11 +82,8 @@ public class BallTrackingHandler {
         game.onGoal(redTeamScored);
         
         // 3秒后重新激活跟踪
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                isActive = true;
-            }
-        }.runTaskLater(plugin, 60L); // 3秒 = 60 ticks
+        game.setDelayedTask(3, () -> {
+            isActive = true;
+        });
     }
 }

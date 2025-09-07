@@ -54,7 +54,7 @@ public class SandRun extends MCEGame {
         setActiveTeams(MCETeamUtils.getActiveTeams());
         MCETeleporter.globalSwapWorld(this.getWorldName());
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
         
         // 使用 SandRunFuncImpl 代替直接循环操作玩家
         SandRunFuncImpl.initializePlayers();
@@ -69,6 +69,9 @@ public class SandRun extends MCEGame {
         SandRunFuncImpl.resetGameBoard();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
         
+        // 播放背景音乐
+        MCEPlayerUtils.globalPlaySound("minecraft:sand_run");
+        
         MCEPlayerUtils.globalGrantTag("Active");
         
         sandFallHandler.startSandFall();
@@ -80,14 +83,15 @@ public class SandRun extends MCEGame {
 
     @Override
     public void onEnd() {
-        SandRunFuncImpl.clearGameTasks(this);
-        sandFallHandler.stopSandFall();
         SandRunFuncImpl.sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
         
-        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
-        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
-        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
+        // onEnd结束后立即清理展示板和资源，然后启动投票系统
+        setDelayedTask(getEndDuration(), () -> {
+            MCEPlayerUtils.globalClearFastBoard();
+            this.stop(); // 停止所有游戏资源
+            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+        });
     }
 
     @Override
@@ -98,6 +102,10 @@ public class SandRun extends MCEGame {
     @Override
     public void stop() {
         super.stop();
+        
+        // 停止背景音乐
+        MCEPlayerUtils.globalStopMusic();
+        
         SandRunFuncImpl.clearGameTasks(this);
         sandFallHandler.stopSandFall();
     }

@@ -128,6 +128,78 @@ public class Launch extends BaseCommand {
         else MCEMainController.immediateLaunchGame(football.getId(), false);
     }
 
+    @Subcommand("crazyMiner")
+    public void launchCrazyMiner(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(crazyMiner.getId(), true);
+    }
+
+    @Subcommand("crazyMinerNoIntro")
+    public void launchCrazyMinerNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(crazyMiner.getId(), false);
+    }
+
+    @Subcommand("extractOwn")
+    public void launchExtractOwn(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(extractOwn.getId(), true);
+    }
+
+    @Subcommand("extractOwnNoIntro")
+    public void launchExtractOwnNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(extractOwn.getId(), false);
+    }
+
+    @Subcommand("TNTTag")
+    public void launchTNTTag(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(tnttag.getId(), true);
+    }
+
+    @Subcommand("TNTTagNoIntro")
+    public void launchTNTTagNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(tnttag.getId(), false);
+    }
+
+    @Subcommand("spleef")
+    public void launchSpleef(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(spleef.getId(), true);
+    }
+
+    @Subcommand("spleefNoIntro")
+    public void launchSpleefNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(spleef.getId(), false);
+    }
+
     @Subcommand("vote")
     public void launchVoting(CommandSender sender) {
         if (checkGameRunning()) {

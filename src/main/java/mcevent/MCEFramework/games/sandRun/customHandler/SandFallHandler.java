@@ -45,8 +45,8 @@ public class SandFallHandler implements Listener {
         if (color == YELLOW) return Material.YELLOW_CONCRETE_POWDER;
         if (color == GREEN) return Material.LIME_CONCRETE_POWDER;
         if (color == DARK_GREEN) return Material.GREEN_CONCRETE_POWDER;
-        if (color == AQUA) return Material.CYAN_CONCRETE_POWDER;
-        if (color == DARK_AQUA) return Material.LIGHT_BLUE_CONCRETE_POWDER;
+        if (color == AQUA) return Material.LIGHT_BLUE_CONCRETE_POWDER;
+        if (color == DARK_AQUA) return Material.CYAN_CONCRETE_POWDER;
         if (color == DARK_BLUE) return Material.BLUE_CONCRETE_POWDER;
         if (color == DARK_PURPLE) return Material.PURPLE_CONCRETE_POWDER;
         if (color == LIGHT_PURPLE) return Material.MAGENTA_CONCRETE_POWDER;

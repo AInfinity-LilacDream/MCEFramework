@@ -4,6 +4,7 @@ import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
 import mcevent.MCEFramework.tools.MCEMessenger;
+import mcevent.MCEFramework.tools.MCEGlowingEffectManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -39,25 +40,28 @@ public class PlayerJoinHandler extends MCEResumableEventHandler implements Liste
         ));
         Player player = event.getPlayer();
         
+        // 清理玩家的发光效果
+        MCEGlowingEffectManager.clearPlayerGlowingEffect(player);
+        
         // 根据游戏状态决定传送位置
         if (MCEMainController.isRunningGame()) {
-            // 检查玩家是否有Active标签（活跃游戏玩家）
-            if (player.getScoreboardTags().contains("Active")) {
-                // 如果是活跃玩家，传送到游戏世界出生点
-                teleportToGameWorld(player);
+            MCEGame currentGame = MCEMainController.getCurrentRunningGame();
+            
+            if (currentGame != null) {
+                // 检查玩家是否是游戏参与者
+                if (currentGame.isGameParticipant(player)) {
+                    // 如果是游戏参与者，传送到游戏世界出生点
+                    teleportToGameWorld(player);
+                } else {
+                    // 如果不是游戏参与者，传送到游戏世界并使用游戏的处理器处理
+                    teleportToGameWorld(player);
+                    
+                    // 使用游戏的统一处理器处理新加入的玩家
+                    currentGame.handlePlayerJoinDuringGame(player);
+                }
             } else {
-                // 如果不是活跃玩家，传送到游戏世界出生点并延迟设置旁观模式
-                teleportToGameWorld(player);
-
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (player.isOnline() && MCEMainController.isRunningGame() &&
-                                !player.getScoreboardTags().contains("Active")) {
-                            player.setGameMode(GameMode.SPECTATOR);
-                        }
-                    }
-                }.runTaskLater(plugin, 5);
+                // 安全回退：传送到主城
+                teleportToLobby(player);
             }
         } else {
             // 如果没有正在进行的游戏，传送到主城
@@ -69,6 +73,9 @@ public class PlayerJoinHandler extends MCEResumableEventHandler implements Liste
      * 传送玩家到主城出生点
      */
     private void teleportToLobby(Player player) {
+        // 清理玩家的发光效果
+        MCEGlowingEffectManager.clearPlayerGlowingEffect(player);
+        
         World lobbyWorld = Bukkit.getWorld("lobby");
         
         if (lobbyWorld != null) {

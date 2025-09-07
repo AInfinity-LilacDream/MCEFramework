@@ -4,9 +4,11 @@ import fr.mrmicky.fastboard.adventure.FastBoard;
 import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.generalGameObject.MCEGameBoard;
+import mcevent.MCEFramework.tools.MCETeamUtils;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Team;
 
 import java.util.Map;
 
@@ -73,15 +75,42 @@ public class CaptureCenterGameBoard extends MCEGameBoard {
         for (Player player : Bukkit.getOnlinePlayers()) {
             FastBoard board = new FastBoard(player);
             board.updateTitle(MiniMessage.miniMessage().deserialize(getMainTitle()));
+            
             board.updateLines(
                     MiniMessage.miniMessage().deserialize(" "),
                     MiniMessage.miniMessage().deserialize(getGameTitle()),
                     MiniMessage.miniMessage().deserialize(getMapTitle()),
                     MiniMessage.miniMessage().deserialize(getStateTitle() + time),
                     MiniMessage.miniMessage().deserialize(getPlayerCountTitle()),
-                    MiniMessage.miniMessage().deserialize(getTeamCountTitle()),
-                    MiniMessage.miniMessage().deserialize(getScoreRankingTitle())
+                    MiniMessage.miniMessage().deserialize(getTeamCountTitle())
             );
         }
+    }
+    
+    /**
+     * 获取玩家的队伍分数信息
+     */
+    private String getPlayerScoreInfo(Player player) {
+        if (teamScores == null || teamScores.isEmpty()) {
+            return "<yellow><bold> 队伍得分：</bold></yellow>暂无数据";
+        }
+        
+        Team playerTeam = MCETeamUtils.getTeam(player);
+        if (playerTeam == null) {
+            return "<yellow><bold> 队伍得分：</bold></yellow>未分队";
+        }
+        
+        String teamName = MCETeamUtils.getUncoloredTeamName(playerTeam);
+        int teamScore = teamScores.getOrDefault(teamName, 0);
+        
+        // 计算总分
+        int totalScore = teamScores.values().stream().mapToInt(Integer::intValue).sum();
+        
+        // 计算占比
+        double percentage = totalScore > 0 ? (double) teamScore / totalScore * 100 : 0;
+        
+        return "<yellow><bold> 队伍得分：</bold></yellow>" +
+               "<aqua>" + teamName + "</aqua><white>(" + teamScore + "分, " + 
+               String.format("%.1f", percentage) + "%)</white>";
     }
 }

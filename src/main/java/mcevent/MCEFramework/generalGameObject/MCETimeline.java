@@ -68,4 +68,18 @@ public class MCETimeline {
         int maxDuration = timelineState.get(currentState).getTimer().getMaxDurationSeconds();
         return maxDuration - counter;
     }
+    
+    /**
+     * 获取当前时间线节点的剩余时间（秒）
+     */
+    public int getRemainingTime() {
+        if (timelineState == null || timelineState.isEmpty() || currentState < 0 || currentState >= timelineState.size()) {
+            return 0;
+        }
+        MCETimelineNode currentNode = timelineState.get(currentState);
+        if (currentNode == null || currentNode.getTimer() == null) {
+            return 0;
+        }
+        return currentNode.getTimer().getRemainingTime();
+    }
 }

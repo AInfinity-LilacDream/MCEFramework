@@ -32,7 +32,10 @@ public class ParkourTagFuncImpl {
     protected static void resetSurvivePlayerTot() {
         pkt.survivePlayerTot.clear();
         for (int i = 0; i < pkt.getActiveTeams().size(); i++) {
-            pkt.survivePlayerTot.add(MCETeamUtils.getTeamOnlinePlayers(pkt.getActiveTeams().get(i)));
+            // PKT游戏中每个队伍都有一个抓人者，所以剩余玩家数 = 队伍总人数 - 1
+            int totalPlayers = MCETeamUtils.getTeamOnlinePlayers(pkt.getActiveTeams().get(i));
+            int survivePlayers = Math.max(0, totalPlayers - 1); // 确保不会是负数
+            pkt.survivePlayerTot.add(survivePlayers);
         }
     }
 

@@ -6,6 +6,7 @@ import mcevent.MCEFramework.games.votingSystem.customHandler.VotingCardHandler;
 import mcevent.MCEFramework.games.votingSystem.gameObject.VotingSystemGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.*;
+import mcevent.MCEFramework.tools.MCEGlowingEffectManager;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.boss.BarColor;
@@ -46,14 +47,30 @@ public class VotingSystem extends MCEGame {
     public void onLaunch() {
         loadConfig();
         
-        // 传送不在主城的玩家到主城
+        // 传送不在主城的玩家到主城并清理发光效果
         for (Player player : Bukkit.getOnlinePlayers()) {
+            // 清理玩家的发光效果
+            MCEGlowingEffectManager.clearPlayerGlowingEffect(player);
+            
             if (!player.getWorld().getName().equals("lobby")) {
                 player.teleport(Objects.requireNonNull(Bukkit.getWorld("lobby")).getSpawnLocation());
             }
         }
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        
+        // 添加延时任务设置冒险模式，确保传送完成后再设置游戏模式
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L); // 0.25秒延时
+        
+        // 重新启用主城二段跳功能（延迟执行确保游戏模式设置完成）
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if ("lobby".equals(player.getWorld().getName())) {
+                    // 重新启用二段跳
+                    player.setAllowFlight(true);
+                    player.setFlying(false);
+                }
+            }
+        }, 10L); // 延迟10tick确保游戏模式设置完成
         
         // 设置玩家血量为10颗心（20.0血量）
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -67,6 +84,9 @@ public class VotingSystem extends MCEGame {
 
     @Override
     public void onCycleStart() {
+        // 播放背景音乐
+        MCEPlayerUtils.globalPlaySound("minecraft:vote");
+        
         // 给所有玩家投票卡
         giveVotingCards();
         
@@ -91,6 +111,10 @@ public class VotingSystem extends MCEGame {
     @Override
     public void stop() {
         super.stop();
+        
+        // 停止背景音乐
+        MCEPlayerUtils.globalStopMusic();
+        
         votingCardHandler.suspend();
         cleanupBossBar();
     }
@@ -102,8 +126,25 @@ public class VotingSystem extends MCEGame {
         ItemStack votingCard = createVotingCard();
         
         for (Player player : Bukkit.getOnlinePlayers()) {
+            // 保存烈焰棒
+            ItemStack blazeRod = null;
+            for (ItemStack item : player.getInventory().getContents()) {
+                if (item != null && item.getType() == Material.BLAZE_ROD && 
+                    item.hasItemMeta() && item.getItemMeta().hasDisplayName() &&
+                    "§c§l风弹发射器".equals(item.getItemMeta().getDisplayName())) {
+                    blazeRod = item.clone();
+                    break;
+                }
+            }
+            
             player.getInventory().clear();
             player.getInventory().setItem(4, votingCard); // 放在第5个槽位（中间）
+            
+            // 恢复烈焰棒
+            if (blazeRod != null) {
+                player.getInventory().setItem(0, blazeRod); // 放在第一个槽位
+            }
+            
             player.updateInventory();
         }
     }

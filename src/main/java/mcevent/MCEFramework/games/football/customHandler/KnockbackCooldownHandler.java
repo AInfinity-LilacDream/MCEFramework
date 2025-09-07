@@ -33,6 +33,8 @@ public class KnockbackCooldownHandler implements Listener {
     
     public void start(Football football) {
         this.game = football;
+        // 先unregister防止重复注册
+        EntityDamageByEntityEvent.getHandlerList().unregister(this);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
     
@@ -40,6 +42,7 @@ public class KnockbackCooldownHandler implements Listener {
         EntityDamageByEntityEvent.getHandlerList().unregister(this);
         blaze_rod_cooldowns.clear();
         breeze_rod_cooldowns.clear();
+        this.game = null; // 确保清理游戏引用
     }
     
     @EventHandler
@@ -55,6 +58,9 @@ public class KnockbackCooldownHandler implements Listener {
         // 只处理有冷却的武器：BLAZE_ROD（击退3）和 BREEZE_ROD（击退7）
         if (itemType != Material.BLAZE_ROD && itemType != Material.BREEZE_ROD) return;
         
+        Entity damaged = event.getEntity();
+        boolean isAttackingBall = (damaged == game.getBall());
+        
         UUID playerId = player.getUniqueId();
         long currentTime = System.currentTimeMillis();
         
@@ -67,7 +73,12 @@ public class KnockbackCooldownHandler implements Listener {
                 long timeDiff = currentTime - lastUse;
                 
                 if (timeDiff < BLAZE_ROD_COOLDOWN) {
+                    // 无论攻击什么都取消事件，但攻击球时给不同提示
                     event.setCancelled(true);
+                    long remainingCooldown = (BLAZE_ROD_COOLDOWN - timeDiff) / 1000;
+                    if (isAttackingBall) {
+                        MCEMessenger.sendInfoToPlayer("<red>击退棒冷却中，还需等待" + remainingCooldown + "秒</red>", player);
+                    }
                     return;
                 }
             }
@@ -86,7 +97,12 @@ public class KnockbackCooldownHandler implements Listener {
                 long timeDiff = currentTime - lastUse;
                 
                 if (timeDiff < BREEZE_ROD_COOLDOWN) {
+                    // 无论攻击什么都取消事件，但攻击球时给不同提示
                     event.setCancelled(true);
+                    long remainingCooldown = (BREEZE_ROD_COOLDOWN - timeDiff) / 1000;
+                    if (isAttackingBall) {
+                        MCEMessenger.sendInfoToPlayer("<gold>旋风棒冷却中，还需等待" + remainingCooldown + "秒</gold>", player);
+                    }
                     return;
                 }
             }

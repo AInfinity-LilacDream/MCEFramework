@@ -4,6 +4,9 @@ import mcevent.MCEFramework.miscellaneous.Constants;
 import mcevent.MCEFramework.miscellaneous.TeamWithDetails;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -103,5 +106,18 @@ public class MCETeamUtils {
                 players++;
 
         return players;
+    }
+    
+    // 友伤系统控制方法
+    public static void enableFriendlyFire() {
+        mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().suspend(); // suspend=true 激活友伤
+    }
+    
+    public static void disableFriendlyFire() {
+        mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().start(); // suspended=false 关闭友伤
+    }
+    
+    public static boolean isFriendlyFireEnabled() {
+        return mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().isSuspended(); // suspended=true 代表友伤启用
     }
 }

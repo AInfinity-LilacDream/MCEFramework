@@ -30,7 +30,11 @@ public class CaptureCenterFuncImpl {
     private static BukkitRunnable actionBarTask;
     private static BukkitRunnable boardUpdateTask;
     private static final Set<Integer> shrunkLayers = new HashSet<>();
-    private static int currentKnockbackLevel = 4; // 初始击退等级
+    private static int currentKnockbackLevel = 3; // 初始击退等级改为3
+    
+    // 击退等级顺序：3->2->2->1->1
+    private static final int[] KNOCKBACK_LEVELS = {3, 2, 2, 1, 1};
+    private static int knockbackLevelIndex = 0; // 当前击退等级索引
     
     // 常量定义
     private static final double CAPTURE_CENTER_X = 8.0;
@@ -232,7 +236,8 @@ public class CaptureCenterFuncImpl {
         gameBoard.updateTeamCount(captureCenter.getActiveTeams().size());
         
         // 重置击退等级
-        currentKnockbackLevel = 4;
+        currentKnockbackLevel = 3;
+        knockbackLevelIndex = 0;
         
         // 初始化队伍分数显示
         initializeTeamScores();
@@ -254,14 +259,14 @@ public class CaptureCenterFuncImpl {
         };
         scoringTask.runTaskTimer(plugin, 0L, 1L);
         
-        // 启动ActionBar更新任务 (每5tick执行以减少性能消耗)
+        // 启动ActionBar更新任务 (每tick执行)
         actionBarTask = new BukkitRunnable() {
             @Override
             public void run() {
                 updateActionBar();
             }
         };
-        actionBarTask.runTaskTimer(plugin, 0L, 5L);
+        actionBarTask.runTaskTimer(plugin, 0L, 1L);
         
         // 启动展示板更新任务 (每tick执行)
         boardUpdateTask = new BukkitRunnable() {
@@ -306,11 +311,11 @@ public class CaptureCenterFuncImpl {
         double distance = Math.sqrt(Math.pow(loc.getX() - CAPTURE_CENTER_X, 2) + Math.pow(loc.getZ() - CAPTURE_CENTER_Z, 2));
         int y = (int) Math.floor(loc.getY()); // 使用玩家脚部位置
         
-        if (y == LAYER1_Y && distance <= 3.0) {
+        if (y == LAYER1_Y && distance <= 2) {
             return 3; // 每tick+3分
-        } else if (y == LAYER2_Y && distance <= 5.0) {
+        } else if (y == LAYER2_Y && distance <= 3) {
             return 2; // 每tick+2分
-        } else if (y == LAYER3_Y && distance <= 11.0) {
+        } else if (y == LAYER3_Y && distance <= 6) {
             return 1; // 每tick+1分
         }
         
@@ -344,32 +349,64 @@ public class CaptureCenterFuncImpl {
      * 更新ActionBar显示
      */
     private static void updateActionBar() {
-        String scorePercentage = calculateTeamScorePercentage();
-        Component actionBarMessage = MiniMessage.miniMessage().deserialize(
-            "<gold>目前队伍占点得分占比：" + scorePercentage + "</gold>"
-        );
-        
         for (Player player : Bukkit.getOnlinePlayers()) {
+            // 计算玩家当前加分速度并播放对应音效
+            int currentScoringSpeed = calculatePlayerScoringSpeed(player);
+            playSpeedBasedSound(player, currentScoringSpeed);
+            
+            String scorePercentage = calculateTeamScorePercentage(player);
+            Component actionBarMessage = MiniMessage.miniMessage().deserialize(
+                "<gold>目前队伍占点得分占比：" + scorePercentage + "</gold>"
+            );
             player.sendActionBar(actionBarMessage);
+        }
+    }
+    
+    /**
+     * 计算玩家当前的加分速度
+     */
+    private static int calculatePlayerScoringSpeed(Player player) {
+        if (player.getGameMode() != GameMode.ADVENTURE) return 0;
+        
+        Location loc = player.getLocation();
+        Team playerTeam = MCETeamUtils.getTeam(player);
+        if (playerTeam == null) return 0;
+        
+        return calculateCapturePoints(loc);
+    }
+    
+    /**
+     * 根据加分速度播放不同音调的提示音
+     */
+    private static void playSpeedBasedSound(Player player, int scoringSpeed) {
+        if (scoringSpeed <= 0) return; // 没有得分时不播放音效
+        
+        switch (scoringSpeed) {
+            case 1:
+                // 低音调 - 1分/tick
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.2f, 0.5f);
+                break;
+            case 2:
+                // 中音调 - 2分/tick
+                player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_CHIME, 0.2f, 0.75f);
+                break;
+            case 3:
+                // 高音调 - 3分/tick
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.2f, 1.0f);
+                break;
         }
     }
     
     /**
      * 计算队伍得分占比
      */
-    private static String calculateTeamScorePercentage() {
+    private static String calculateTeamScorePercentage(Player player) {
         // 确保队伍分数已初始化
         if (teamScores.isEmpty() && captureCenter.getActiveTeams() != null) {
             initializeTeamScores();
         }
         
-        Team playerTeam = null;
-        Player firstPlayer = Bukkit.getOnlinePlayers().iterator().hasNext() ? 
-            Bukkit.getOnlinePlayers().iterator().next() : null;
-        if (firstPlayer != null) {
-            playerTeam = MCETeamUtils.getTeam(firstPlayer);
-        }
-        
+        Team playerTeam = MCETeamUtils.getTeam(player);
         if (playerTeam == null) return "0%";
         
         int totalScore = teamScores.values().stream().mapToInt(Integer::intValue).sum();
@@ -406,25 +443,25 @@ public class CaptureCenterFuncImpl {
             );
             
             // 立即开始收缩平台（显示标题的同时）
-            shrinkLayer(layerY);
+            shrinkLayer(layerY, game);
         }));
     }
     
     /**
      * 收缩指定层级
      */
-    private static void shrinkLayer(int layerY) {
+    private static void shrinkLayer(int layerY, CaptureCenter game) {
         World world = Bukkit.getWorld(captureCenter.getWorldName());
         if (world == null) return;
         
         // 让方块交替变换为海晶灯作为预警，5秒后消失
-        flashLayerWarning(world, layerY);
+        flashLayerWarning(world, layerY, game);
     }
     
     /**
      * 闪烁层级警告
      */
-    private static void flashLayerWarning(World world, int layerY) {
+    private static void flashLayerWarning(World world, int layerY, CaptureCenter game) {
         // 存储原方块类型
         Map<Location, org.bukkit.block.data.BlockData> originalBlocks = new HashMap<>();
         
@@ -463,29 +500,26 @@ public class CaptureCenterFuncImpl {
                 if (flashes >= 10) { // 闪烁5次后结束
                     this.cancel();
                     // 闪烁结束后移除该层
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            removeLayer(world, layerY);
-                            shrunkLayers.add(layerY);
-                            
-                            // 每收缩一层，击退等级减少1
-                            currentKnockbackLevel--;
-                            if (currentKnockbackLevel > 0) {
-                                // 给予新等级的击退棒
-                                giveKnockbackStick(currentKnockbackLevel);
-                                MCEMessenger.sendGlobalInfo("<yellow>平台收缩！击退棒等级降为" + currentKnockbackLevel + "</yellow>");
-                            } else {
-                                // 击退等级归零，清除所有击退棒
-                                for (Player player : Bukkit.getOnlinePlayers()) {
-                                    if (player.getGameMode() == GameMode.ADVENTURE) {
-                                        player.getInventory().clear();
-                                    }
+                    game.setDelayedTask(0.05, () -> {
+                        removeLayer(world, layerY);
+                        shrunkLayers.add(layerY);
+                        
+                        // 根据预定义的顺序更新击退等级
+                        knockbackLevelIndex++;
+                        if (knockbackLevelIndex < KNOCKBACK_LEVELS.length) {
+                            currentKnockbackLevel = KNOCKBACK_LEVELS[knockbackLevelIndex];
+                            // 给予新等级的击退棒
+                            giveKnockbackStick(currentKnockbackLevel);
+                        } else {
+                            // 击退等级耗尽，清除所有击退棒
+                            currentKnockbackLevel = 0;
+                            for (Player player : Bukkit.getOnlinePlayers()) {
+                                if (player.getGameMode() == GameMode.ADVENTURE) {
+                                    player.getInventory().clear();
                                 }
-                                MCEMessenger.sendGlobalInfo("<red>平台收缩！击退棒已失效！</red>");
                             }
                         }
-                    }.runTaskLater(plugin, 0L); // 立即移除
+                    });
                 }
             }
         }.runTaskTimer(plugin, 0L, 10L); // 每0.5秒切换一次
@@ -535,6 +569,30 @@ public class CaptureCenterFuncImpl {
      * 发送获胜消息
      */
     public static void sendWinningMessage() {
+        // 首先发送最后存活玩家信息
+        List<Player> survivingPlayers = new ArrayList<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getGameMode() == GameMode.ADVENTURE) {
+                survivingPlayers.add(player);
+            }
+        }
+        
+        if (!survivingPlayers.isEmpty()) {
+            StringBuilder survivorMessage = new StringBuilder();
+            for (int i = 0; i < survivingPlayers.size(); i++) {
+                survivorMessage.append(MCEPlayerUtils.getColoredPlayerName(survivingPlayers.get(i)));
+                if (i == survivingPlayers.size() - 2 && survivingPlayers.size() > 1) {
+                    // 倒数第二个玩家，添加"和"
+                    survivorMessage.append("和");
+                } else if (i < survivingPlayers.size() - 1) {
+                    // 不是最后一个玩家，添加逗号
+                    survivorMessage.append(", ");
+                }
+            }
+            survivorMessage.append(" <aqua>是最后存活的玩家！</aqua>");
+            MCEMessenger.sendGlobalInfo(survivorMessage.toString());
+        }
+        
         if (teamScores.isEmpty()) return;
         
         // 按分数排序队伍
@@ -566,6 +624,11 @@ public class CaptureCenterFuncImpl {
      * 处理玩家掉落虚空
      */
     public static void handlePlayerFallIntoVoid(Player player) {
+        // 发送死亡信息
+        MCEMessenger.sendGlobalInfo(
+            MCEPlayerUtils.getColoredPlayerName(player) + " <gray>掉入了虚空！</gray>"
+        );
+        
         // 将玩家切换为旁观模式
         player.setGameMode(GameMode.SPECTATOR);
         player.setHealth(player.getMaxHealth());
@@ -594,30 +657,8 @@ public class CaptureCenterFuncImpl {
         }
         gameBoard.updateTeamCount(aliveTeams.size());
         
-        // 检查某个队伍是否全灭
-        Team playerTeam = MCETeamUtils.getTeam(player);
-        if (playerTeam != null) {
-            boolean teamEliminated = true;
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                if (p.getGameMode() == GameMode.ADVENTURE) {
-                    Team pTeam = MCETeamUtils.getTeam(p);
-                    if (pTeam != null && pTeam.equals(playerTeam)) {
-                        teamEliminated = false;
-                        break;
-                    }
-                }
-            }
-            
-            if (teamEliminated) {
-                MCEMessenger.sendGlobalInfo(
-                    MCEPlayerUtils.getColoredPlayerName(player) + " 所在的" + 
-                    MCETeamUtils.getUncoloredTeamName(playerTeam) + "<gray>已被团灭！</gray>"
-                );
-            }
-        }
-        
         // 检查游戏是否结束
-        if (alivePlayerCount == 0) {
+        if (alivePlayerCount == 0 || aliveTeams.size() <= 1) {
             captureCenter.getTimeline().nextState();
         }
     }

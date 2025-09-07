@@ -52,7 +52,7 @@ public class CaptureCenter extends MCEGame {
         CaptureCenterFuncImpl.teleportPlayersToSpawn();
         
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
         
         CaptureCenterFuncImpl.initializePlayers();
         
@@ -61,13 +61,20 @@ public class CaptureCenter extends MCEGame {
         MCEPlayerUtils.clearGlobalTags();
         
         // 注册事件处理器
-        playerFallHandler.register();
+        playerFallHandler.register(this);
     }
     
     @Override
     public void onCycleStart() {
         CaptureCenterFuncImpl.resetGameBoard();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
+        
+        // 开启全局PVP，但关闭友伤（允许不同队伍互相攻击，禁止同队误伤）
+        MCEWorldUtils.enablePVP();
+        MCETeamUtils.disableFriendlyFire();
+        
+        // 播放背景音乐
+        MCEPlayerUtils.globalPlaySound("minecraft:capture_center");
         
         // 确保所有玩家都有Active标签
         MCEPlayerUtils.globalGrantTag("Active");
@@ -100,14 +107,15 @@ public class CaptureCenter extends MCEGame {
     
     @Override
     public void onEnd() {
-        CaptureCenterFuncImpl.clearGameTasks(this);
         CaptureCenterFuncImpl.sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
-        playerFallHandler.unregister();
         
-        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
-        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
-        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
+        // onEnd结束后立即清理展示板和资源，然后启动投票系统
+        setDelayedTask(getEndDuration(), () -> {
+            MCEPlayerUtils.globalClearFastBoard();
+            this.stop(); // 停止所有游戏资源
+            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+        });
     }
     
     @Override
@@ -118,6 +126,10 @@ public class CaptureCenter extends MCEGame {
     @Override
     public void stop() {
         super.stop();
+        
+        // 停止背景音乐
+        MCEPlayerUtils.globalStopMusic();
+        
         CaptureCenterFuncImpl.clearGameTasks(this);
         playerFallHandler.unregister();
     }

@@ -53,7 +53,10 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
         pkt.getSurvivePlayerTot().set(runnerTeamPos, pkt.getSurvivePlayerTot().get(runnerTeamPos) - 1);
         pkt.getGameBoard().globalDisplay();
 
-        if (pkt.getSurvivePlayerTot().get(runnerTeamPos) <= 0) {
+        // 检查队伍是否被抓完：被抓人数 = 队伍总人数 - 1（因为每队有一个抓人者）
+        int totalTeamMembers = MCETeamUtils.getTeamOnlinePlayers(runnerTeam);
+        int survivingMembers = pkt.getSurvivePlayerTot().get(runnerTeamPos);
+        if (survivingMembers <= 1) { // 只剩1人（抓人者）时，队伍被抓完
             pkt.completeMatchesTot++;
             pkt.setTeamCompleteTime(catcherTeam, pkt.getTimeline().getCurrentTimelineNodeDuration() - 10);
             catcher.setGameMode(GameMode.SPECTATOR);

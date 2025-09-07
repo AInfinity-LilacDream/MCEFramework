@@ -137,9 +137,14 @@ public class MCEMessenger {
 
     // 向所有玩家发送动作栏信息
     public static void sendGlobalActionBarMessage(String message) {
-        Component parsed = MiniMessage.miniMessage().deserialize(message);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendActionBar(parsed);
+            sendActionBarMessageToPlayer(player, message);
         }
+    }
+
+    // 向指定玩家发送动作栏信息
+    public static void sendActionBarMessageToPlayer(Player player, String message) {
+        Component parsed = MiniMessage.miniMessage().deserialize(message);
+        player.sendActionBar(parsed);
     }
 }

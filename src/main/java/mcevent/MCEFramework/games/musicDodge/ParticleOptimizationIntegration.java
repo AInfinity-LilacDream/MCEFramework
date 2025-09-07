@@ -243,7 +243,12 @@ public class ParticleOptimizationIntegration {
         // 计算延迟时间（tick）
         long delayTicks = (long)(delayMeasures * 4 * 60.0 /bpm * 20);
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> attackDataManager.registerAttack(attack), delayTicks);
+        // Use delayed task through Constants.musicDodge if available, fallback to Bukkit scheduler
+        if (mcevent.MCEFramework.miscellaneous.Constants.musicDodge != null) {
+            mcevent.MCEFramework.miscellaneous.Constants.musicDodge.setDelayedTask(delayTicks / 20.0, () -> attackDataManager.registerAttack(attack));
+        } else {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> attackDataManager.registerAttack(attack), delayTicks);
+        }
     }
     
     /**
@@ -276,10 +281,17 @@ public class ParticleOptimizationIntegration {
         integration.createBarAttack("x", 6, "musicdodge_classic", 1.0, 1.0, 100);
         
         // 游戏结束后清理
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            interceptor.disable();
-            manager.stop();
-        }, 20 * 60); // 60秒后停止
+        if (mcevent.MCEFramework.miscellaneous.Constants.musicDodge != null) {
+            mcevent.MCEFramework.miscellaneous.Constants.musicDodge.setDelayedTask(60, () -> {
+                interceptor.disable();
+                manager.stop();
+            });
+        } else {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                interceptor.disable();
+                manager.stop();
+            }, 20 * 60); // 60秒后停止
+        }
     }
     
     /**

@@ -6,25 +6,40 @@ import com.comphenix.protocol.ProtocolManager;
 import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.commands.*;
+import mcevent.MCEFramework.customHandler.ChatFormatHandler;
+import mcevent.MCEFramework.customHandler.FriendlyFireHandler;
 import mcevent.MCEFramework.customHandler.GlobalPVPHandler;
+import mcevent.MCEFramework.customHandler.LobbyBounceHandler;
+import mcevent.MCEFramework.customHandler.LobbyHandler;
 import mcevent.MCEFramework.customHandler.PlayerJoinHandler;
+import mcevent.MCEFramework.customHandler.GamePlayerQuitHandler;
+import mcevent.MCEFramework.customHandler.WelcomeMessageHandler;
 import mcevent.MCEFramework.games.captureCenter.CaptureCenter;
+import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
+import mcevent.MCEFramework.games.extractOwn.ExtractOwn;
 import mcevent.MCEFramework.games.football.Football;
 import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
+import mcevent.MCEFramework.games.spleef.Spleef;
+import mcevent.MCEFramework.games.tntTag.TNTTag;
 import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCETimeline;
 import mcevent.MCEFramework.miscellaneous.Constants;
 import mcevent.MCEFramework.tools.MCEPlayerUtils;
+import mcevent.MCEFramework.tools.MCEGlowingEffectManager;
+import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -51,7 +66,22 @@ public final class MCEMainController extends JavaPlugin {
     private static GlobalPVPHandler globalPVPHandler;
     
     @Getter
+    private static FriendlyFireHandler friendlyFireHandler;
+    
+    @Getter
     private static PlayerJoinHandler playerJoinHandler;
+    
+    @Getter
+    private static GamePlayerQuitHandler gamePlayerQuitHandler;
+    
+    @Getter
+    private static LobbyBounceHandler lobbyBounceHandler;
+    
+    @Getter
+    private static LobbyHandler lobbyHandler;
+    
+    @Getter
+    private static ChatFormatHandler chatFormatHandler;
 
     @Override
     public void onEnable() {
@@ -64,22 +94,34 @@ public final class MCEMainController extends JavaPlugin {
         String srMapName = readMapNameFromConfig("MCEConfig/SandRun.cfg", mapNames[3]);
         String ccMapName = readMapNameFromConfig("MCEConfig/CaptureCenter.cfg", mapNames[4]);
         String footballMapName = readMapNameFromConfig("MCEConfig/Football.cfg", mapNames[5]);
-        String votingMapName = mapNames[6]; // 投票系统直接使用lobby
+        String crazyMinerMapName = readMapNameFromConfig("MCEConfig/CrazyMiner.cfg", mapNames[6]);
+        String extractOwnMapName = readMapNameFromConfig("MCEConfig/ExtractOwn.cfg", mapNames[7]);
+        String tntTagMapName = readMapNameFromConfig("MCEConfig/TNTTag.cfg", mapNames[8]);
+        String spleefMapName = readMapNameFromConfig("MCEConfig/Spleef.cfg", mapNames[9]);
+        String votingMapName = mapNames[10]; // 投票系统直接使用lobby
         
         // 使用配置文件中的地图名称创建游戏实例
-        pkt = new ParkourTag("瓮中捉鳖", 0, pktMapName, true, "MCEConfig/ParkourTag.cfg",
+        pkt = new ParkourTag("瓮中捉鳖", PARKOUR_TAG_ID, pktMapName, true, "MCEConfig/ParkourTag.cfg",
                 5, 35, 15, 15, 70, 25, 25);
-        discoFever = new DiscoFever("色盲狂热", 1, dfMapName, 1, false, "MCEConfig/DiscoFever.cfg",
+        discoFever = new DiscoFever("色盲狂热", DISCO_FEVER_ID, dfMapName, 1, false, "MCEConfig/DiscoFever.cfg",
                 5, 55, 15, 0, 215, 25, 25);
-        musicDodge = new MusicDodge("跃动音律", 2, mdMapName, 1, false, "MCEConfig/MusicDodge.cfg",
+        musicDodge = new MusicDodge("跃动音律", MUSIC_DODGE_ID, mdMapName, 1, false, "MCEConfig/MusicDodge.cfg",
                 5, 55, 15, 0, 215, 25, 25);
-        sandRun = new SandRun("落沙漫步", 3, srMapName, 1, false, "MCEConfig/SandRun.cfg",
+        sandRun = new SandRun("落沙漫步", SAND_RUN_ID, srMapName, 1, false, "MCEConfig/SandRun.cfg",
                 5, 55, 15, 0, 180, 25, 25);
-        captureCenter = new CaptureCenter("占山为王", 4, ccMapName, 1, false, "MCEConfig/CaptureCenter.cfg",
+        captureCenter = new CaptureCenter("占山为王", CAPTURE_CENTER_ID, ccMapName, 1, false, "MCEConfig/CaptureCenter.cfg",
                 5, 55, 15, 0, 180, 25, 25);
-        football = new Football("少林足球", 5, footballMapName, 1, false, "MCEConfig/Football.cfg",
-                3, 25, 10, 5, Integer.MAX_VALUE, 15, 20);
-        votingSystem = new VotingSystem("投票系统", 6, votingMapName, 1, false, "MCEConfig/VotingSystem.cfg",
+        football = new Football("少林足球", FOOTBALL_ID, footballMapName, 5, true, "MCEConfig/Football.cfg",
+                3, 25, 10, 5, Integer.MAX_VALUE, 1, 20);
+        crazyMiner = new CrazyMiner("惊天矿工团", CRAZY_MINER_ID, crazyMinerMapName, 1, false, "MCEConfig/CrazyMiner.cfg",
+                5, 55, 15, 0, 1080, 25, 25);
+        extractOwn = new ExtractOwn("暗矢狂潮", EXTRACT_OWN_ID, extractOwnMapName, 3, true, "MCEConfig/ExtractOwn.cfg",
+                5, 55, 15, 5, 360, 15, 25);
+        tnttag = new TNTTag("丢锅大战", TNT_TAG_ID, tntTagMapName, false, "MCEConfig/TNTTag.cfg",
+                5, 60, 15, 0, Integer.MAX_VALUE, 5, 25);
+        spleef = new Spleef("冰雪掘战", SPLEEF_ID, spleefMapName, 3, true, "MCEConfig/Spleef.cfg",
+                5, 55, 15, 5, 180, 15, 25);
+        votingSystem = new VotingSystem("投票系统", VOTING_SYSTEM_ID, votingMapName, 1, false, "MCEConfig/VotingSystem.cfg",
                 2, 0, 0, 0, 30, 0, 3);
 
         // 初始化游戏列表
@@ -89,6 +131,10 @@ public final class MCEMainController extends JavaPlugin {
         gameList.add(sandRun);
         gameList.add(captureCenter);
         gameList.add(football);
+        gameList.add(crazyMiner);
+        gameList.add(extractOwn);
+        gameList.add(tnttag);
+        gameList.add(spleef);
         gameList.add(votingSystem);
 
         // 全面清理所有玩家状态（在线和离线）
@@ -96,12 +142,27 @@ public final class MCEMainController extends JavaPlugin {
         
         // 注册全局事件监听器
         globalPVPHandler = new GlobalPVPHandler();
+        friendlyFireHandler = new FriendlyFireHandler();
         playerJoinHandler = new PlayerJoinHandler();
+        gamePlayerQuitHandler = new GamePlayerQuitHandler();
+        lobbyBounceHandler = new LobbyBounceHandler();
+        lobbyHandler = new LobbyHandler();
+        chatFormatHandler = new ChatFormatHandler();
+        new WelcomeMessageHandler(); // 欢迎标语处理器
+
+        // 延迟给所有在线玩家烈焰棒（确保所有初始化完成）
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if ("lobby".equals(player.getWorld().getName())) {
+                    lobbyHandler.giveBlazeRod(player);
+                }
+            }
+            getLogger().info("已为所有在主城的玩家给予烈焰棒");
+        }, 10L); // 延迟10tick (0.5秒)
 
         // ACF command manager
         PaperCommandManager commandManager = new PaperCommandManager(this);
         commandManager.registerCommand(new ShuffleTeam()); // shuffleteam
-        commandManager.registerCommand(new DivideTeams()); // divideteams
         commandManager.registerCommand(new Launch()); // launch
         commandManager.registerCommand(new Stop()); // stop
         commandManager.registerCommand(new Suspend()); // suspend
@@ -110,8 +171,16 @@ public final class MCEMainController extends JavaPlugin {
         commandManager.registerCommand(new PKTSelectChaser()); // pktselectchaser
         commandManager.registerCommand(new Party()); // party
         commandManager.registerCommand(new TogglePVP()); // togglepvp
+        commandManager.registerCommand(new ToggleFriendlyFire()); // togglefriendlyfire
         
         getLogger().info("合合启动了");
+        
+        // 启动欢迎标语动画（插件启动时没有游戏在运行）
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            if (!isRunningGame()) {
+                startWelcomeMessage();
+            }
+        }, 20L); // 延迟1秒启动，确保所有初始化完成
     }
 
     /**
@@ -163,6 +232,9 @@ public final class MCEMainController extends JavaPlugin {
     }
 
     public static void immediateLaunchGame(int gameID, boolean intro) {
+        // 停止欢迎标语动画
+        stopWelcomeMessage();
+        
         MCEGame nextGame = gameList.get(gameID);
         setCurrentRunningGame(nextGame);
         nextGame.init(intro); // 在开始游戏之前，先初始化游戏的时间线
@@ -171,8 +243,8 @@ public final class MCEMainController extends JavaPlugin {
     }
     
     public static void launchVotingSystem() {
-        // 启动投票系统（游戏ID 6）
-        immediateLaunchGame(6, false);
+        // 启动投票系统
+        immediateLaunchGame(VOTING_SYSTEM_ID, false);
     }
 
     // 切换到子时间线之后会自动切换回主时间线
@@ -189,7 +261,7 @@ public final class MCEMainController extends JavaPlugin {
         return isRunningGame();
 //        return currentTimeline != null && currentTimeline == eventTimeline;
     }
-
+    
     // 停止当前运行的游戏
     public static boolean stopCurrentGame() {
         if (currentRunningGame != null && isRunningGame()) {
@@ -236,6 +308,13 @@ public final class MCEMainController extends JavaPlugin {
      * 清理单个玩家的状态
      */
     private void cleanupPlayer(Player player) {
+        // 传送不在主城的玩家到主城
+        if (!"lobby".equals(player.getWorld().getName())) {
+            if (Bukkit.getWorld("lobby") != null) {
+                player.teleport(Bukkit.getWorld("lobby").getSpawnLocation());
+            }
+        }
+        
         // 清空药水效果
         player.getActivePotionEffects().forEach(effect -> 
             player.removePotionEffect(effect.getType())
@@ -243,6 +322,9 @@ public final class MCEMainController extends JavaPlugin {
         
         // 清空scoreboard标签
         player.getScoreboardTags().clear();
+        
+        // 清除发光效果
+        MCEGlowingEffectManager.clearPlayerGlowingEffect(player);
         
         // 清空物品栏
         player.getInventory().clear();
@@ -256,5 +338,19 @@ public final class MCEMainController extends JavaPlugin {
         player.setFoodLevel(20);
         player.setSaturation(20);
         player.setHealth(player.getMaxHealth());
+    }
+    
+    /**
+     * 启动欢迎标语动画（当无游戏运行时）
+     */
+    public static void startWelcomeMessage() {
+        WelcomeMessageHandler.startWelcomeMessage();
+    }
+    
+    /**
+     * 停止欢迎标语动画
+     */
+    public static void stopWelcomeMessage() {
+        WelcomeMessageHandler.stopWelcomeMessage();
     }
 }

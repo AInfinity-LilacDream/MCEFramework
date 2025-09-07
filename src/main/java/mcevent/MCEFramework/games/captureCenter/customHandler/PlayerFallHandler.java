@@ -1,5 +1,6 @@
 package mcevent.MCEFramework.games.captureCenter.customHandler;
 
+import mcevent.MCEFramework.games.captureCenter.CaptureCenter;
 import mcevent.MCEFramework.games.captureCenter.CaptureCenterFuncImpl;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCEPlayerUtils;
@@ -20,8 +21,10 @@ import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
 public class PlayerFallHandler implements Listener {
     
     private boolean isRegistered = false;
+    private CaptureCenter game;
     
-    public void register() {
+    public void register(CaptureCenter captureCenter) {
+        this.game = captureCenter;
         if (!isRegistered) {
             Bukkit.getPluginManager().registerEvents(this, plugin);
             isRegistered = true;
@@ -46,11 +49,6 @@ public class PlayerFallHandler implements Listener {
             Team playerTeam = MCETeamUtils.getTeam(player);
             String teamName = playerTeam != null ? MCETeamUtils.getUncoloredTeamName(playerTeam) : "未知队伍";
             
-            MCEMessenger.sendGlobalInfo(
-                MCEPlayerUtils.getColoredPlayerName(player) + 
-                " <gray>(" + teamName + ") 被击溃了！</gray>"
-            );
-            
             CaptureCenterFuncImpl.handlePlayerFallIntoVoid(player);
         }
     }
@@ -74,7 +72,7 @@ public class PlayerFallHandler implements Listener {
                 // 确保不是队友攻击
                 if (attackerTeam != null && victimTeam != null && !attackerTeam.equals(victimTeam)) {
                     // 延迟检查玩家是否真的掉入虚空
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    game.setDelayedTask(0.1, () -> {
                         if (victim.getLocation().getY() <= -65 || victim.getGameMode() == GameMode.SPECTATOR) {
                             CaptureCenterFuncImpl.handlePlayerKill(attacker);
                             
@@ -85,7 +83,7 @@ public class PlayerFallHandler implements Listener {
                                 " <gold>+50分！</gold>"
                             );
                         }
-                    }, 2L); // 延迟2tick检查
+                    }); // 延迟0.1秒检查
                 }
             }
         }

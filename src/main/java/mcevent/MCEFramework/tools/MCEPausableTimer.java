@@ -66,4 +66,11 @@ public class MCEPausableTimer {
     public void stop() {
         if (task != null && !task.isCancelled()) task.cancel();
     }
+    
+    /**
+     * 获取剩余时间（秒）
+     */
+    public int getRemainingTime() {
+        return counter;
+    }
 }

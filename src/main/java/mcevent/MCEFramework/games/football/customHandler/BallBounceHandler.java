@@ -93,16 +93,21 @@ public class BallBounceHandler {
         }
         
         // X轴边界碰撞 - 只有当球实际碰到墙壁且速度朝向墙壁时才反弹
+        // 但在球门范围内不反弹，让球能够进门
         double ballWestEdge = ballLocation.getX() - entityWidth/2;
         double ballEastEdge = ballLocation.getX() + entityWidth/2;
         
-        if (ballWestEdge <= MIN_X && vx < -MIN_BOUNCE_VELOCITY) {
+        // 检查Z轴是否在球门范围内
+        boolean inBlueGoalZRange = ballLocation.getZ() >= 5 && ballLocation.getZ() <= 11; // 蓝方球门Z范围
+        boolean inRedGoalZRange = ballLocation.getZ() >= 5 && ballLocation.getZ() <= 11; // 红方球门Z范围
+        
+        if (ballWestEdge <= MIN_X && vx < -MIN_BOUNCE_VELOCITY && !inBlueGoalZRange) {
             plugin.getLogger().info(String.format("[碰撞检测] 西墙反弹触发: 球西边缘%.3f <= 西墙%.1f, 朝向墙速度%.3f", 
                 ballWestEdge, MIN_X, vx));
             vx = -vx * WALL_DAMPING;
             bounced = true;
             plugin.getLogger().info(String.format("[反弹结果] 西墙反弹完成: 速度%.3f->%.3f", ballVelocity.getX(), vx));
-        } else if (ballEastEdge >= MAX_X && vx > MIN_BOUNCE_VELOCITY) {
+        } else if (ballEastEdge >= MAX_X && vx > MIN_BOUNCE_VELOCITY && !inRedGoalZRange) {
             plugin.getLogger().info(String.format("[碰撞检测] 东墙反弹触发: 球东边缘%.3f >= 东墙%.1f, 朝向墙速度%.3f", 
                 ballEastEdge, MAX_X, vx));
             vx = -vx * WALL_DAMPING;
@@ -112,8 +117,8 @@ public class BallBounceHandler {
             // 添加未触发反弹的调试信息
             if ((ballWestEdge <= MIN_X && vx >= -MIN_BOUNCE_VELOCITY) || 
                 (ballEastEdge >= MAX_X && vx <= MIN_BOUNCE_VELOCITY)) {
-                plugin.getLogger().info(String.format("[反弹未触发] X轴: 西边缘%.3f(边界%.1f) 东边缘%.3f(边界%.1f) 速度%.3f(阈值±%.3f)", 
-                    ballWestEdge, MIN_X, ballEastEdge, MAX_X, vx, MIN_BOUNCE_VELOCITY));
+                plugin.getLogger().info(String.format("[反弹未触发] X轴: 西边缘%.3f(边界%.1f) 东边缘%.3f(边界%.1f) 速度%.3f(阈值±%.3f) 球门Z范围内:%s", 
+                    ballWestEdge, MIN_X, ballEastEdge, MAX_X, vx, MIN_BOUNCE_VELOCITY, (inBlueGoalZRange || inRedGoalZRange)));
             }
         }
         
@@ -282,4 +287,5 @@ public class BallBounceHandler {
     public void resetVelocity() {
         ballVelocity = new Vector(0, 0, 0);
     }
+    
 }

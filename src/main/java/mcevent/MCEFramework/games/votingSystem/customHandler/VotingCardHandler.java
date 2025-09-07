@@ -10,7 +10,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.event.block.Action;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
 
@@ -42,8 +44,12 @@ public class VotingCardHandler extends MCEResumableEventHandler implements Liste
                 // 确保投票已初始化（如果还没初始化）
                 VotingSystemFuncImpl.ensureVotingInitialized();
                 
-                // 打开投票GUI
-                VotingGUI.openVotingGUI(player);
+                // 判断具体的动作类型
+                Action action = event.getAction();
+                if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                    // 右键 - 打开投票GUI
+                    VotingGUI.openVotingGUI(player);
+                }
             }
         }
     }
@@ -76,6 +82,24 @@ public class VotingCardHandler extends MCEResumableEventHandler implements Liste
                 VotingGUI.refreshVotingGUI(player);
                 // 刷新所有其他打开GUI的玩家
                 VotingGUI.refreshAllVotingGUIs();
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        if (isSuspended()) return;
+        
+        ItemStack droppedItem = event.getItemDrop().getItemStack();
+        
+        // 检查是否是投票卡
+        if (droppedItem.getType() == Material.PAPER && 
+            droppedItem.hasItemMeta() && droppedItem.getItemMeta().hasDisplayName()) {
+            
+            String displayName = droppedItem.getItemMeta().getDisplayName();
+            if ("§6§l投票卡".equals(displayName)) {
+                // 取消丢弃投票卡
+                event.setCancelled(true);
             }
         }
     }

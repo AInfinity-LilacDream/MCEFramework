@@ -21,6 +21,11 @@ public class VotingGUI {
     
     private static final Component GUI_TITLE = MiniMessage.miniMessage().deserialize("<gold><bold>选择下一个游戏</bold></gold>");
     
+    // GUI布局配置
+    private static final int GUI_SIZE = 27; // 3行
+    private static final int[] GAME_SLOTS = {1, 2, 3, 4, 5, 6, 7, 10, 11, 12}; // 游戏ID 0-9 对应的槽位，不包括投票系统
+    private static final int SKIP_INTRO_SLOT = 16; // 跳过Intro选项的槽位
+    
     // 游戏对应的物品（按照Constants中的游戏ID顺序）
     private static final Material[] GAME_MATERIALS = {
         Material.NETHERITE_BOOTS,    // ID 0: 瓮中捉鳖 - 下界合金靴子
@@ -28,48 +33,41 @@ public class VotingGUI {
         Material.NOTE_BLOCK,         // ID 2: 跃动音律 - 音符盒
         Material.RED_CONCRETE_POWDER,// ID 3: 落沙漫步 - 红色混凝土粉末
         Material.STICK,              // ID 4: 占山为王 - 木棍
-        Material.GRASS_BLOCK         // ID 5: 少林足球 - 草方块
+        Material.GRASS_BLOCK,        // ID 5: 少林足球 - 草方块
+        Material.IRON_PICKAXE,       // ID 6: 惊天矿工团 - 铁镐
+        Material.CROSSBOW,           // ID 7: 暗矢狂潮 - 弩
+        Material.TNT,                // ID 8: 丢锅大战 - TNT
+        Material.SNOWBALL            // ID 9: 冰雪掘战 - 雪球
     };
     
     // 游戏名称（按照Constants中的游戏ID顺序）
     private static final String[] GAME_NAMES = {
-        "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球"
+        "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战"
     };
     
     // 游戏描述
     private static final String[] GAME_DESCRIPTIONS = {
-        "跑酷追逐游戏", "彩色平台生存", "音乐节奏躲避", "沙子下落生存", "占点竞技", "足球竞技"
+        "跑酷追逐游戏", "彩色平台生存", "音乐节奏躲避", "沙子下落生存", "占点竞技", "足球竞技", "挖掘生存大逃杀", "弩箭战斗竞技", "TNT传递生存", "雪球战斗竞技"
     };
 
     /**
      * 为玩家打开投票GUI
      */
     public static void openVotingGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 9, GUI_TITLE);
+        Inventory gui = Bukkit.createInventory(null, GUI_SIZE, GUI_TITLE);
         
-        // 添加游戏选项（前3个游戏在槽位1-3，后3个游戏在槽位5-7）
-        for (int i = 0; i < 3; i++) {
-            ItemStack gameItem = createGameItem(i);
-            gui.setItem(i + 1, gameItem); // 槽位1-3
-        }
-        for (int i = 3; i < 6; i++) {
-            ItemStack gameItem = createGameItem(i);
-            gui.setItem(i + 2, gameItem); // 槽位5-7（跳过中间槽位4）
+        // 添加所有游戏选项
+        for (int gameId = 0; gameId < GAME_SLOTS.length; gameId++) {
+            ItemStack gameItem = createGameItem(gameId);
+            gui.setItem(GAME_SLOTS[gameId], gameItem);
         }
         
-        // 添加跳过Intro选项（中间槽位）
+        // 添加跳过Intro选项
         ItemStack skipIntroItem = createSkipIntroItem(player);
-        gui.setItem(4, skipIntroItem); // 第5个槽位（中间）
+        gui.setItem(SKIP_INTRO_SLOT, skipIntroItem);
         
-        // 添加装饰性物品
-        ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta glassMeta = glass.getItemMeta();
-        if (glassMeta != null) {
-            glassMeta.displayName(Component.text(" "));
-            glass.setItemMeta(glassMeta);
-        }
-        gui.setItem(0, glass); // 第1个槽位
-        gui.setItem(8, glass); // 第9个槽位
+        // 添加装饰性物品到空槽位
+        fillEmptySlots(gui);
         
         player.openInventory(gui);
     }
@@ -150,11 +148,10 @@ public class VotingGUI {
      * 检查点击的物品是否为游戏选项
      */
     public static int getGameIdFromSlot(int slot) {
-        // 槽位1-3对应游戏0-2，槽位5-7对应游戏3-5
-        if (slot >= 1 && slot <= 3) {
-            return slot - 1;
-        } else if (slot >= 5 && slot <= 7) {
-            return slot - 2;
+        for (int gameId = 0; gameId < GAME_SLOTS.length; gameId++) {
+            if (GAME_SLOTS[gameId] == slot) {
+                return gameId;
+            }
         }
         return -1; // 无效槽位
     }
@@ -163,7 +160,7 @@ public class VotingGUI {
      * 检查点击的槽位是否为跳过Intro选项
      */
     public static boolean isSkipIntroSlot(int slot) {
-        return slot == 4; // 中间槽位
+        return slot == SKIP_INTRO_SLOT;
     }
     
     /**
@@ -205,20 +202,52 @@ public class VotingGUI {
     public static void refreshVotingGUI(Player player) {
         Inventory inventory = player.getOpenInventory().getTopInventory();
         
-        // 更新游戏选项物品（槽位1-3和5-7）
-        for (int i = 0; i < 3; i++) {
-            ItemStack gameItem = createGameItem(i);
-            inventory.setItem(i + 1, gameItem); // 槽位1-3
-        }
-        for (int i = 3; i < 6; i++) {
-            ItemStack gameItem = createGameItem(i);
-            inventory.setItem(i + 2, gameItem); // 槽位5-7
+        // 更新所有游戏选项
+        for (int gameId = 0; gameId < GAME_SLOTS.length; gameId++) {
+            ItemStack gameItem = createGameItem(gameId);
+            inventory.setItem(GAME_SLOTS[gameId], gameItem);
         }
         
-        // 更新跳过Intro选项物品（槽位4）
+        // 更新跳过Intro选项
         ItemStack skipIntroItem = createSkipIntroItem(player);
-        inventory.setItem(4, skipIntroItem);
+        inventory.setItem(SKIP_INTRO_SLOT, skipIntroItem);
         
         player.updateInventory();
+    }
+    
+    /**
+     * 用装饰性物品填充空槽位
+     */
+    private static void fillEmptySlots(Inventory gui) {
+        ItemStack glassPane = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta meta = glassPane.getItemMeta();
+        
+        if (meta != null) {
+            Component displayName = MiniMessage.miniMessage().deserialize("<gray> </gray>");
+            meta.displayName(displayName);
+            glassPane.setItemMeta(meta);
+        }
+        
+        // 填充所有空槽位
+        for (int slot = 0; slot < GUI_SIZE; slot++) {
+            // 检查是否为游戏槽位
+            boolean isGameSlot = false;
+            for (int gameSlot : GAME_SLOTS) {
+                if (slot == gameSlot) {
+                    isGameSlot = true;
+                    break;
+                }
+            }
+            
+            // 检查是否为跳过Intro槽位
+            if (slot == SKIP_INTRO_SLOT) {
+                isGameSlot = true;
+            }
+            
+            // 如果不是游戏槽位或跳过Intro槽位，则填充装饰性物品
+            if (!isGameSlot) {
+                gui.setItem(slot, glassPane);
+            }
+        }
     }
 }

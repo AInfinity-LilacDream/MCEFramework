@@ -60,7 +60,7 @@ public class MusicDodge extends MCEGame {
         setActiveTeams(MCETeamUtils.getActiveTeams());
         MCETeleporter.globalSwapWorld(this.getWorldName());
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
         // 设置玩家血量为10颗心（20.0血量）
         for (Player player : Bukkit.getOnlinePlayers()) {
             Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(20.0);
@@ -105,20 +105,14 @@ public class MusicDodge extends MCEGame {
     
     @Override
     public void onEnd() {
-        musicBPMPerformer.stop();
+        MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
         
-        // 停止粒子优化系统
-        ParticleOptimizationIntegration.setOptimizationEnabled(false);
-        particleInterceptor.disable();
-        attackDataManager.stop();
-        
-        // 停止监听器并清理物品
-        itemHandler.suspend();
-        clearTeleportOrbs();
-        
-        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
-        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
-        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
+        // onEnd结束后立即清理展示板和资源，然后启动投票系统
+        setDelayedTask(getEndDuration(), () -> {
+            MCEPlayerUtils.globalClearFastBoard();
+            this.stop(); // 停止所有游戏资源
+            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+        });
     }
 
     @Override

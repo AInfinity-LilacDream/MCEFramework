@@ -55,6 +55,7 @@ public class DiscoFever extends MCEGame {
         MCETimerUtils.setFramedTask(() -> actionBarMessageHandler.showMessage());
     }
 
+
     @Override
     public void onLaunch() {
         currentPlatformLocation = getDiscoFeverPlatformLocation(this.getWorldName());
@@ -69,10 +70,9 @@ public class DiscoFever extends MCEGame {
         currentState = 0;
         setActiveTeams(MCETeamUtils.getActiveTeams());
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
-        MCETeleporter.globalSwapWorld(this.getWorldName());
 
         // 设置玩家血量为10颗心（20.0血量）
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -131,19 +131,15 @@ public class DiscoFever extends MCEGame {
 
     @Override
     public void onEnd() {
-        // 停止背景音乐
-        MCEPlayerUtils.globalStopMusic();
-
-        bossBar.removeAll();
-        discoFever.clearBossBarTask();
-        actionBarMessageHandler.suspend();
-        playerFallHandler.suspend();
         sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
         
-        // 等待onEnd阶段完成后再启动投票系统（endDuration + 2秒缓冲）
-        long delayTicks = (getEndDuration() + 2) * 20L; // 转换为ticks
-        Bukkit.getScheduler().runTaskLater(plugin, MCEMainController::launchVotingSystem, delayTicks);
+        // onEnd结束后立即清理展示板和资源，然后启动投票系统
+        setDelayedTask(getEndDuration(), () -> {
+            MCEPlayerUtils.globalClearFastBoard();
+            this.stop(); // 停止所有游戏资源
+            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+        });
     }
 
     @Override
