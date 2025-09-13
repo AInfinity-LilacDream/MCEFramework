@@ -4,6 +4,7 @@ import mcevent.MCEFramework.games.captureCenter.CaptureCenter;
 import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
 import mcevent.MCEFramework.games.football.Football;
+import mcevent.MCEFramework.games.hitWall.HitWall;
 import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
@@ -32,7 +33,8 @@ public class Constants {
     public static final int EXTRACT_OWN_ID = 7;
     public static final int TNT_TAG_ID = 8;
     public static final int SPLEEF_ID = 9;
-    public static final int VOTING_SYSTEM_ID = 10;
+    public static final int HIT_WALL_ID = 10;
+    public static final int VOTING_SYSTEM_ID = 11;
 
     public static final TeamWithDetails[] teams = {
             new TeamWithDetails("<red>红色山楂</red>", "红色山楂", "红队", NamedTextColor.RED, "<red>", "</red>"),
@@ -63,6 +65,7 @@ public class Constants {
             "extractown",
             "TNTTag_classic",
             "spleef_christmas",
+            "",
             "lobby", // 投票系统使用主城
     };
 
@@ -72,11 +75,13 @@ public class Constants {
     public static MusicDodge musicDodge;
     public static SandRun sandRun;
     public static CaptureCenter captureCenter;
+    public static HitWall hitWall;
     public static Football football;
     public static CrazyMiner crazyMiner;
     public static mcevent.MCEFramework.games.extractOwn.ExtractOwn extractOwn;
     public static TNTTag tnttag;
     public static Spleef spleef;
+    public static HitWall hitwall;
     public static VotingSystem votingSystem;
 
     // ParkourTag位置现在从配置文件动态获取，不再使用硬编码
@@ -94,4 +99,6 @@ public class Constants {
             false,
             false
     );
+
+    public static boolean enableTeamSelection = false;  // 暂时无需求
 }

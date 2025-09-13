@@ -5,6 +5,7 @@ import lombok.Setter;
 import mcevent.MCEFramework.games.votingSystem.customHandler.VotingCardHandler;
 import mcevent.MCEFramework.games.votingSystem.gameObject.VotingSystemGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
+import mcevent.MCEFramework.miscellaneous.Constants;
 import mcevent.MCEFramework.tools.*;
 import mcevent.MCEFramework.tools.MCEGlowingEffectManager;
 import org.bukkit.*;
@@ -98,6 +99,11 @@ public class VotingSystem extends MCEGame {
         
         MCEMessenger.sendGlobalTitle("<gold><bold>投票开始！</bold></gold>", 
                                    "<yellow>右键投票卡选择下一个游戏</yellow>");
+
+        // 处理玩家选队
+        if (Constants.enableTeamSelection) {
+            giveTeamSelectionCard();
+        }
     }
 
     @Override
@@ -148,7 +154,7 @@ public class VotingSystem extends MCEGame {
             player.updateInventory();
         }
     }
-    
+
     /**
      * 创建投票卡物品
      */
@@ -165,7 +171,38 @@ public class VotingSystem extends MCEGame {
         }
         return card;
     }
-    
+
+    /**
+     * 给所有玩家发放选队卡
+     */
+    private void giveTeamSelectionCard() {
+        ItemStack votingCard = createVotingCard();
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.getInventory().clear();
+            player.getInventory().setItem(5, votingCard); // 放在第5个槽位（中间）
+            player.updateInventory();
+        }
+    }
+
+    /**
+     * 创建投票卡物品
+     * @return 投票卡 ItemStack
+     */
+    private ItemStack createTeamSelectionCard() {
+        ItemStack selectionCard = new ItemStack(Material.PAPER);    // 或者换成别的
+        ItemMeta meta = selectionCard.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§6§l选队卡");
+            meta.setLore(java.util.Arrays.asList(
+                    "§e右键点击打开选队界面",
+                    "§7选择您想要加入的队伍"
+            ));
+            selectionCard.setItemMeta(meta);
+        }
+        return selectionCard;
+    }
+
     /**
      * 创建投票倒计时BossBar
      */
