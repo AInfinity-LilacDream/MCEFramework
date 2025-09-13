@@ -19,11 +19,13 @@ import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
 import mcevent.MCEFramework.games.extractOwn.ExtractOwn;
 import mcevent.MCEFramework.games.football.Football;
+import mcevent.MCEFramework.games.hitWall.HitWall;
 import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
 import mcevent.MCEFramework.games.spleef.Spleef;
 import mcevent.MCEFramework.games.tntTag.TNTTag;
+import mcevent.MCEFramework.games.hitWall.HitWall;
 import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCETimeline;
@@ -98,7 +100,8 @@ public final class MCEMainController extends JavaPlugin {
         String extractOwnMapName = readMapNameFromConfig("MCEConfig/ExtractOwn.cfg", mapNames[7]);
         String tntTagMapName = readMapNameFromConfig("MCEConfig/TNTTag.cfg", mapNames[8]);
         String spleefMapName = readMapNameFromConfig("MCEConfig/Spleef.cfg", mapNames[9]);
-        String votingMapName = mapNames[10]; // 投票系统直接使用lobby
+        String hitwallMapName = readMapNameFromConfig("MCEConfig/HitWall.cfg", mapNames[10]);
+        String votingMapName = mapNames[11]; // 投票系统直接使用lobby
         
         // 使用配置文件中的地图名称创建游戏实例
         pkt = new ParkourTag("瓮中捉鳖", PARKOUR_TAG_ID, pktMapName, true, "MCEConfig/ParkourTag.cfg",
@@ -121,6 +124,8 @@ public final class MCEMainController extends JavaPlugin {
                 5, 60, 15, 0, Integer.MAX_VALUE, 5, 25);
         spleef = new Spleef("冰雪掘战", SPLEEF_ID, spleefMapName, 3, true, "MCEConfig/Spleef.cfg",
                 5, 55, 15, 5, 180, 15, 25);
+        hitwall = new HitWall("墙洞洞墙", HIT_WALL_ID, hitwallMapName, 1, false, "MCEConfig/HitWall.cfg",
+                5, 55, 15, 5, 180, 10, 10);
         votingSystem = new VotingSystem("投票系统", VOTING_SYSTEM_ID, votingMapName, 1, false, "MCEConfig/VotingSystem.cfg",
                 2, 0, 0, 0, 30, 0, 3);
 
@@ -135,6 +140,7 @@ public final class MCEMainController extends JavaPlugin {
         gameList.add(extractOwn);
         gameList.add(tnttag);
         gameList.add(spleef);
+        gameList.add(hitWall);
         gameList.add(votingSystem);
 
         // 全面清理所有玩家状态（在线和离线）
