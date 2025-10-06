@@ -28,22 +28,23 @@ public class VotingCardHandler extends MCEResumableEventHandler implements Liste
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (isSuspended()) return;
+        if (isSuspended())
+            return;
 
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
 
         // 检查是否右键点击投票卡
-        if (item != null && item.getType() == Material.PAPER && 
-            item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
-            
+        if (item != null && item.getType() == Material.PAPER &&
+                item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+
             String displayName = item.getItemMeta().getDisplayName();
             if ("§6§l投票卡".equals(displayName)) {
                 event.setCancelled(true);
-                
+
                 // 确保投票已初始化（如果还没初始化）
                 VotingSystemFuncImpl.ensureVotingInitialized();
-                
+
                 // 判断具体的动作类型
                 Action action = event.getAction();
                 if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
@@ -56,21 +57,27 @@ public class VotingCardHandler extends MCEResumableEventHandler implements Liste
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (isSuspended()) return;
+        if (isSuspended())
+            return;
 
         // 检查是否为投票GUI
-        if (!(event.getWhoClicked() instanceof Player)) return;
-        
+        if (!(event.getWhoClicked() instanceof Player))
+            return;
+
         Player player = (Player) event.getWhoClicked();
-        
+
         // 直接检查是否为我们的投票GUI，通过比较Component标题
         if (VotingGUI.isVotingGUI(player)) {
             event.setCancelled(true); // 阻止物品移动
-            
+
             int slot = event.getSlot();
             int gameId = VotingGUI.getGameIdFromSlot(slot);
-            
+
             if (gameId != -1) {
+                // 禁止对 musicdodge (ID=2) 投票
+                if (gameId == 2) {
+                    return;
+                }
                 // 玩家点击了有效的游戏选项
                 VotingSystemFuncImpl.vote(player, gameId);
                 // 无论成功失败都立即关闭GUI
@@ -88,14 +95,15 @@ public class VotingCardHandler extends MCEResumableEventHandler implements Liste
 
     @EventHandler
     public void onPlayerDropItem(PlayerDropItemEvent event) {
-        if (isSuspended()) return;
-        
+        if (isSuspended())
+            return;
+
         ItemStack droppedItem = event.getItemDrop().getItemStack();
-        
+
         // 检查是否是投票卡
-        if (droppedItem.getType() == Material.PAPER && 
-            droppedItem.hasItemMeta() && droppedItem.getItemMeta().hasDisplayName()) {
-            
+        if (droppedItem.getType() == Material.PAPER &&
+                droppedItem.hasItemMeta() && droppedItem.getItemMeta().hasDisplayName()) {
+
             String displayName = droppedItem.getItemMeta().getDisplayName();
             if ("§6§l投票卡".equals(displayName)) {
                 // 取消丢弃投票卡

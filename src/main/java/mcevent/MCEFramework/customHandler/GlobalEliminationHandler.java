@@ -1,9 +1,16 @@
 package mcevent.MCEFramework.customHandler;
 
 import mcevent.MCEFramework.MCEMainController;
+import mcevent.MCEFramework.games.captureCenter.CaptureCenter;
+import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
+import mcevent.MCEFramework.games.discoFever.DiscoFever;
+import mcevent.MCEFramework.games.extractOwn.ExtractOwn;
+import mcevent.MCEFramework.games.sandRun.SandRun;
+import mcevent.MCEFramework.games.spleef.Spleef;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl;
 import mcevent.MCEFramework.games.survivalGame.gameObject.SurvivalGameGameBoard;
+import mcevent.MCEFramework.games.tntTag.TNTTag;
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.MCEMessenger;
@@ -16,6 +23,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.scoreboard.Team;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 
@@ -98,5 +108,61 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
                 }
             }
         }
+
+        // 每次淘汰后评估是否应当结束当前回合
+        evaluateRoundEnd(current);
+    }
+
+    private static void evaluateRoundEnd(MCEGame current) {
+        if (current == null)
+            return;
+
+        // 模式一：只剩一队结束
+        if (current instanceof CaptureCenter
+                || current instanceof CrazyMiner
+                || current instanceof ExtractOwn
+                || current instanceof Spleef
+                || current instanceof SurvivalGame) {
+            if (countAliveTeams() <= 1) {
+                current.getTimeline().nextState();
+            }
+            return;
+        }
+
+        // 模式二：所有人都死了才结束（无存活玩家）
+        if (current instanceof DiscoFever || current instanceof SandRun) {
+            if (countAlivePlayers() == 0) {
+                current.getTimeline().nextState();
+            }
+            return;
+        }
+
+        // 模式三：只剩一个人结束
+        if (current instanceof TNTTag) {
+            if (countAlivePlayers() <= 1) {
+                current.getTimeline().nextState();
+            }
+        }
+    }
+
+    private static int countAlivePlayers() {
+        int alive = 0;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getGameMode() != GameMode.SPECTATOR)
+                alive++;
+        }
+        return alive;
+    }
+
+    private static int countAliveTeams() {
+        Set<Team> aliveTeams = new HashSet<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getGameMode() == GameMode.SURVIVAL || p.getGameMode() == GameMode.ADVENTURE) {
+                Team t = MCETeamUtils.getTeam(p);
+                if (t != null)
+                    aliveTeams.add(t);
+            }
+        }
+        return aliveTeams.size();
     }
 }
