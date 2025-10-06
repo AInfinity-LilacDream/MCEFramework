@@ -31,19 +31,19 @@ public class PlayerFallHandler extends MCEResumableEventHandler implements Liste
 
     @EventHandler
     public void onMove(PlayerMoveEvent event) {
-        if (this.isSuspended()) return;
+        if (this.isSuspended())
+            return;
 
         Player player = event.getPlayer();
         if (player.getY() <= 3 && player.getGameMode() != GameMode.SPECTATOR) {
             if (!inGame) {
                 player.teleport(player.getWorld().getSpawnLocation());
-            }
-            else {
+            } else {
                 DiscoFeverGameBoard gameBoard = (DiscoFeverGameBoard) discoFever.getGameBoard();
                 Team team = MCETeamUtils.getTeam(player);
 
-                MCEMessenger.sendGlobalInfo(MCEPlayerUtils.getColoredPlayerName(player) + " <gray>掉入了虚空！</gray>");
-                player.setGameMode(GameMode.SPECTATOR);
+                // 统一淘汰处理：消息+音效+切旁观
+                mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(player);
                 gameBoard.updatePlayerRemainTitle(gameBoard.getPlayerRemain() - 1);
                 gameBoard.updateTeamRemainTitle(team);
                 gameBoard.globalDisplay();

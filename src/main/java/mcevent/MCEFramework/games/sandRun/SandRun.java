@@ -76,9 +76,7 @@ public class SandRun extends MCEGame {
         
         sandFallHandler.startSandFall();
         
-        gameTask.add(MCETimerUtils.setDelayedTask(180, () -> {
-            this.getTimeline().nextState();
-        }));
+        gameTask.add(MCETimerUtils.setDelayedTask(180, () -> this.getTimeline().nextState()));
     }
 
     @Override

@@ -86,7 +86,8 @@ public class SurvivalGame extends MCEGame {
 
         // 启动处理器
         pvPControlHandler.start();
-        playerDeathHandler.start();
+        // 由全局淘汰监听器处理死亡；本地 handler 可保持挂起或用于仅限SG的扩展
+        playerDeathHandler.suspend();
 
         // 启动时重置世界边界（并应用外扩设置）
         resetWorldBorder();

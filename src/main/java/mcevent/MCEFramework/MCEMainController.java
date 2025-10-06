@@ -149,6 +149,7 @@ public final class MCEMainController extends JavaPlugin {
         lobbyBounceHandler = new LobbyBounceHandler();
         lobbyHandler = new LobbyHandler();
         chatFormatHandler = new ChatFormatHandler();
+        new mcevent.MCEFramework.customHandler.GlobalEliminationHandler(); // 全局淘汰监听器
         new WelcomeMessageHandler(); // 欢迎标语处理器
         Bukkit.getPluginManager()
                 .registerEvents(new mcevent.MCEFramework.games.survivalGame.customHandler.ChestSelectorHandler(), this); // 箱子标注器

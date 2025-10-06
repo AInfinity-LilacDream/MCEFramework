@@ -6,7 +6,6 @@ import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import mcevent.MCEFramework.tools.MCETeamUtils;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
-import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -25,19 +24,25 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
 
     @EventHandler
     public void onCaught(PrePlayerAttackEntityEvent event) {
-        if (this.isSuspended()) return;
+        if (this.isSuspended())
+            return;
 
         event.setCancelled(true);
-        if (!(event.getAttacked() instanceof Player runner)) return;
+        if (!(event.getAttacked() instanceof Player runner))
+            return;
         Player catcher = event.getPlayer();
 
         if (Objects.requireNonNull(MCETeamUtils.getTeam(catcher)).getName()
-                .equals(Objects.requireNonNull(MCETeamUtils.getTeam(runner)).getName())) return;
-        if (catcher.getScoreboardTags().contains("runner")) return;
-        if (runner.getScoreboardTags().contains("caught")) return;
+                .equals(Objects.requireNonNull(MCETeamUtils.getTeam(runner)).getName()))
+            return;
+        if (catcher.getScoreboardTags().contains("runner"))
+            return;
+        if (runner.getScoreboardTags().contains("caught"))
+            return;
 
         runner.addScoreboardTag("caught");
-        runner.setGameMode(GameMode.SPECTATOR);
+        // 统一淘汰处理
+        mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(runner);
 
         Team runnerTeam = MCETeamUtils.getTeam(runner);
         Team catcherTeam = MCETeamUtils.getTeam(catcher);
@@ -54,12 +59,12 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
         pkt.getGameBoard().globalDisplay();
 
         // 检查队伍是否被抓完：被抓人数 = 队伍总人数 - 1（因为每队有一个抓人者）
-        int totalTeamMembers = MCETeamUtils.getTeamOnlinePlayers(runnerTeam);
+        // 由全局淘汰监听器负责队伍团灭提示；此处仅更新内部计数
         int survivingMembers = pkt.getSurvivePlayerTot().get(runnerTeamPos);
         if (survivingMembers <= 1) { // 只剩1人（抓人者）时，队伍被抓完
             pkt.completeMatchesTot++;
             pkt.setTeamCompleteTime(catcherTeam, pkt.getTimeline().getCurrentTimelineNodeDuration() - 10);
-            catcher.setGameMode(GameMode.SPECTATOR);
+            // 交给全局处理器发送团灭提示；这里无需改抓捕者模式
             MCEMessenger.sendTitleToPlayer(catcher, "<green>专业猎手！</green>", "<green>干得漂亮！</green>");
             if (pkt.getTeamCompleteTime(runnerTeam) == 0) {
                 MCEMessenger.sendInfoToTeam(catcherTeam, "<green>[✅] 你们比对手更快抓住了所有猎物( " +
