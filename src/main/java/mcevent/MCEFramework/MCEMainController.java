@@ -1,8 +1,6 @@
 package mcevent.MCEFramework;
 
 import co.aikar.commands.PaperCommandManager;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
 import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.commands.*;
@@ -23,23 +21,18 @@ import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
 import mcevent.MCEFramework.games.spleef.Spleef;
+import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.tntTag.TNTTag;
 import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCETimeline;
-import mcevent.MCEFramework.miscellaneous.Constants;
-import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import mcevent.MCEFramework.tools.MCEGlowingEffectManager;
-import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -52,34 +45,37 @@ public final class MCEMainController extends JavaPlugin {
 
     @Getter
     private static MCETimeline eventTimeline = new MCETimeline(true);
-    @Getter @Setter
+    @Getter
+    @Setter
     private static MCETimeline currentTimeline;
     private static final ArrayList<MCEGame> gameList = new ArrayList<>();
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private static boolean isRunningGame = false;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private static MCEGame currentRunningGame = null;
 
     @Getter
     private static GlobalPVPHandler globalPVPHandler;
-    
+
     @Getter
     private static FriendlyFireHandler friendlyFireHandler;
-    
+
     @Getter
     private static PlayerJoinHandler playerJoinHandler;
-    
+
     @Getter
     private static GamePlayerQuitHandler gamePlayerQuitHandler;
-    
+
     @Getter
     private static LobbyBounceHandler lobbyBounceHandler;
-    
+
     @Getter
     private static LobbyHandler lobbyHandler;
-    
+
     @Getter
     private static ChatFormatHandler chatFormatHandler;
 
@@ -89,7 +85,7 @@ public final class MCEMainController extends JavaPlugin {
         // 初始化全局游戏单例 - 只读取地图名称，完整配置将在onLaunch时读取
         // 先读取配置文件获取地图名称
         String pktMapName = readMapNameFromConfig("MCEConfig/ParkourTag.cfg", mapNames[0]);
-        String dfMapName = readMapNameFromConfig("MCEConfig/DiscoFever.cfg", mapNames[1]); 
+        String dfMapName = readMapNameFromConfig("MCEConfig/DiscoFever.cfg", mapNames[1]);
         String mdMapName = readMapNameFromConfig("MCEConfig/MusicDodge.cfg", mapNames[2]);
         String srMapName = readMapNameFromConfig("MCEConfig/SandRun.cfg", mapNames[3]);
         String ccMapName = readMapNameFromConfig("MCEConfig/CaptureCenter.cfg", mapNames[4]);
@@ -98,8 +94,9 @@ public final class MCEMainController extends JavaPlugin {
         String extractOwnMapName = readMapNameFromConfig("MCEConfig/ExtractOwn.cfg", mapNames[7]);
         String tntTagMapName = readMapNameFromConfig("MCEConfig/TNTTag.cfg", mapNames[8]);
         String spleefMapName = readMapNameFromConfig("MCEConfig/Spleef.cfg", mapNames[9]);
-        String votingMapName = mapNames[10]; // 投票系统直接使用lobby
-        
+        String survivalGameMapName = readMapNameFromConfig("MCEConfig/SurvivalGame.cfg", mapNames[10]);
+        String votingMapName = mapNames[11]; // 投票系统直接使用lobby
+
         // 使用配置文件中的地图名称创建游戏实例
         pkt = new ParkourTag("瓮中捉鳖", PARKOUR_TAG_ID, pktMapName, true, "MCEConfig/ParkourTag.cfg",
                 5, 35, 15, 15, 70, 25, 25);
@@ -121,6 +118,9 @@ public final class MCEMainController extends JavaPlugin {
                 5, 60, 15, 0, Integer.MAX_VALUE, 5, 25);
         spleef = new Spleef("冰雪掘战", SPLEEF_ID, spleefMapName, 3, true, "MCEConfig/Spleef.cfg",
                 5, 55, 15, 5, 180, 15, 25);
+        survivalGame = new SurvivalGame("饥饿游戏", SURVIVAL_GAME_ID, survivalGameMapName, 2, true,
+                "MCEConfig/SurvivalGame.cfg",
+                5, 55, 15, 15, 450, 25, 25);
         votingSystem = new VotingSystem("投票系统", VOTING_SYSTEM_ID, votingMapName, 1, false, "MCEConfig/VotingSystem.cfg",
                 2, 0, 0, 0, 30, 0, 3);
 
@@ -135,11 +135,12 @@ public final class MCEMainController extends JavaPlugin {
         gameList.add(extractOwn);
         gameList.add(tnttag);
         gameList.add(spleef);
+        gameList.add(survivalGame);
         gameList.add(votingSystem);
 
         // 全面清理所有玩家状态（在线和离线）
         cleanupAllPlayersOnStartup();
-        
+
         // 注册全局事件监听器
         globalPVPHandler = new GlobalPVPHandler();
         friendlyFireHandler = new FriendlyFireHandler();
@@ -149,6 +150,11 @@ public final class MCEMainController extends JavaPlugin {
         lobbyHandler = new LobbyHandler();
         chatFormatHandler = new ChatFormatHandler();
         new WelcomeMessageHandler(); // 欢迎标语处理器
+        Bukkit.getPluginManager()
+                .registerEvents(new mcevent.MCEFramework.games.survivalGame.customHandler.ChestSelectorHandler(), this); // 箱子标注器
+
+        // 确保 survival_game_loot_table 资源已复制到数据目录
+        ensureSurvivalGameLootTable();
 
         // 延迟给所有在线玩家烈焰棒（确保所有初始化完成）
         Bukkit.getScheduler().runTaskLater(this, () -> {
@@ -172,9 +178,17 @@ public final class MCEMainController extends JavaPlugin {
         commandManager.registerCommand(new Party()); // party
         commandManager.registerCommand(new TogglePVP()); // togglepvp
         commandManager.registerCommand(new ToggleFriendlyFire()); // togglefriendlyfire
-        
+        commandManager.registerCommand(new GiveSpecialItem()); // giveSpecialItem
+
         getLogger().info("合合启动了");
-        
+
+        // 预加载并输出生存游戏战利品信息（进入游戏前）
+        try {
+            mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl.preloadAndDumpLootTables();
+        } catch (Throwable t) {
+            getLogger().warning("Failed to dump SurvivalGame loot tables: " + t.getMessage());
+        }
+
         // 启动欢迎标语动画（插件启动时没有游戏在运行）
         Bukkit.getScheduler().runTaskLater(this, () -> {
             if (!isRunningGame()) {
@@ -183,34 +197,69 @@ public final class MCEMainController extends JavaPlugin {
         }, 20L); // 延迟1秒启动，确保所有初始化完成
     }
 
+    private void ensureSurvivalGameLootTable() {
+        try {
+            java.nio.file.Path root = plugin.getDataPath().resolve("MCEConfig").resolve("survival_game_loot_table");
+            java.nio.file.Files.createDirectories(root);
+
+            copyIfMissing(root.resolve("lootConfig.cfg"), "MCEConfig/survival_game_loot_table/lootConfig.cfg");
+
+            java.nio.file.Path lootPool = root.resolve("lootPool");
+            java.nio.file.Path lootData = root.resolve("lootData");
+            java.nio.file.Files.createDirectories(lootPool);
+            java.nio.file.Files.createDirectories(lootData);
+
+            String[] files = new String[] {
+                    "ammo.cfg", "armor.cfg", "empty.cfg", "enchantment.cfg", "food.cfg", "material.cfg", "others.cfg",
+                    "potion.cfg", "weapon.cfg"
+            };
+            for (String f : files) {
+                copyIfMissing(lootPool.resolve(f), "MCEConfig/survival_game_loot_table/lootPool/" + f);
+                copyIfMissing(lootData.resolve(f), "MCEConfig/survival_game_loot_table/lootData/" + f);
+            }
+        } catch (Exception e) {
+            getLogger().warning("Failed to ensure survival_game_loot_table resources: " + e.getMessage());
+        }
+    }
+
+    private void copyIfMissing(java.nio.file.Path target, String resourcePath) throws java.io.IOException {
+        if (java.nio.file.Files.exists(target))
+            return;
+        try (java.io.InputStream in = getResource(resourcePath)) {
+            if (in != null) {
+                java.nio.file.Files.copy(in, target);
+            }
+        }
+    }
+
     /**
      * 从配置文件中快速读取地图名称，不进行完整配置解析
      */
     private String readMapNameFromConfig(String configFileName, String defaultMapName) {
         try {
             Path configPath = plugin.getDataPath().resolve(configFileName);
-            
+
             // 如果配置文件不存在，使用默认值
             if (!java.nio.file.Files.exists(configPath)) {
                 return defaultMapName;
             }
-            
+
             List<String> lines = java.nio.file.Files.readAllLines(configPath);
             boolean inMapNameSection = false;
-            
+
             for (String line : lines) {
                 String trimmedLine = line.trim();
-                
+
                 if (trimmedLine.equals("[map_name]")) {
                     inMapNameSection = true;
                     continue;
                 }
-                
+
                 if (trimmedLine.startsWith("[") && trimmedLine.endsWith("]")) {
                     inMapNameSection = false;
                     continue;
                 }
-                
+
                 if (inMapNameSection && !trimmedLine.isEmpty()) {
                     return trimmedLine;
                 }
@@ -218,7 +267,7 @@ public final class MCEMainController extends JavaPlugin {
         } catch (Exception e) {
             plugin.getLogger().warning("读取地图名称失败: " + configFileName + ", 使用默认值: " + defaultMapName);
         }
-        
+
         return defaultMapName;
     }
 
@@ -234,14 +283,14 @@ public final class MCEMainController extends JavaPlugin {
     public static void immediateLaunchGame(int gameID, boolean intro) {
         // 停止欢迎标语动画
         stopWelcomeMessage();
-        
+
         MCEGame nextGame = gameList.get(gameID);
         setCurrentRunningGame(nextGame);
         nextGame.init(intro); // 在开始游戏之前，先初始化游戏的时间线
 
         nextGame.start();
     }
-    
+
     public static void launchVotingSystem() {
         // 启动投票系统
         immediateLaunchGame(VOTING_SYSTEM_ID, false);
@@ -259,9 +308,9 @@ public final class MCEMainController extends JavaPlugin {
     // 检测当前是否正在运行游戏
     public static boolean checkGameRunning() {
         return isRunningGame();
-//        return currentTimeline != null && currentTimeline == eventTimeline;
+        // return currentTimeline != null && currentTimeline == eventTimeline;
     }
-    
+
     // 停止当前运行的游戏
     public static boolean stopCurrentGame() {
         if (currentRunningGame != null && isRunningGame()) {
@@ -272,23 +321,23 @@ public final class MCEMainController extends JavaPlugin {
         }
         return false;
     }
-    
+
     /**
      * 插件启动时全面清理所有玩家状态
      * 清空效果、标签、物品栏
      */
     private void cleanupAllPlayersOnStartup() {
         getLogger().info("开始清理所有玩家状态...");
-        
+
         // 清理在线玩家
         for (Player player : Bukkit.getOnlinePlayers()) {
             cleanupPlayer(player);
         }
-        
+
         // 清理离线玩家 - 获取所有曾经加入过服务器的玩家
         OfflinePlayer[] offlinePlayers = Bukkit.getOfflinePlayers();
         int cleanedCount = 0;
-        
+
         for (OfflinePlayer offlinePlayer : offlinePlayers) {
             if (offlinePlayer.hasPlayedBefore() && !offlinePlayer.isOnline()) {
                 // 对于离线玩家，我们主要清理可持久化的数据
@@ -299,11 +348,11 @@ public final class MCEMainController extends JavaPlugin {
                 }
             }
         }
-        
-        getLogger().info("清理完成！在线玩家: " + Bukkit.getOnlinePlayers().size() + 
-                        ", 离线玩家: " + cleanedCount);
+
+        getLogger().info("清理完成！在线玩家: " + Bukkit.getOnlinePlayers().size() +
+                ", 离线玩家: " + cleanedCount);
     }
-    
+
     /**
      * 清理单个玩家的状态
      */
@@ -314,39 +363,37 @@ public final class MCEMainController extends JavaPlugin {
                 player.teleport(Bukkit.getWorld("lobby").getSpawnLocation());
             }
         }
-        
+
         // 清空药水效果
-        player.getActivePotionEffects().forEach(effect -> 
-            player.removePotionEffect(effect.getType())
-        );
-        
+        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+
         // 清空scoreboard标签
         player.getScoreboardTags().clear();
-        
+
         // 清除发光效果
         MCEGlowingEffectManager.clearPlayerGlowingEffect(player);
-        
+
         // 清空物品栏
         player.getInventory().clear();
         player.getEnderChest().clear();
-        
+
         // 重置经验
         player.setExp(0);
         player.setLevel(0);
-        
+
         // 重置食物和生命值
         player.setFoodLevel(20);
         player.setSaturation(20);
         player.setHealth(player.getMaxHealth());
     }
-    
+
     /**
      * 启动欢迎标语动画（当无游戏运行时）
      */
     public static void startWelcomeMessage() {
         WelcomeMessageHandler.startWelcomeMessage();
     }
-    
+
     /**
      * 停止欢迎标语动画
      */

@@ -97,6 +97,15 @@ public class MCETeamUtils {
         return team.getName();
     }
 
+    public static String getTeamColoredName(Team team) {
+        for (TeamWithDetails teamWithDetails : Constants.teams) {
+            if (Objects.equals(teamWithDetails.teamName(), team.getName())) {
+                return teamWithDetails.textColorPre() + teamWithDetails.teamNameNoColor() + teamWithDetails.textColorPost();
+            }
+        }
+        return team.getName();
+    }
+
     // 返回队伍中在线玩家的数量
     public static int getTeamOnlinePlayers(Team team) {
         int players = 0;

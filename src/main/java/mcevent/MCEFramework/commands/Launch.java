@@ -200,6 +200,24 @@ public class Launch extends BaseCommand {
         else MCEMainController.immediateLaunchGame(spleef.getId(), false);
     }
 
+    @Subcommand("survivalgame")
+    public void launchSurvivalGame(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(survivalGame.getId(), true);
+    }
+
+    @Subcommand("survivalgamenointro")
+    public void launchSurvivalGameNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        }
+        else MCEMainController.immediateLaunchGame(survivalGame.getId(), false);
+    }
+
     @Subcommand("vote")
     public void launchVoting(CommandSender sender) {
         if (checkGameRunning()) {

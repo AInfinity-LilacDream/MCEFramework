@@ -37,7 +37,7 @@ public class MCEPausableTimer {
             task.runTaskLater(Constants.plugin, 1L); // 1 tick 延迟
             return;
         }
-        
+
         task = new BukkitRunnable() {
 
             @Override
@@ -52,7 +52,8 @@ public class MCEPausableTimer {
                 }
             }
         };
-        task.runTaskTimer(Constants.plugin, 0L, 20L);
+        // 修复初始立刻触发导致少1秒的问题：首轮延迟1秒再开始每秒递减
+        task.runTaskTimer(Constants.plugin, 20L, 20L);
     }
 
     public void pause() {
@@ -64,9 +65,10 @@ public class MCEPausableTimer {
     }
 
     public void stop() {
-        if (task != null && !task.isCancelled()) task.cancel();
+        if (task != null && !task.isCancelled())
+            task.cancel();
     }
-    
+
     /**
      * 获取剩余时间（秒）
      */

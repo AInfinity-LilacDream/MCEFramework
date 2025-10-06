@@ -8,6 +8,7 @@ import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
 import mcevent.MCEFramework.games.spleef.Spleef;
+import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.tntTag.TNTTag;
 import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -32,7 +33,8 @@ public class Constants {
     public static final int EXTRACT_OWN_ID = 7;
     public static final int TNT_TAG_ID = 8;
     public static final int SPLEEF_ID = 9;
-    public static final int VOTING_SYSTEM_ID = 10;
+    public static final int SURVIVAL_GAME_ID = 10;
+    public static final int VOTING_SYSTEM_ID = 11;
 
     public static final TeamWithDetails[] teams = {
             new TeamWithDetails("<red>红色山楂</red>", "红色山楂", "红队", NamedTextColor.RED, "<red>", "</red>"),
@@ -63,6 +65,7 @@ public class Constants {
             "extractown",
             "TNTTag_classic",
             "spleef_christmas",
+            "sg_fdu",
             "lobby", // 投票系统使用主城
     };
 
@@ -77,6 +80,7 @@ public class Constants {
     public static mcevent.MCEFramework.games.extractOwn.ExtractOwn extractOwn;
     public static TNTTag tnttag;
     public static Spleef spleef;
+    public static SurvivalGame survivalGame;
     public static VotingSystem votingSystem;
 
     // ParkourTag位置现在从配置文件动态获取，不再使用硬编码

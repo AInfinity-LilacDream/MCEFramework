@@ -21,7 +21,7 @@ MCEMessenger: 向玩家发送信息的工具类
 public class MCEMessenger {
 
     public static void sendMatchTitleToPlayer(Player player, String ownTeamName, String opponentTeamName, int currentRound) {
-        sendTitleToPlayer(player, "第" + currentRound + "回合", ownTeamName + " VS " + opponentTeamName);
+        sendTitleToPlayer(player, "第 " + currentRound + " 回合", ownTeamName + " VS " + opponentTeamName);
     }
 
     public static void sendGlobalText(String message) {

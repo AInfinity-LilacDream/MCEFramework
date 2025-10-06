@@ -37,7 +37,7 @@ public class VotingSystemFuncImpl {
     
     // 游戏名称映射
     private static final String[] gameNames = {
-        "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战"
+        "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏"
     };
 
     /**
@@ -217,12 +217,26 @@ public class VotingSystemFuncImpl {
         
         // 处理平票的情况
         if (winningGameId == -1 || hasTie(maxVotes)) {
-            // 随机选择一个游戏
-            Random random = new Random();
-            winningGameId = random.nextInt(gameNames.length);
-            
-            MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>", 
-                                       "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
+            // 仅在平票的游戏中随机选择
+            java.util.List<Integer> tieCandidates = new java.util.ArrayList<>();
+            for (int i = 0; i < gameNames.length; i++) {
+                if (votes.getOrDefault(i, 0) == maxVotes) {
+                    tieCandidates.add(i);
+                }
+            }
+
+            if (!tieCandidates.isEmpty()) {
+                Random random = new Random();
+                winningGameId = tieCandidates.get(random.nextInt(tieCandidates.size()));
+                MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>", 
+                                           "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
+            } else {
+                // 理论上不会发生：降级为全局随机
+                Random random = new Random();
+                winningGameId = random.nextInt(gameNames.length);
+                MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>", 
+                                           "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
+            }
         } else {
             // 再次验证winningGameId有效性
             if (winningGameId >= 0 && winningGameId < gameNames.length) {

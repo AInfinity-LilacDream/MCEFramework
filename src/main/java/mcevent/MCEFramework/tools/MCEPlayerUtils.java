@@ -53,13 +53,6 @@ public class MCEPlayerUtils {
         }, delayTicks);
     }
     
-    public static void globalClearScoreboard() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            Scoreboard emptyBoard = Bukkit.getScoreboardManager().getNewScoreboard();
-            player.setScoreboard(emptyBoard);
-        }
-    }
-    
     public static void globalClearFastBoard() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             // 创建一个空的 FastBoard 来清除现有的计分板

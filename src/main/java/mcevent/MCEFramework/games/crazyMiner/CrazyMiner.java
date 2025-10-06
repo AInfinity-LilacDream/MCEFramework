@@ -133,8 +133,8 @@ public class CrazyMiner extends MCEGame {
         
         MCEPlayerUtils.globalGrantTag("Active");
         
-        // 确保所有玩家为冒险模式
-        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
+        // 确保所有玩家为生存模式（允许挖矿）
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
         
         // 给玩家初始物品（木镐和牛排）
         giveInitialItems();

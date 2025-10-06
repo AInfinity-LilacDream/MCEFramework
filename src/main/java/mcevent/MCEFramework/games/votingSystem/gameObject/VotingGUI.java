@@ -23,7 +23,7 @@ public class VotingGUI {
     
     // GUI布局配置
     private static final int GUI_SIZE = 27; // 3行
-    private static final int[] GAME_SLOTS = {1, 2, 3, 4, 5, 6, 7, 10, 11, 12}; // 游戏ID 0-9 对应的槽位，不包括投票系统
+    private static final int[] GAME_SLOTS = {1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13}; // 游戏ID 0-10 对应的槽位，不包括投票系统
     private static final int SKIP_INTRO_SLOT = 16; // 跳过Intro选项的槽位
     
     // 游戏对应的物品（按照Constants中的游戏ID顺序）
@@ -37,17 +37,18 @@ public class VotingGUI {
         Material.IRON_PICKAXE,       // ID 6: 惊天矿工团 - 铁镐
         Material.CROSSBOW,           // ID 7: 暗矢狂潮 - 弩
         Material.TNT,                // ID 8: 丢锅大战 - TNT
-        Material.SNOWBALL            // ID 9: 冰雪掘战 - 雪球
+        Material.SNOWBALL,           // ID 9: 冰雪掘战 - 雪球
+        Material.COOKED_BEEF         // ID 10: 饥饿游戏 - 牛排
     };
     
     // 游戏名称（按照Constants中的游戏ID顺序）
     private static final String[] GAME_NAMES = {
-        "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战"
+        "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏"
     };
     
     // 游戏描述
     private static final String[] GAME_DESCRIPTIONS = {
-        "跑酷追逐游戏", "彩色平台生存", "音乐节奏躲避", "沙子下落生存", "占点竞技", "足球竞技", "挖掘生存大逃杀", "弩箭战斗竞技", "TNT传递生存", "雪球战斗竞技"
+        "跑酷追逐游戏", "彩色平台生存", "音乐节奏躲避", "沙子下落生存", "占点竞技", "足球竞技", "挖掘生存大逃杀", "弩箭战斗竞技", "TNT传递生存", "雪球战斗竞技", "生存大逃杀"
     };
 
     /**

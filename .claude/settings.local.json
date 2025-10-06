@@ -6,7 +6,10 @@
       "Read(/E:\\git_repository\\MCEFramework\\src\\main\\java\\mcevent\\MCEFramework\\games\\crazyMiner/**)",
       "Read(/E:\\git_repository\\MCEFramework\\src\\main\\java\\mcevent\\MCEFramework\\games\\crazyMiner/**)",
       "Read(/E:\\git_repository\\MCEFramework\\src\\main\\java\\mcevent\\MCEFramework\\games\\crazyMiner/**)",
-      "Read(/E:\\git_repository\\MCEFramework\\src\\main\\resources\\MCEConfig/**)"
+      "Read(/E:\\git_repository\\MCEFramework\\src\\main\\resources\\MCEConfig/**)",
+      "Read(//d/QQDownloads/Normal/**)",
+      "Bash(mkdir -p \"E:\\git_repository\\MCEFramework\\src\\main\\resources\\MCEConfig\\survival_game_loot_table\\lootPool\")",
+      "Bash(mkdir -p \"E:\\git_repository\\MCEFramework\\src\\main\\resources\\MCEConfig\\survival_game_loot_table\\lootData\")"
     ],
     "deny": [],
     "ask": []

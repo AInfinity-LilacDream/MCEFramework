@@ -37,8 +37,8 @@ public class BlockBreakHandler implements Listener {
         
         Player player = event.getPlayer();
         
-        // Only handle blocks broken by adventure players with Active tag
-        if (player.getGameMode() != GameMode.ADVENTURE || 
+        // Only handle blocks broken by adventure or survival players with Active tag
+        if ((player.getGameMode() != GameMode.ADVENTURE && player.getGameMode() != GameMode.SURVIVAL) || 
             !player.getScoreboardTags().contains("Active")) {
             return;
         }

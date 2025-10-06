@@ -264,6 +264,13 @@ public class Spleef extends MCEGame {
         
         // 显示最终游戏结果
         showFinalGameResults();
+        
+        // onEnd结束后立即清理展示板和资源，然后启动投票系统
+        setDelayedTask(getEndDuration(), () -> {
+            MCEPlayerUtils.globalClearFastBoard();
+            this.stop(); // 停止所有游戏资源
+            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+        });
     }
 
     @Override

@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.Material;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -12,12 +11,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
-import static org.bukkit.Bukkit.getLogger;
 
 /*
 MCEConfigParser: 读取游戏配置文件的基类
  */
-@Getter @Setter
+@Getter
+@Setter
 public class MCEConfigParser {
     protected Path dataFolderPath = plugin.getDataPath();
     protected Path configPath;
@@ -38,11 +37,18 @@ public class MCEConfigParser {
             Files.createDirectories(configPath.getParent());
 
             if (!Files.exists(configPath)) {
-                try (InputStream defaultConfig = plugin.getResource(configFileName)) {
-                    if (defaultConfig != null)
-                        Files.copy(defaultConfig, configPath);
-                    else
-                        Files.createFile(configPath);
+                InputStream defaultConfig = plugin.getResource(configFileName);
+                if (defaultConfig == null) {
+                    // 兼容资源位于 MCEConfig/ 目录的情况
+                    String altPath = (configFileName.startsWith("MCEConfig/") ? configFileName
+                            : ("MCEConfig/" + configFileName));
+                    defaultConfig = plugin.getResource(altPath);
+                }
+                if (defaultConfig != null) {
+                    Files.copy(defaultConfig, configPath);
+                    defaultConfig.close();
+                } else {
+                    Files.createFile(configPath);
                 }
             }
         } catch (IOException e) {
@@ -97,7 +103,7 @@ public class MCEConfigParser {
                         Component component = MiniMessage.miniMessage().deserialize(currentBlock.toString());
                         introLines.add(component);
                     } catch (Exception e) {
-                         plugin.getLogger().severe("Error parsing MiniMessage in Intro block: " + e.getMessage());
+                        plugin.getLogger().severe("Error parsing MiniMessage in Intro block: " + e.getMessage());
                     }
                     // 重置状态
                     inQuote = false;
@@ -114,13 +120,13 @@ public class MCEConfigParser {
 
         // 循环结束后，检查是否还有未关闭的引号块（配置文件末尾未正确关闭）
         if (inQuote) {
-             plugin.getLogger().warning("Unclosed quote block at the end of file.");
+            plugin.getLogger().warning("Unclosed quote block at the end of file.");
             // 尝试处理这个未关闭的块
             try {
                 Component component = MiniMessage.miniMessage().deserialize(currentBlock.toString());
                 introLines.add(component);
             } catch (Exception e) {
-                 plugin.getLogger().severe("Error parsing incomplete Intro block: " + e.getMessage());
+                plugin.getLogger().severe("Error parsing incomplete Intro block: " + e.getMessage());
             }
         }
 
@@ -128,5 +134,6 @@ public class MCEConfigParser {
     }
 
     // 接口
-    protected void parse() {}
+    protected void parse() {
+    }
 }
