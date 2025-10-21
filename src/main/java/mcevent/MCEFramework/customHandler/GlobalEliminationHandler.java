@@ -61,7 +61,9 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
             return;
         MCEGame current = MCEMainController.getCurrentRunningGame();
 
-        // 设置旁观
+        // 统一标记与旁观
+        victim.addScoreboardTag("dead");
+        victim.removeScoreboardTag("Active");
         victim.setGameMode(GameMode.SPECTATOR);
 
         // 玩家淘汰提示与音效
@@ -94,7 +96,9 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
         if (vteam != null) {
             boolean anyAlive = false;
             for (Player p : Bukkit.getOnlinePlayers()) {
-                if (MCETeamUtils.getTeam(p) == vteam && p.getGameMode() != GameMode.SPECTATOR) {
+                Team pt = MCETeamUtils.getTeam(p);
+                if (pt != null && vteam != null && java.util.Objects.equals(pt.getName(), vteam.getName())
+                        && p.getGameMode() != GameMode.SPECTATOR) {
                     anyAlive = true;
                     break;
                 }

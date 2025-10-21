@@ -47,9 +47,11 @@ public class ParkourTag extends MCEGame {
     ParkourTagConfigParser parkourTagConfigParser = new ParkourTagConfigParser();
 
     public ParkourTag(String title, int id, String mapName, boolean isMultiGame, String configFileName,
-                      int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration, int cycleStartDuration, int cycleEndDuration, int endDuration) {
+            int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
+            int cycleStartDuration, int cycleEndDuration, int endDuration) {
         super(title, id, mapName, isMultiGame, configFileName,
-                launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration, cycleEndDuration, endDuration);
+                launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration,
+                cycleEndDuration, endDuration);
         MCETimerUtils.setFramedTask(opponentTeamGlowingHandler::toggleGlowing);
     }
 
@@ -63,11 +65,11 @@ public class ParkourTag extends MCEGame {
                 survivePlayerTot.set(teamIndex, Math.max(0, survivePlayerTot.get(teamIndex) - 1));
             }
         }
-        
+
         // 检查游戏结束条件
         checkGameEndCondition();
     }
-    
+
     @Override
     protected void checkGameEndCondition() {
         // 检查是否有队伍的跑者全部出局
@@ -77,7 +79,7 @@ public class ParkourTag extends MCEGame {
                 activeTeamCount++;
             }
         }
-        
+
         if (activeTeamCount <= 1) {
             // 只剩一队或没队了，游戏应该结束
             // 让时间线自然过渡，不主动干预
@@ -88,23 +90,25 @@ public class ParkourTag extends MCEGame {
     public void onLaunch() {
         // 先关闭事件监听器
         playerCaughtHandler.suspend();
+        MCEPlayerUtils.globalClearPotionEffects();
         setIntroTextList(parkourTagConfigParser.openAndParse(getConfigFileName()));
         MCETeleporter.globalSwapWorld(this.getWorldName());
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
         MCEPlayerUtils.globalHideNameTag();
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
         World world = Bukkit.getWorld(this.getWorldName());
-        if (world != null) world.setGameRule(GameRule.FALL_DAMAGE, false);
-        
+        if (world != null)
+            world.setGameRule(GameRule.FALL_DAMAGE, false);
+
         // 设置玩家血量为10颗心（20.0血量）
         for (Player player : Bukkit.getOnlinePlayers()) {
             Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(20.0);
             player.setHealth(20.0);
         }
-        
+
         grantGlobalPotionEffect(saturation);
         this.setActiveTeams(MCETeamUtils.getActiveTeams());
 
@@ -123,7 +127,7 @@ public class ParkourTag extends MCEGame {
         MCEPlayerUtils.clearGlobalTags();
         MCEPlayerUtils.globalGrantTag("Active"); // 重新添加Active标签
         MCEPlayerUtils.globalGrantTag("runner");
-        MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        MCEPlayerUtils.globalSetGameMode(GameMode.SURVIVAL);
 
         setActiveTeams(MCETeamUtils.rotateTeam(this.getActiveTeams())); // 更新本回合队伍匹配列表
         sendCurrentRoundMatchTitle();
@@ -168,8 +172,8 @@ public class ParkourTag extends MCEGame {
     public void onEnd() {
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
-        MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
-        
+        // 不在结束阶段修改玩家游戏模式
+
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
         setDelayedTask(getEndDuration(), () -> {
             MCEPlayerUtils.globalClearFastBoard();

@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.discoFever.customHandler.ActionBarMessageHandler;
-import mcevent.MCEFramework.games.discoFever.customHandler.PlayerFallHandler;
 import mcevent.MCEFramework.games.discoFever.gameObject.DiscoFeverGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.*;
@@ -28,10 +27,10 @@ import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
 /*
 DiscoFever: disco fever的完整实现
  */
-@Getter @Setter
+@Getter
+@Setter
 public class DiscoFever extends MCEGame {
 
-    private PlayerFallHandler playerFallHandler = new PlayerFallHandler();
     private ActionBarMessageHandler actionBarMessageHandler = new ActionBarMessageHandler();
     private DiscoFeverConfigParser discoFeverConfigParser = new DiscoFeverConfigParser();
     private List<BukkitRunnable> bossBarTasks = new ArrayList<>();
@@ -45,32 +44,32 @@ public class DiscoFever extends MCEGame {
     private BossBar bossBar = Bukkit.createBossBar(
             "平台时间",
             BarColor.GREEN,
-            BarStyle.SOLID
-    );
+            BarStyle.SOLID);
 
     public DiscoFever(String title, int id, String mapName, int round, boolean isMultiGame, String configFileName,
-                      int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration, int cycleStartDuration, int cycleEndDuration, int endDuration) {
+            int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
+            int cycleStartDuration, int cycleEndDuration, int endDuration) {
         super(title, id, mapName, round, isMultiGame, configFileName,
-                launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration, cycleEndDuration, endDuration);
+                launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration,
+                cycleEndDuration, endDuration);
         MCETimerUtils.setFramedTask(() -> actionBarMessageHandler.showMessage());
     }
 
-
     @Override
     public void onLaunch() {
+        MCEPlayerUtils.globalClearPotionEffects();
         currentPlatformLocation = getDiscoFeverPlatformLocation(this.getWorldName());
         resetPlatform(this.getWorldName());
         loadConfig();
         World world = Bukkit.getWorld(this.getWorldName());
-        if (world != null) world.setGameRule(GameRule.FALL_DAMAGE, false);
+        if (world != null)
+            world.setGameRule(GameRule.FALL_DAMAGE, false);
         setActiveTeams(MCETeamUtils.getActiveTeams());
-        playerFallHandler.start();
-        playerFallHandler.setInGame(false);
         MCETeleporter.globalSwapWorld(this.getWorldName());
         currentState = 0;
         setActiveTeams(MCETeamUtils.getActiveTeams());
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
@@ -94,7 +93,6 @@ public class DiscoFever extends MCEGame {
         MCEPlayerUtils.globalPlaySound("minecraft:disco_fever");
 
         currentPlatformLocation = getDiscoFeverPlatformLocation(this.getWorldName());
-        playerFallHandler.setInGame(true);
         actionBarMessageHandler.start();
 
         double time = 0;
@@ -122,8 +120,7 @@ public class DiscoFever extends MCEGame {
                     updateCurrentPlatformLocation();
                 }));
                 time += 2;
-            }
-            else {
+            } else {
                 bossBarTasks.add(MCETimerUtils.setDelayedTask(time, () -> this.getTimeline().nextState()));
             }
         }
@@ -132,8 +129,8 @@ public class DiscoFever extends MCEGame {
     @Override
     public void onEnd() {
         sendWinningMessage();
-        MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
-        
+        // 不在结束阶段修改玩家游戏模式
+
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
         setDelayedTask(getEndDuration(), () -> {
             MCEPlayerUtils.globalClearFastBoard();
@@ -157,7 +154,6 @@ public class DiscoFever extends MCEGame {
         bossBar.removeAll();
         clearBossBarTask();
         actionBarMessageHandler.suspend();
-        playerFallHandler.suspend();
     }
 
     public void clearBossBarTask() {

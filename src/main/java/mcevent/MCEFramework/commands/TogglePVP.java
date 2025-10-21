@@ -23,8 +23,7 @@ public class TogglePVP extends BaseCommand {
         if (globalPVPHandler.isSuspended()) {
             MCEWorldUtils.disablePVP();
             MCEMessenger.sendGlobalInfo("全局PVP已关闭！");
-        }
-        else {
+        } else {
             MCEWorldUtils.enablePVP();
             MCEMessenger.sendGlobalInfo("全局PVP已开启！");
         }

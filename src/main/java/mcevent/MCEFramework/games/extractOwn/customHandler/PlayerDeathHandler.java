@@ -51,7 +51,7 @@ public class PlayerDeathHandler extends MCEResumableEventHandler implements List
         }
 
         // 检查玩家是否在游戏中
-        if (victim.getGameMode() != GameMode.ADVENTURE) {
+        if (victim.getGameMode() != GameMode.SURVIVAL) {
             return;
         }
 
@@ -65,7 +65,7 @@ public class PlayerDeathHandler extends MCEResumableEventHandler implements List
         }
 
         // 如果没有攻击者或攻击者不在游戏中，跳过
-        if (attacker == null || attacker.getGameMode() != GameMode.ADVENTURE) {
+        if (attacker == null || attacker.getGameMode() != GameMode.SURVIVAL) {
             return;
         }
 
@@ -96,7 +96,7 @@ public class PlayerDeathHandler extends MCEResumableEventHandler implements List
         }
 
         // 检查玩家是否在游戏中
-        if (victim.getGameMode() != GameMode.ADVENTURE) {
+        if (victim.getGameMode() != GameMode.SURVIVAL) {
             return;
         }
 

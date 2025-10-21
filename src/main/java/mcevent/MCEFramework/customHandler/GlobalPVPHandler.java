@@ -2,6 +2,8 @@ package mcevent.MCEFramework.customHandler;
 
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
+
+import mcevent.MCEFramework.tools.MCEMessenger;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -32,16 +34,13 @@ public class GlobalPVPHandler extends MCEResumableEventHandler implements Listen
             if (projectile.getShooter() instanceof Player) {
                 // 检查是否是Spleef游戏中的雪球伤害，如果是则不干扰
                 if (event.getEntity().hasMetadata("spleef_snowball_damage")) {
-                    plugin.getLogger().info("调试 - GlobalPVPHandler检测到Spleef雪球伤害，不干扰");
                     return;
                 }
                 isPlayerVsPlayer = true;
-                plugin.getLogger().info("调试 - GlobalPVPHandler检测到投射物攻击，PVP状态: suspended=" + isSuspended());
             }
         }
         
         if (isPlayerVsPlayer) {
-            plugin.getLogger().info("调试 - GlobalPVPHandler取消PVP攻击");
             event.setCancelled(true);
         }
     }

@@ -98,7 +98,7 @@ public class SandFallHandler implements Listener {
     private void spawnSandForAllPlayers() {
         int activePlayerCount = 0;
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.ADVENTURE && player.getScoreboardTags().contains("Active")) {
+            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Active")) {
                 activePlayerCount++;
                 spawnSandAbovePlayer(player);
             }

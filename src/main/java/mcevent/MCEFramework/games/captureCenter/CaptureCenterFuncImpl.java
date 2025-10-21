@@ -207,7 +207,7 @@ public class CaptureCenterFuncImpl {
     public static void giveKnockbackStick(int knockbackLevel) {
         // 清除所有活跃玩家的击退棒
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.ADVENTURE && player.getScoreboardTags().contains("Active")) {
+            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Active")) {
                 player.getInventory().clear();
             }
         }
@@ -227,7 +227,7 @@ public class CaptureCenterFuncImpl {
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.ADVENTURE && player.getScoreboardTags().contains("Active")) {
+            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Active")) {
                 player.getInventory().addItem(knockbackStick);
             }
         }
@@ -298,7 +298,7 @@ public class CaptureCenterFuncImpl {
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() != GameMode.ADVENTURE)
+            if (player.getGameMode() != GameMode.SURVIVAL)
                 continue;
 
             Location loc = player.getLocation();
@@ -376,7 +376,7 @@ public class CaptureCenterFuncImpl {
      * 计算玩家当前的加分速度
      */
     private static int calculatePlayerScoringSpeed(Player player) {
-        if (player.getGameMode() != GameMode.ADVENTURE)
+        if (player.getGameMode() != GameMode.SURVIVAL)
             return 0;
 
         Location loc = player.getLocation();
@@ -529,7 +529,7 @@ public class CaptureCenterFuncImpl {
                             // 击退等级耗尽，清除所有击退棒
                             currentKnockbackLevel = 0;
                             for (Player player : Bukkit.getOnlinePlayers()) {
-                                if (player.getGameMode() == GameMode.ADVENTURE) {
+                                if (player.getGameMode() == GameMode.SURVIVAL) {
                                     player.getInventory().clear();
                                 }
                             }
@@ -587,7 +587,7 @@ public class CaptureCenterFuncImpl {
         // 首先发送最后存活玩家信息
         List<Player> survivingPlayers = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.ADVENTURE) {
+            if (player.getGameMode() == GameMode.SURVIVAL) {
                 survivingPlayers.add(player);
             }
         }
@@ -651,7 +651,7 @@ public class CaptureCenterFuncImpl {
         int alivePlayers = 0;
         java.util.Set<String> aliveTeamNames = new java.util.HashSet<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
-            if (p.getGameMode() == GameMode.ADVENTURE) {
+            if (p.getGameMode() == GameMode.SURVIVAL) {
                 alivePlayers++;
                 Team pt = MCETeamUtils.getTeam(p);
                 if (pt != null)

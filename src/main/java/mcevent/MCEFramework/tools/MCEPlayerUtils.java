@@ -44,7 +44,7 @@ public class MCEPlayerUtils {
             player.setGameMode(gamemode);
         }
     }
-    
+
     public static void globalSetGameModeDelayed(GameMode gamemode, long delayTicks) {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -52,7 +52,7 @@ public class MCEPlayerUtils {
             }
         }, delayTicks);
     }
-    
+
     public static void globalClearFastBoard() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             // 创建一个空的 FastBoard 来清除现有的计分板
@@ -102,8 +102,7 @@ public class MCEPlayerUtils {
                     music,
                     SoundCategory.AMBIENT,
                     1.0f,
-                    1.0f
-            );
+                    1.0f);
         }
     }
 
@@ -118,10 +117,16 @@ public class MCEPlayerUtils {
             player.stopSound(SoundCategory.AMBIENT);
         }
     }
-    
+
     public static void globalClearInventory() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.getInventory().clear();
+        }
+    }
+
+    public static void globalClearPotionEffects() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
         }
     }
 }

@@ -134,6 +134,7 @@ public class Spleef extends MCEGame {
     @Override
     public void onLaunch() {
         loadConfig();
+        MCEPlayerUtils.globalClearPotionEffects();
 
         World world = Bukkit.getWorld(this.getWorldName());
         if (world != null) {
@@ -146,7 +147,7 @@ public class Spleef extends MCEGame {
         MCETeleporter.globalSwapWorld(this.getWorldName());
         MCEWorldUtils.enablePVP();
         MCETeamUtils.disableFriendlyFire();
-        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
         MCEPlayerUtils.globalHideNameTag();
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
@@ -203,8 +204,8 @@ public class Spleef extends MCEGame {
             plugin.getLogger().info("Spleef: 已将所有玩家传送到出生点: " + spawnLocation);
         }
 
-        // 将玩家游戏模式设置为冒险模式（准备阶段）
-        MCEPlayerUtils.globalSetGameMode(GameMode.ADVENTURE);
+        // 将玩家游戏模式设置为生存模式（准备阶段）
+        MCEPlayerUtils.globalSetGameMode(GameMode.SURVIVAL);
     }
 
     @Override
@@ -217,8 +218,7 @@ public class Spleef extends MCEGame {
         // 给所有玩家发放效率5金铲子
         giveGoldenShovels();
 
-        // 将玩家游戏模式改为生存模式
-        MCEPlayerUtils.globalSetGameMode(GameMode.SURVIVAL);
+        // 游戏模式已在回合准备阶段设为生存模式，无需在此重复设置
 
         // 启动所有事件处理器
         playerFallHandler.start();
@@ -242,7 +242,6 @@ public class Spleef extends MCEGame {
         craftingDisableHandler.suspend();
 
         MCEPlayerUtils.globalClearInventory();
-        MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
 
         // 重置地图（为下一回合准备）
         copyMapRegion();
@@ -264,7 +263,7 @@ public class Spleef extends MCEGame {
         snowballThrowHandler.suspend();
         craftingDisableHandler.suspend();
 
-        // 显示最终游戏结果
+        // 显示最终游戏结果（第三回合不显示淘汰顺序）
         showFinalGameResults();
 
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
@@ -354,7 +353,7 @@ public class Spleef extends MCEGame {
         Team winningTeam = findWinningTeam();
 
         if (winningTeam != null) {
-            String teamName = winningTeam.getDisplayName();
+            String teamName = MCETeamUtils.getTeamColoredName(winningTeam);
             MCEMessenger.sendGlobalTitle("<gold><bold>游戏结束！</bold></gold>", "<yellow>获胜队伍: " + teamName + "</yellow>");
             MCEMessenger.sendGlobalInfo("恭喜 " + teamName + " 队获得胜利！");
         } else {
@@ -362,8 +361,10 @@ public class Spleef extends MCEGame {
             MCEMessenger.sendGlobalInfo("所有队伍都被淘汰了！");
         }
 
-        // 显示死亡顺序
-        showDeathOrder();
+        // 显示死亡顺序（非第三回合）
+        if (getCurrentRound() < getRound()) {
+            showDeathOrder();
+        }
     }
 
     /**

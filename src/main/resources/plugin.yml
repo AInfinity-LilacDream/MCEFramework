@@ -2,7 +2,7 @@ name: MCEFramework
 version: '1.0-SNAPSHOT'
 main: mcevent.MCEFramework.MCEMainController
 api-version: '1.21'
-depend: [Multiverse-Core, ProtocolLib]
+depend: [ProtocolLib]
 
 permissions:
     shuffleteam.use:

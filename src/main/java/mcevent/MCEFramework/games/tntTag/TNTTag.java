@@ -73,6 +73,7 @@ public class TNTTag extends MCEGame {
     public void onLaunch() {
         setIntroTextList(tntTagConfigParser.openAndParse(getConfigFileName()));
         MCETeleporter.globalSwapWorld(this.getWorldName());
+        MCEPlayerUtils.globalClearPotionEffects();
         MCEWorldUtils.enablePVP(); // 启用PVP
 
         // 确保队伍存在并将所有玩家分到翠队
@@ -83,7 +84,7 @@ public class TNTTag extends MCEGame {
             }
         }
 
-        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
         MCEPlayerUtils.globalHideNameTag();
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
@@ -142,7 +143,7 @@ public class TNTTag extends MCEGame {
     @Override
     public void onEnd() {
         TNTTagFuncImpl.sendFinalResults();
-        MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
+        // 不在结束阶段修改玩家游戏模式
 
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
         setDelayedTask(getEndDuration(), () -> {

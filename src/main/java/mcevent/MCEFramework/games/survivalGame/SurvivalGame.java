@@ -5,7 +5,6 @@ import lombok.Setter;
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.survivalGame.customHandler.MovementRestrictionHandler;
 import mcevent.MCEFramework.games.survivalGame.customHandler.PlayerDeathHandler;
-import mcevent.MCEFramework.games.survivalGame.customHandler.PvPControlHandler;
 import mcevent.MCEFramework.games.survivalGame.gameObject.SurvivalGameGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.*;
@@ -30,7 +29,6 @@ public class SurvivalGame extends MCEGame {
 
     private SurvivalGameConfigParser survivalGameConfigParser = new SurvivalGameConfigParser();
     private MovementRestrictionHandler movementRestrictionHandler = new MovementRestrictionHandler();
-    private PvPControlHandler pvPControlHandler = new PvPControlHandler();
     private PlayerDeathHandler playerDeathHandler = new PlayerDeathHandler();
 
     private List<BukkitRunnable> gameTasks = new ArrayList<>();
@@ -61,6 +59,7 @@ public class SurvivalGame extends MCEGame {
 
         // 加载配置
         loadConfig();
+        MCEPlayerUtils.globalClearPotionEffects();
 
         World world = Bukkit.getWorld(this.getWorldName());
         if (world != null) {
@@ -72,7 +71,7 @@ public class SurvivalGame extends MCEGame {
         setActiveTeams(MCETeamUtils.getActiveTeams());
         MCETeleporter.globalSwapWorld(this.getWorldName());
         MCEWorldUtils.disablePVP();
-        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
@@ -84,9 +83,7 @@ public class SurvivalGame extends MCEGame {
 
         MCEPlayerUtils.clearGlobalTags();
 
-        // 启动处理器
-        pvPControlHandler.start();
-        // 由全局淘汰监听器处理死亡；本地 handler 可保持挂起或用于仅限SG的扩展
+        // 启动处理器（由全局淘汰监听器处理死亡；PVP 由全局处理器控制）
         playerDeathHandler.suspend();
 
         // 启动时重置世界边界（并应用外扩设置）
@@ -140,8 +137,8 @@ public class SurvivalGame extends MCEGame {
             p.setExp(0);
         }
 
-        // 每回合开始前，将所有玩家设置为冒险模式
-        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.ADVENTURE, 5L);
+        // 每回合开始前，将所有玩家设置为生存模式
+        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
 
         // 在回合准备阶段生成并填充战利品箱
         spawnLootChests();
@@ -176,7 +173,12 @@ public class SurvivalGame extends MCEGame {
         clearKillStats();
         clearEliminationOrder();
 
-        // 不再本地控制 PvP，完全交给全局 /togglepvp 与 /togglefriendlyfire
+        // 45秒后开启PvP（调用全局PVP控制方法）
+        setDelayedTask(45, () -> {
+            pvpEnabled = true;
+            MCEWorldUtils.enablePVP();
+            MCEMessenger.sendGlobalInfo("<red><bold>PvP已开启！</bold></red>");
+        });
 
         // 3分钟后开始第一次缩圈
         setDelayedTask(180, SurvivalGameFuncImpl::startFirstBorderShrink);
@@ -203,6 +205,8 @@ public class SurvivalGame extends MCEGame {
         clearLootChests();
         // 清理死亡箱子
         clearDeathChests();
+        // 回溯玩家放置导致的地形变化
+        mcevent.MCEFramework.tools.MCEBlockRestoreUtils.restoreAllForWorld(getWorldName());
 
         // 回合结束：发送队伍排名
         sendRoundRanking();
@@ -238,10 +242,12 @@ public class SurvivalGame extends MCEGame {
     @Override
     public void onEnd() {
         sendWinningMessage();
-        MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
+        // 不在结束阶段修改玩家游戏模式
 
         // 清理死亡箱子，防止遗留到后续流程
         clearDeathChests();
+        // 恢复所有被玩家放置覆盖的方块
+        mcevent.MCEFramework.tools.MCEBlockRestoreUtils.restoreAllForWorld(getWorldName());
 
         setDelayedTask(getEndDuration(), () -> {
             MCEPlayerUtils.globalClearFastBoard();
@@ -261,7 +267,6 @@ public class SurvivalGame extends MCEGame {
 
         clearGameTasks();
         movementRestrictionHandler.suspend();
-        pvPControlHandler.suspend();
         playerDeathHandler.suspend();
 
         // 停止循环背景音乐

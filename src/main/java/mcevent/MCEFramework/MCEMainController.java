@@ -8,7 +8,7 @@ import mcevent.MCEFramework.customHandler.ChatFormatHandler;
 import mcevent.MCEFramework.customHandler.FriendlyFireHandler;
 import mcevent.MCEFramework.customHandler.GlobalPVPHandler;
 import mcevent.MCEFramework.customHandler.LobbyBounceHandler;
-import mcevent.MCEFramework.customHandler.LobbyHandler;
+import mcevent.MCEFramework.customHandler.LobbyItemHandler;
 import mcevent.MCEFramework.customHandler.PlayerJoinHandler;
 import mcevent.MCEFramework.customHandler.GamePlayerQuitHandler;
 import mcevent.MCEFramework.customHandler.WelcomeMessageHandler;
@@ -72,9 +72,10 @@ public final class MCEMainController extends JavaPlugin {
 
     @Getter
     private static LobbyBounceHandler lobbyBounceHandler;
-
     @Getter
-    private static LobbyHandler lobbyHandler;
+    private static LobbyItemHandler lobbyItemHandler;
+
+    // LobbyHandler 已移除
 
     @Getter
     private static ChatFormatHandler chatFormatHandler;
@@ -147,9 +148,10 @@ public final class MCEMainController extends JavaPlugin {
         playerJoinHandler = new PlayerJoinHandler();
         gamePlayerQuitHandler = new GamePlayerQuitHandler();
         lobbyBounceHandler = new LobbyBounceHandler();
-        lobbyHandler = new LobbyHandler();
+        lobbyItemHandler = new LobbyItemHandler();
         chatFormatHandler = new ChatFormatHandler();
         new mcevent.MCEFramework.customHandler.GlobalEliminationHandler(); // 全局淘汰监听器
+        new mcevent.MCEFramework.customHandler.GlobalBlockInteractionHandler(); // 全局方块交互监听器
         new WelcomeMessageHandler(); // 欢迎标语处理器
         Bukkit.getPluginManager()
                 .registerEvents(new mcevent.MCEFramework.games.survivalGame.customHandler.ChestSelectorHandler(), this); // 箱子标注器
@@ -157,15 +159,15 @@ public final class MCEMainController extends JavaPlugin {
         // 确保 survival_game_loot_table 资源已复制到数据目录
         ensureSurvivalGameLootTable();
 
-        // 延迟给所有在线玩家烈焰棒（确保所有初始化完成）
+        // 为主城玩家发放烈焰棒（保留原有便捷行为，不包含饱和/二段跳）
         Bukkit.getScheduler().runTaskLater(this, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if ("lobby".equals(player.getWorld().getName())) {
-                    lobbyHandler.giveBlazeRod(player);
+                    lobbyItemHandler.giveBlazeRod(player);
                 }
             }
             getLogger().info("已为所有在主城的玩家给予烈焰棒");
-        }, 10L); // 延迟10tick (0.5秒)
+        }, 10L);
 
         // ACF command manager
         PaperCommandManager commandManager = new PaperCommandManager(this);
@@ -286,6 +288,7 @@ public final class MCEMainController extends JavaPlugin {
         stopWelcomeMessage();
 
         MCEGame nextGame = gameList.get(gameID);
+        // 大厅饱和任务与发放物品逻辑已移除
         setCurrentRunningGame(nextGame);
         nextGame.init(intro); // 在开始游戏之前，先初始化游戏的时间线
 

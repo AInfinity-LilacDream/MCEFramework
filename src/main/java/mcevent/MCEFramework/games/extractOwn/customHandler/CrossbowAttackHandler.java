@@ -22,63 +22,66 @@ import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
 CrossbowAttackHandler: 弩箭攻击处理器
 */
 public class CrossbowAttackHandler extends MCEResumableEventHandler implements Listener {
-    
+
     private ExtractOwn extractOwn;
-    
+
     public void register(ExtractOwn game) {
         this.extractOwn = game;
         setSuspended(true); // 默认挂起，游戏开始时启动
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
-    
+
     @Override
     public void start() {
         setSuspended(false);
     }
-    
+
     @Override
     public void suspend() {
         setSuspended(true);
     }
-    
+
     @EventHandler
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        if (isSuspended()) return;
-        
+        if (isSuspended())
+            return;
+
         // 检查是否是箭击中玩家
         if (event.getDamager() instanceof Arrow arrow && event.getEntity() instanceof Player victim) {
             // 检查射箭者是否是玩家
             if (arrow.getShooter() instanceof Player shooter) {
                 Team shooterTeam = MCETeamUtils.getTeam(shooter);
                 Team victimTeam = MCETeamUtils.getTeam(victim);
-                
+
                 // 防止同队误伤
                 if (shooterTeam != null && victimTeam != null && shooterTeam.equals(victimTeam)) {
                     event.setCancelled(true);
                     return;
                 }
-                
+
                 // 设置弩的伤害为2.5颗心 (5.0 HP)
                 event.setDamage(5.0);
             }
         }
     }
-    
+
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        if (isSuspended()) return;
-        
+        if (isSuspended())
+            return;
+
         // 阻止掉落物品和经验
         event.getDrops().clear();
         event.setDroppedExp(0);
-        
+
         // 死亡处理由PlayerDeathHandler负责，这里只处理掉落物
     }
-    
+
     @EventHandler
     public void onArrowHit(ProjectileHitEvent event) {
-        if (isSuspended()) return;
-        
+        if (isSuspended())
+            return;
+
         if (event.getEntity() instanceof Arrow arrow) {
             // 如果击中玩家，立即移除箭
             if (event.getHitEntity() instanceof Player) {
@@ -93,19 +96,20 @@ public class CrossbowAttackHandler extends MCEResumableEventHandler implements L
             }
         }
     }
-    
+
     @EventHandler
     public void onPlayerDropItem(PlayerDropItemEvent event) {
-        if (isSuspended()) return;
-        
+        if (isSuspended())
+            return;
+
         Player player = event.getPlayer();
         Material droppedItem = event.getItemDrop().getItemStack().getType();
-        
+
         // 检查玩家是否在游戏中
-        if (player.getGameMode() != GameMode.ADVENTURE) {
+        if (player.getGameMode() != GameMode.SURVIVAL) {
             return;
         }
-        
+
         // 防止丢弃弩和箭
         if (droppedItem == Material.CROSSBOW || droppedItem == Material.ARROW) {
             event.setCancelled(true);
