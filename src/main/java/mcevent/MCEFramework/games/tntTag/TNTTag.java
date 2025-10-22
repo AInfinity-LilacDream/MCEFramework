@@ -21,6 +21,8 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,10 +78,15 @@ public class TNTTag extends MCEGame {
         MCEPlayerUtils.globalClearPotionEffects();
         MCEWorldUtils.enablePVP(); // 启用PVP
 
-        // 确保队伍存在并将所有玩家分到翠队
+        // 确保队伍存在并将所有玩家分到翠队（先移除其在其他队伍中的成员关系）
         Team cyanTeam = getCyanTeam();
         if (cyanTeam != null) {
+            org.bukkit.scoreboard.Scoreboard sb = Bukkit.getScoreboardManager().getMainScoreboard();
             for (Player player : Bukkit.getOnlinePlayers()) {
+                for (Team t : sb.getTeams()) {
+                    if (t.hasEntry(player.getName()))
+                        t.removeEntry(player.getName());
+                }
                 cyanTeam.addEntry(player.getName());
             }
         }
@@ -203,6 +210,27 @@ public class TNTTag extends MCEGame {
         // 选择TNT携带者
         selectTNTCarriers();
 
+        // 阶段开始：提示携带者并播放音效；若只剩一名携带者则拉回出生点
+        for (Player carrier : tntCarriers) {
+            try {
+                carrier.sendTitle("§c§l你是TNT携带者！", "§e快速将TNT传递给别人", 5, 40, 10);
+            } catch (Throwable ignored) {
+            }
+            try {
+                carrier.playSound(carrier.getLocation(), Sound.ENTITY_TNT_PRIMED, 1.0f, 1.0f);
+            } catch (Throwable ignored) {
+            }
+        }
+        if (tntCarriers.size() == 1) {
+            World w = Bukkit.getWorld(this.getWorldName());
+            if (w != null) {
+                Location spawn = w.getSpawnLocation();
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    p.teleport(spawn);
+                }
+            }
+        }
+
         // 开始30秒倒计时 - 使用MCETimerUtils的标准BossBar显示
         MCETimerUtils.showGlobalDurationOnBossBar(bossBar, 30.0, false);
 
@@ -243,6 +271,11 @@ public class TNTTag extends MCEGame {
             if (currentTeam != null) {
                 currentTeam.removeEntry(player.getName());
             }
+            // 清除上一阶段可能遗留的加速效果
+            try {
+                player.removePotionEffect(PotionEffectType.SPEED);
+            } catch (Throwable ignored) {
+            }
         }
 
         Random random = new Random();
@@ -262,6 +295,11 @@ public class TNTTag extends MCEGame {
 
             // 给予TNT头盔（带绑定诅咒）
             selected.getInventory().setHelmet(createTNTHelmet());
+            // 给予携带者速度I，覆盖30秒（与阶段时长一致）
+            try {
+                selected.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0, false, false));
+            } catch (Throwable ignored) {
+            }
         }
 
         // 其他玩家分到翠队
@@ -309,6 +347,16 @@ public class TNTTag extends MCEGame {
             redTeam.addEntry(to.getName());
         }
 
+        // 更新速度效果：移除原携带者速度，给予新携带者速度I（30秒）
+        try {
+            from.removePotionEffect(PotionEffectType.SPEED);
+        } catch (Throwable ignored) {
+        }
+        try {
+            to.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0, false, false));
+        } catch (Throwable ignored) {
+        }
+
         MCEMessenger.sendGlobalText("<yellow>" + from.getName() + " 将TNT传递给了 " + to.getName() + "！</yellow>");
     }
 
@@ -349,19 +397,27 @@ public class TNTTag extends MCEGame {
 
     // 获取红队
     private Team getRedTeam() {
-        for (TeamWithDetails teamDetails : Constants.teams) {
-            if ("红队".equals(teamDetails.alias())) {
-                return Bukkit.getScoreboardManager().getMainScoreboard().getTeam(teamDetails.teamName());
-            }
-        }
-        return null;
+        return getOrCreateTeamByAlias("红队");
     }
 
     // 获取翠队
     private Team getCyanTeam() {
+        return getOrCreateTeamByAlias("翠队");
+    }
+
+    private Team getOrCreateTeamByAlias(String alias) {
+        org.bukkit.scoreboard.Scoreboard sb = Bukkit.getScoreboardManager().getMainScoreboard();
         for (TeamWithDetails teamDetails : Constants.teams) {
-            if ("翠队".equals(teamDetails.alias())) {
-                return Bukkit.getScoreboardManager().getMainScoreboard().getTeam(teamDetails.teamName());
+            if (alias.equals(teamDetails.alias())) {
+                Team t = sb.getTeam(teamDetails.teamName());
+                if (t == null) {
+                    t = sb.registerNewTeam(teamDetails.teamName());
+                    try {
+                        t.color(teamDetails.teamColor());
+                    } catch (Throwable ignored) {
+                    }
+                }
+                return t;
             }
         }
         return null;

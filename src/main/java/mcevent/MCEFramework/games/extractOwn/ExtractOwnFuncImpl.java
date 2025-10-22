@@ -28,8 +28,8 @@ public class ExtractOwnFuncImpl {
 
     // 游戏配置
     private static final Location MAP_CENTER = new Location(null, 409.5, 28, 127.5);
-    private static final int KILL_SCORE = 50;
-    private static final int SURVIVAL_SCORE = 30;
+    private static final int KILL_SCORE = 30; // 击杀 +30
+    private static final int SURVIVAL_SCORE = 20; // 胜利队每名存活 +20
 
     // 缩圈配置
     private static final int INITIAL_BORDER_SIZE = 250;
@@ -228,7 +228,7 @@ public class ExtractOwnFuncImpl {
                 borderTask.cancel();
             }
 
-            // 找到最后存活的队伍并记录获胜
+            // 再次确认并计算存活分：找到最后存活的队伍并记录获胜
             Team winningTeam = getLastSurvivingTeam(game);
             if (winningTeam != null) {
                 String teamName = winningTeam.getName();
@@ -243,6 +243,8 @@ public class ExtractOwnFuncImpl {
 
                 int totalSurvivalScore = survivingPlayers * SURVIVAL_SCORE;
                 addTeamScore(teamName, totalSurvivalScore);
+                MCEMessenger.sendGlobalInfo("<gold>存活加分：</gold> " + MCETeamUtils.getTeamColoredName(winningTeam)
+                        + " <gray>+" + totalSurvivalScore + "分</gray>");
 
                 // 记录回合获胜
                 game.addRoundWin(teamName);

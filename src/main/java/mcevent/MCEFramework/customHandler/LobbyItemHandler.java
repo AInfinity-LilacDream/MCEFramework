@@ -1,7 +1,8 @@
 package mcevent.MCEFramework.customHandler;
 
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
-import org.bukkit.Bukkit;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,7 +30,16 @@ public class LobbyItemHandler extends MCEResumableEventHandler implements Listen
             return;
         Player player = event.getPlayer();
         if (isInLobby(player)) {
-            giveBlazeRod(player);
+            // 进入主城默认打开PVP与友伤（投票期间除外）
+            try {
+                mcevent.MCEFramework.MCEMainController.getGlobalPVPHandler().suspend();
+            } catch (Throwable ignored) {
+            }
+            try {
+                mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().suspend();
+            } catch (Throwable ignored) {
+            }
+            giveLobbyItems(player);
         }
     }
 
@@ -39,7 +49,16 @@ public class LobbyItemHandler extends MCEResumableEventHandler implements Listen
             return;
         Player player = event.getPlayer();
         if (isInLobby(player)) {
-            giveBlazeRod(player);
+            // 进入主城默认打开PVP与友伤（投票期间除外）
+            try {
+                mcevent.MCEFramework.MCEMainController.getGlobalPVPHandler().suspend();
+            } catch (Throwable ignored) {
+            }
+            try {
+                mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().suspend();
+            } catch (Throwable ignored) {
+            }
+            giveLobbyItems(player);
         }
     }
 
@@ -47,21 +66,43 @@ public class LobbyItemHandler extends MCEResumableEventHandler implements Listen
         return "lobby".equals(player.getWorld().getName());
     }
 
-    public void giveBlazeRod(Player player) {
-        // 先清空物品栏后发放烈焰棒（保持原先行为）
+    public void giveLobbyItems(Player player) {
+        // 不在投票阶段时发放；投票阶段由 VotingSystem 发卡
+        if (mcevent.MCEFramework.MCEMainController.isRunningGame())
+            return;
+
+        // 先清空物品栏后发放主城物品（保持原先行为）
         player.getInventory().clear();
 
+        // 风弹发射器（烈焰棒）
         ItemStack blazeRod = new ItemStack(Material.BLAZE_ROD);
         ItemMeta meta = blazeRod.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName("§c§l风弹发射器");
-            meta.setLore(java.util.Arrays.asList(
-                    "§e右键发射风弹",
-                    "§7击中玩家给予发光效果",
-                    "§c冷却时间: 3秒"));
+            Component name = MiniMessage.miniMessage().deserialize("<red><bold>风弹发射器</bold></red>");
+            java.util.List<Component> lore = java.util.Arrays.asList(
+                    MiniMessage.miniMessage().deserialize("<yellow>右键发射风弹</yellow>"),
+                    MiniMessage.miniMessage().deserialize("<gray>击中玩家给予发光效果</gray>"),
+                    MiniMessage.miniMessage().deserialize("<red>冷却时间: 3秒</red>"));
+            meta.displayName(name);
+            meta.lore(lore);
             blazeRod.setItemMeta(meta);
         }
         player.getInventory().setItem(0, blazeRod);
+
+        // 追溯指南针（前往 Duel）
+        ItemStack compass = new ItemStack(Material.COMPASS);
+        ItemMeta cmeta = compass.getItemMeta();
+        if (cmeta != null) {
+            Component name = MiniMessage.miniMessage().deserialize("<green><bold>前往Duel</bold></green>");
+            java.util.List<Component> lore = java.util.Arrays.asList(
+                    MiniMessage.miniMessage().deserialize("<yellow>右键传送到 <aqua>duel</aqua> 世界</yellow>"),
+                    MiniMessage.miniMessage().deserialize("<gray>仅在主城可用</gray>"));
+            cmeta.displayName(name);
+            cmeta.lore(lore);
+            compass.setItemMeta(cmeta);
+        }
+        player.getInventory().setItem(8, compass);
+
         player.updateInventory();
     }
 }

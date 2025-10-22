@@ -96,6 +96,15 @@ public class VotingSystem extends MCEGame {
         // 创建并启动BossBar倒计时
         createVotingBossBar();
 
+        // 回到主城投票时，发放主城物品（风弹发射器 + 前往Duel指南针）
+        for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+            mcevent.MCEFramework.customHandler.LobbyItemHandler lih = mcevent.MCEFramework.MCEMainController
+                    .getLobbyItemHandler();
+            if (lih != null && "lobby".equals(p.getWorld().getName())) {
+                lih.giveLobbyItems(p);
+            }
+        }
+
         MCEMessenger.sendGlobalTitle("<gold><bold>投票开始！</bold></gold>",
                 "<yellow>右键投票卡选择下一个游戏</yellow>");
     }

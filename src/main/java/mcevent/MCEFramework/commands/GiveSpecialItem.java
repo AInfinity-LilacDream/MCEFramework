@@ -33,4 +33,23 @@ public class GiveSpecialItem extends BaseCommand {
 
         player.sendMessage(Component.text("已获得箱子标注器！").color(NamedTextColor.GREEN));
     }
+
+    @Subcommand("wind_charge_launcher")
+    public void onWindChargeLauncher(Player player) {
+        ItemStack blazeRod = new ItemStack(Material.BLAZE_ROD);
+        ItemMeta meta = blazeRod.getItemMeta();
+        if (meta != null) {
+            net.kyori.adventure.text.minimessage.MiniMessage mm = net.kyori.adventure.text.minimessage.MiniMessage
+                    .miniMessage();
+            java.util.List<net.kyori.adventure.text.Component> lore = java.util.Arrays.asList(
+                    mm.deserialize("<yellow>右键发射风弹</yellow>"),
+                    mm.deserialize("<gray>击中玩家给予发光效果</gray>"),
+                    mm.deserialize("<red>冷却时间: 3秒</red>"));
+            meta.displayName(mm.deserialize("<red><bold>风弹发射器</bold></red>"));
+            meta.lore(lore);
+            blazeRod.setItemMeta(meta);
+        }
+        player.getInventory().addItem(blazeRod);
+        player.sendMessage(Component.text("已获得风弹发射器！").color(NamedTextColor.GREEN));
+    }
 }

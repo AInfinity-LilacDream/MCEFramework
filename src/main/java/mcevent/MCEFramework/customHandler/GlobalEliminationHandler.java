@@ -6,7 +6,6 @@ import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
 import mcevent.MCEFramework.games.extractOwn.ExtractOwn;
 import mcevent.MCEFramework.games.sandRun.SandRun;
-import mcevent.MCEFramework.games.spleef.Spleef;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl;
 import mcevent.MCEFramework.games.survivalGame.gameObject.SurvivalGameGameBoard;
@@ -23,6 +22,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -44,12 +45,54 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
         if (!MCEMainController.isRunningGame())
             return;
 
-        Player victim = event.getEntity();
-        // SG 特化：生成死亡箱并清空掉落
         MCEGame current = MCEMainController.getCurrentRunningGame();
+        // DiscoFever 和 ParkourTag 使用自定义淘汰/抓捕逻辑，不走全局死亡淘汰
+        if (current instanceof DiscoFever || current instanceof mcevent.MCEFramework.games.parkourTag.ParkourTag)
+            return;
+
+        Player victim = event.getEntity();
+        // SG 特化：用事件drops创建死亡箱并清空掉落，避免玩家背包被系统先清空
         if (current instanceof SurvivalGame) {
-            SurvivalGameFuncImpl.createDeathChest(victim, victim.getLocation());
+            // 调试：打印玩家背包与事件掉落
+            try {
+                PlayerInventory inv = victim.getInventory();
+                plugin.getLogger().info("[SG][DeathDebug] Player=" + victim.getName());
+                ItemStack[] storage = inv.getStorageContents();
+                int idx = 0;
+                for (ItemStack it : storage) {
+                    if (it != null && it.getType() != org.bukkit.Material.AIR) {
+                        plugin.getLogger()
+                                .info("[SG][DeathDebug] storage[" + idx + "]=" + it.getType() + " x" + it.getAmount());
+                    }
+                    idx++;
+                }
+                ItemStack[] armor = inv.getArmorContents();
+                int aidx = 0;
+                for (ItemStack it : armor) {
+                    if (it != null && it.getType() != org.bukkit.Material.AIR) {
+                        plugin.getLogger()
+                                .info("[SG][DeathDebug] armor[" + aidx + "]=" + it.getType() + " x" + it.getAmount());
+                    }
+                    aidx++;
+                }
+                ItemStack off = inv.getItemInOffHand();
+                if (off != null && off.getType() != org.bukkit.Material.AIR) {
+                    plugin.getLogger().info("[SG][DeathDebug] offhand=" + off.getType() + " x" + off.getAmount());
+                }
+            } catch (Throwable ignored) {
+            }
+
+            java.util.List<ItemStack> snapshot = new java.util.ArrayList<>(event.getDrops());
             event.getDrops().clear();
+            org.bukkit.Location chestLoc = victim.getLocation().clone();
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                try {
+                    plugin.getLogger().info("[SG][DeathDebug] placing chest with drops=" + snapshot.size());
+                    SurvivalGameFuncImpl.createDeathChest(victim, chestLoc, snapshot);
+                } catch (Throwable t) {
+                    plugin.getLogger().warning("[SG][DeathDebug] createDeathChest failed: " + t.getMessage());
+                }
+            }, 1L);
         }
 
         // 统一处理
@@ -90,25 +133,28 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
                 board.updatePlayerRemainTitle(remaining);
             }
         }
+        // 暗矢狂潮使用自身死亡监听器结算积分与淘汰流程，这里不做任何处理
 
-        // 队伍团灭检测
-        Team vteam = MCETeamUtils.getTeam(victim);
-        if (vteam != null) {
-            boolean anyAlive = false;
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                Team pt = MCETeamUtils.getTeam(p);
-                if (pt != null && vteam != null && java.util.Objects.equals(pt.getName(), vteam.getName())
-                        && p.getGameMode() != GameMode.SPECTATOR) {
-                    anyAlive = true;
-                    break;
+        // 队伍团灭检测（TNTTag 不参与队伍团灭判定）
+        if (!(current instanceof TNTTag)) {
+            Team vteam = MCETeamUtils.getTeam(victim);
+            if (vteam != null) {
+                boolean anyAlive = false;
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    Team pt = MCETeamUtils.getTeam(p);
+                    if (pt != null && vteam != null && java.util.Objects.equals(pt.getName(), vteam.getName())
+                            && p.getGameMode() != GameMode.SPECTATOR) {
+                        anyAlive = true;
+                        break;
+                    }
                 }
-            }
-            if (!anyAlive) {
-                String tname = MCETeamUtils.getTeamColoredName(vteam);
-                MCEMessenger.sendGlobalInfo(tname + " <gray>已被团灭！</gray>");
-                MCEPlayerUtils.globalPlaySound("minecraft:team_eliminated");
-                if (current instanceof SurvivalGame) {
-                    SurvivalGameFuncImpl.registerTeamElimination(vteam);
+                if (!anyAlive) {
+                    String tname = MCETeamUtils.getTeamColoredName(vteam);
+                    MCEMessenger.sendGlobalInfo(tname + " <gray>已被团灭！</gray>");
+                    MCEPlayerUtils.globalPlaySound("minecraft:team_eliminated");
+                    if (current instanceof SurvivalGame) {
+                        SurvivalGameFuncImpl.registerTeamElimination(vteam);
+                    }
                 }
             }
         }
@@ -121,12 +167,11 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
         if (current == null)
             return;
 
-        // 模式一：只剩一队结束
+        // 模式一：只剩一队结束（由各自游戏控制是否在此处推进）
+        // 注意：ExtractOwn 自行处理回合结束与存活分统计，这里不推进
         if (current instanceof CaptureCenter
                 || current instanceof CrazyMiner
-                || current instanceof ExtractOwn
-                || current instanceof Spleef
-                || current instanceof SurvivalGame) {
+                || current instanceof SurvivalGame) { // Spleef 改由自身逻辑推进，保留 cycleEnd 阶段
             if (countAliveTeams() <= 1) {
                 current.getTimeline().nextState();
             }
@@ -134,6 +179,7 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
         }
 
         // 模式二：所有人都死了才结束（无存活玩家）
+        // 注意：DiscoFever 改为自身坠落监听，不使用全局死亡监听淘汰，但仍沿用此处的回合结束评估
         if (current instanceof DiscoFever || current instanceof SandRun) {
             if (countAlivePlayers() == 0) {
                 current.getTimeline().nextState();

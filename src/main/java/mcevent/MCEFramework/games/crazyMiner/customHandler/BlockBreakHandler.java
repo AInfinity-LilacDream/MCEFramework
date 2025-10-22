@@ -5,12 +5,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Inventory;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
 import static mcevent.MCEFramework.miscellaneous.Constants.crazyMiner;
@@ -65,7 +67,12 @@ public class BlockBreakHandler implements Listener {
 
                 // 远古残骸特殊处理
                 if (brokenBlock == Material.ANCIENT_DEBRIS) {
-                    CrazyMinerFuncImpl.handleAncientDebrisBreak(player, event.getBlock().getLocation());
+                    // 额外掉落：2-4块远古残片 + 1个下界合金升级模板
+                    Location loc = event.getBlock().getLocation();
+                    int scraps = 2 + (int) (Math.random() * 3);
+                    event.getBlock().getWorld().dropItemNaturally(loc, new ItemStack(Material.NETHERITE_SCRAP, scraps));
+                    event.getBlock().getWorld().dropItemNaturally(loc,
+                            new ItemStack(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE, 1));
                 }
             } else {
                 // 镐子等级不够，取消掉落
@@ -224,18 +231,34 @@ public class BlockBreakHandler implements Listener {
      * 处理特殊方块
      */
     private boolean handleSpecialBlocks(BlockBreakEvent event, Material blockType, Location blockLocation) {
+        // 树叶：50% 概率掉落羽毛（覆盖所有 *_LEAVES）
+        if (blockType.name().endsWith("_LEAVES")) {
+            event.setDropItems(false);
+            if (Math.random() < 0.50) {
+                event.getBlock().getWorld().dropItemNaturally(blockLocation, new ItemStack(Material.FEATHER, 1));
+            } else if (blockType == Material.OAK_LEAVES && Math.random() < 0.04) {
+                // 橡树叶保留少量苹果掉落作为彩蛋
+                event.getBlock().getWorld().dropItemNaturally(blockLocation, new ItemStack(Material.APPLE, 1));
+            }
+            return true;
+        }
+
+        // 泥土/粗泥土：2% 概率生成奖励箱
+        if (blockType == Material.DIRT || blockType == Material.COARSE_DIRT) {
+            if (Math.random() < 0.02) {
+                // 阻止默认掉落，1tick后在方块原位置生成箱子并填充战利品
+                event.setDropItems(false);
+                Location chestLoc = event.getBlock().getLocation().clone();
+                Bukkit.getScheduler().runTaskLater(plugin, () -> spawnRewardChest(chestLoc), 1L);
+                return true;
+            }
+        }
+
         switch (blockType) {
             case REDSTONE_ORE -> {
                 event.setDropItems(false);
                 if (Math.random() < 0.8) { // 80%概率
                     // 不掉落任何东西
-                }
-                return true;
-            }
-            case OAK_LEAVES -> {
-                event.setDropItems(false);
-                if (Math.random() < 0.04) { // 4%概率
-                    event.getBlock().getWorld().dropItemNaturally(blockLocation, new ItemStack(Material.APPLE, 1));
                 }
                 return true;
             }
@@ -251,6 +274,102 @@ public class BlockBreakHandler implements Listener {
             default -> {
                 return false; // 不是特殊方块
             }
+        }
+    }
+
+    private void spawnRewardChest(Location chestLocation) {
+        try {
+            chestLocation.getBlock().setType(Material.CHEST);
+            org.bukkit.block.BlockState state = chestLocation.getBlock().getState();
+            if (!(state instanceof Chest chest)) {
+                return;
+            }
+            Inventory inv = chest.getBlockInventory();
+
+            // 按 SurvivalGame 的风格：随机 4-6 次抽取战利品条目（来自指定物品池）
+            java.util.Random r = new java.util.Random();
+            int rolls = 4 + r.nextInt(3); // 4-6 次
+            for (int i = 0; i < rolls; i++) {
+                // 先抽随机槽位，优先找空位
+                int size = inv.getSize();
+                int chosenSlot = -1;
+                for (int attempt = 0; attempt < Math.min(size, 10); attempt++) {
+                    int slot = r.nextInt(size);
+                    ItemStack cur = inv.getItem(slot);
+                    if (cur == null || cur.getType() == Material.AIR) {
+                        chosenSlot = slot;
+                        break;
+                    }
+                }
+                if (chosenSlot < 0) {
+                    chosenSlot = r.nextInt(size); // 没有空位则覆盖随机槽位
+                }
+
+                // 再抽具体物品（数量从0开始，可能不生成）
+                int type = r.nextInt(9); // 7类 + 末影珍珠 + TNT
+                Material mat;
+                int amount;
+                switch (type) {
+                    case 0 -> {
+                        mat = Material.ARROW;
+                        amount = r.nextInt(6);
+                    } // 0-5
+                    case 1 -> {
+                        mat = Material.DIAMOND;
+                        amount = r.nextInt(3);
+                    } // 0-2
+                    case 2 -> {
+                        mat = Material.GOLD_INGOT;
+                        amount = r.nextInt(5);
+                    } // 0-4
+                    case 3 -> {
+                        mat = Material.APPLE;
+                        amount = r.nextInt(5);
+                    } // 0-4
+                    case 4 -> {
+                        mat = Material.FLINT;
+                        amount = r.nextInt(3);
+                    } // 0-2
+                    case 5 -> {
+                        mat = Material.FEATHER;
+                        amount = r.nextInt(7);
+                    } // 0-6
+                    case 6 -> {
+                        mat = Material.COBWEB;
+                        amount = r.nextInt(6);
+                    } // 0-5
+                    case 7 -> {
+                        mat = Material.ENDER_PEARL;
+                        amount = r.nextInt(2);
+                    } // 0-1
+                    default -> {
+                        mat = Material.TNT;
+                        amount = 1 + r.nextInt(3);
+                    } // 1-3
+                }
+                if (amount <= 0) {
+                    continue; // 本次不放置物品
+                }
+                inv.setItem(chosenSlot, new ItemStack(mat, amount));
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    // 20% 概率掉燧石（对GRAVEL）
+    @org.bukkit.event.EventHandler
+    public void onGravelBreak(org.bukkit.event.block.BlockBreakEvent event) {
+        if (!isActive)
+            return;
+        if (event.getBlock().getType() != Material.GRAVEL)
+            return;
+        if (event.getPlayer().getGameMode() != GameMode.SURVIVAL
+                || !event.getPlayer().getScoreboardTags().contains("Active"))
+            return;
+        if (Math.random() < 0.20) {
+            event.setDropItems(false);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation().add(0.5, 0.5, 0.5),
+                    new ItemStack(Material.FLINT, 1));
         }
     }
 }

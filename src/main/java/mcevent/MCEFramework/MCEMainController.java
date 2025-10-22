@@ -9,6 +9,10 @@ import mcevent.MCEFramework.customHandler.FriendlyFireHandler;
 import mcevent.MCEFramework.customHandler.GlobalPVPHandler;
 import mcevent.MCEFramework.customHandler.LobbyBounceHandler;
 import mcevent.MCEFramework.customHandler.LobbyItemHandler;
+import mcevent.MCEFramework.customHandler.LobbyDoubleJumpHandler;
+import mcevent.MCEFramework.customHandler.WindLauncherHandler;
+import mcevent.MCEFramework.customHandler.LobbyTeleportCompassHandler;
+import mcevent.MCEFramework.games.duel.DuelKitManager;
 import mcevent.MCEFramework.customHandler.PlayerJoinHandler;
 import mcevent.MCEFramework.customHandler.GamePlayerQuitHandler;
 import mcevent.MCEFramework.customHandler.WelcomeMessageHandler;
@@ -74,6 +78,12 @@ public final class MCEMainController extends JavaPlugin {
     private static LobbyBounceHandler lobbyBounceHandler;
     @Getter
     private static LobbyItemHandler lobbyItemHandler;
+    @Getter
+    private static LobbyDoubleJumpHandler lobbyDoubleJumpHandler;
+    @Getter
+    private static WindLauncherHandler windLauncherHandler;
+    @Getter
+    private static LobbyTeleportCompassHandler lobbyTeleportCompassHandler;
 
     // LobbyHandler 已移除
 
@@ -149,7 +159,12 @@ public final class MCEMainController extends JavaPlugin {
         gamePlayerQuitHandler = new GamePlayerQuitHandler();
         lobbyBounceHandler = new LobbyBounceHandler();
         lobbyItemHandler = new LobbyItemHandler();
+        lobbyDoubleJumpHandler = new LobbyDoubleJumpHandler();
+        windLauncherHandler = new WindLauncherHandler();
+        lobbyTeleportCompassHandler = new LobbyTeleportCompassHandler();
+        new DuelKitManager();
         chatFormatHandler = new ChatFormatHandler();
+        new mcevent.MCEFramework.customHandler.LobbySaturationHandler(); // 主城饱和效果
         new mcevent.MCEFramework.customHandler.GlobalEliminationHandler(); // 全局淘汰监听器
         new mcevent.MCEFramework.customHandler.GlobalBlockInteractionHandler(); // 全局方块交互监听器
         new WelcomeMessageHandler(); // 欢迎标语处理器
@@ -163,11 +178,15 @@ public final class MCEMainController extends JavaPlugin {
         Bukkit.getScheduler().runTaskLater(this, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if ("lobby".equals(player.getWorld().getName())) {
-                    lobbyItemHandler.giveBlazeRod(player);
+                    lobbyItemHandler.giveLobbyItems(player);
                 }
             }
             getLogger().info("已为所有在主城的玩家给予烈焰棒");
         }, 10L);
+
+        // 启动时默认开启全局PVP与友伤（suspend=不拦截）
+        globalPVPHandler.suspend();
+        friendlyFireHandler.suspend();
 
         // ACF command manager
         PaperCommandManager commandManager = new PaperCommandManager(this);
@@ -288,6 +307,11 @@ public final class MCEMainController extends JavaPlugin {
         stopWelcomeMessage();
 
         MCEGame nextGame = gameList.get(gameID);
+        // 启动其他游戏前，隐藏 Duel 的 BELOW_NAME 生命显示
+        try {
+            mcevent.MCEFramework.games.duel.DuelKitManager.hideHealthBelowNameForAll();
+        } catch (Throwable ignored) {
+        }
         // 大厅饱和任务与发放物品逻辑已移除
         setCurrentRunningGame(nextGame);
         nextGame.init(intro); // 在开始游戏之前，先初始化游戏的时间线

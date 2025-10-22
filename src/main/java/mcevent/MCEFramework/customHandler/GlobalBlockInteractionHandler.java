@@ -4,6 +4,7 @@ import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
 import mcevent.MCEFramework.games.spleef.Spleef;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
+import mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl;
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
 import mcevent.MCEFramework.tools.MCEBlockRestoreUtils;
 import org.bukkit.GameMode;
@@ -31,12 +32,8 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
-    private boolean isSurvivalAndInGame(Player player) {
-        if (player.getGameMode() != GameMode.SURVIVAL)
-            return false;
-        if (!MCEMainController.isRunningGame())
-            return false;
-        return true;
+    private boolean isSurvival(Player player) {
+        return player.getGameMode() == GameMode.SURVIVAL;
     }
 
     private boolean isCurrentGame(Class<?> clazz) {
@@ -49,12 +46,41 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
         if (isSuspended())
             return;
         Player player = event.getPlayer();
-        if (!isSurvivalAndInGame(player))
+        if (!isSurvival(player))
             return;
 
-        // 例外：CrazyMiner、Spleef 允许破坏；SurvivalGame 禁止
-        if (isCurrentGame(CrazyMiner.class) || isCurrentGame(Spleef.class)) {
-            return; // 允许破坏
+        // 在未运行任何游戏（主城）或投票系统阶段：默认禁止破坏
+        if (!MCEMainController.isRunningGame()
+                || isCurrentGame(mcevent.MCEFramework.games.votingSystem.VotingSystem.class)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // 运行中游戏的例外
+        // SurvivalGame：仅允许破坏玩家放置的方块
+        if (isCurrentGame(SurvivalGame.class)) {
+            if (SurvivalGameFuncImpl.isPlayerPlaced(event.getBlock().getLocation())) {
+                return; // 允许破坏
+            }
+            event.setCancelled(true);
+            return;
+        }
+        // CrazyMiner 允许破坏
+        if (isCurrentGame(CrazyMiner.class))
+            return;
+        // Spleef 仅在回合正式开始时允许破坏（依据 SnowBreakHandler 是否激活）
+        if (isCurrentGame(Spleef.class)) {
+            var game = MCEMainController.getCurrentRunningGame();
+            if (game instanceof Spleef sp) {
+                try {
+                    if (!sp.getSnowBreakHandler().isSuspended()) {
+                        return; // 回合中，允许破坏
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            event.setCancelled(true);
+            return;
         }
 
         // 默认禁止：取消并不改变世界
@@ -66,16 +92,46 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
         if (isSuspended())
             return;
         Player player = event.getPlayer();
-        if (!isSurvivalAndInGame(player))
+        if (!isSurvival(player))
             return;
 
-        // 例外：SurvivalGame 允许放置，并记录被替换的方块用于回溯
+        // 在未运行任何游戏（主城）或投票系统阶段：默认禁止放置
+        if (!MCEMainController.isRunningGame()
+                || isCurrentGame(mcevent.MCEFramework.games.votingSystem.VotingSystem.class)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // 运行中游戏的例外：SurvivalGame 允许放置，并记录被替换的方块用于回溯与登记玩家放置
         if (isCurrentGame(SurvivalGame.class)) {
             BlockState replaced = event.getBlockReplacedState();
             if (replaced != null) {
                 MCEBlockRestoreUtils.recordReplacedState(replaced);
             }
+            // 登记玩家放置的方块坐标
+            mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl.registerPlacedBlock(
+                    event.getBlockPlaced().getLocation());
             return; // 允许放置
+        }
+
+        // CrazyMiner 允许放置
+        if (isCurrentGame(mcevent.MCEFramework.games.crazyMiner.CrazyMiner.class)) {
+            return;
+        }
+
+        // Spleef 仅在回合正式开始时允许放置
+        if (isCurrentGame(Spleef.class)) {
+            var game = MCEMainController.getCurrentRunningGame();
+            if (game instanceof Spleef sp) {
+                try {
+                    if (!sp.getSnowBreakHandler().isSuspended()) {
+                        return; // 回合中允许放置
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            event.setCancelled(true);
+            return;
         }
 
         // 默认禁止放置

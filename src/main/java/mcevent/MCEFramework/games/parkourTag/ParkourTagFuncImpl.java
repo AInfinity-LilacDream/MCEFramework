@@ -5,10 +5,7 @@ import static mcevent.MCEFramework.tools.MCETeamUtils.*;
 import static mcevent.MCEFramework.tools.MCEWorldUtils.teleportLocation;
 
 import mcevent.MCEFramework.MCEMainController;
-import mcevent.MCEFramework.tools.MCEMessenger;
-import mcevent.MCEFramework.tools.MCETeamUtils;
-import mcevent.MCEFramework.tools.MCETimerUtils;
-import mcevent.MCEFramework.tools.MCEWorldUtils;
+import mcevent.MCEFramework.tools.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -25,7 +22,8 @@ public class ParkourTagFuncImpl {
     // 清空提前结束的对局数量以及结束时间
     protected static void clearMatchCompleteState() {
         pkt.completeMatchesTot = 0;
-        for (int i = 0; i < pkt.getActiveTeams().size(); ++i) pkt.completeTime[i] = 0;
+        for (int i = 0; i < pkt.getActiveTeams().size(); ++i)
+            pkt.completeTime[i] = 0;
     }
 
     // 重置队伍存活玩家数
@@ -44,7 +42,9 @@ public class ParkourTagFuncImpl {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Team team = MCETeamUtils.getTeam(player);
             Team opponentTeam = pkt.getOpponentTeam(team);
-            if (team != null) MCEMessenger.sendMatchTitleToPlayer(player, team.getName(), opponentTeam.getName(), pkt.getCurrentRound());
+            if (team != null)
+                MCEMessenger.sendMatchTitleToPlayer(player, team.getName(), opponentTeam.getName(),
+                        pkt.getCurrentRound());
         }
     }
 
@@ -63,8 +63,10 @@ public class ParkourTagFuncImpl {
             Location pktTeamLocation2 = config.getLocation("pktTeamLocation2");
             Location pktOffset = config.getLocation("pktOffset");
 
-            for (Player player : team1Players) player.teleport(teleportLocation(pktTeamLocation1, pktOffset, offset));
-            for (Player player : team2Players) player.teleport(teleportLocation(pktTeamLocation2, pktOffset, offset));
+            for (Player player : team1Players)
+                player.teleport(teleportLocation(pktTeamLocation1, pktOffset, offset));
+            for (Player player : team2Players)
+                player.teleport(teleportLocation(pktTeamLocation2, pktOffset, offset));
         }
     }
 
@@ -75,7 +77,7 @@ public class ParkourTagFuncImpl {
         Location pktDoorLocation2down = config.getLocation("pktDoorLocation2down");
         Location pktDoorLocation2up = config.getLocation("pktDoorLocation2up");
         Location pktOffset = config.getLocation("pktOffset");
-        
+
         for (int offset = 0; offset < 20; ++offset) {
             Location loc1Down = MCEWorldUtils.teleportLocation(pktDoorLocation1down, pktOffset, offset);
             Location loc1Up = MCEWorldUtils.teleportLocation(pktDoorLocation1up, pktOffset, offset);
@@ -99,7 +101,7 @@ public class ParkourTagFuncImpl {
         Location pktChaserStartLocation = config.getLocation("pktChaserStartLocation");
         Location pktRunnerStartLocation = config.getLocation("pktRunnerStartLocation");
         Location pktOffset = config.getLocation("pktOffset");
-        
+
         int teamTotal = MCETeamUtils.getActiveTeamCount();
         for (int i = 0; i < teamTotal; i += 2) {
             Team team1 = pkt.getActiveTeams().get(i);
@@ -120,6 +122,46 @@ public class ParkourTagFuncImpl {
                     player.teleport(teleportLocation(pktChaserStartLocation, pktOffset, i));
                 else
                     player.teleport(teleportLocation(pktRunnerStartLocation, pktOffset, i + 1));
+            }
+        }
+    }
+
+    // 确保每个队伍有且只有一个抓捕者；若无则随机指定，并提示双方队伍
+    protected static void ensureChasersSelectedAndNotify() {
+        int teamTotal = MCETeamUtils.getActiveTeamCount();
+        for (int i = 0; i < teamTotal; i += 2) {
+            Team team1 = pkt.getActiveTeams().get(i);
+            Team team2 = pkt.getActiveTeams().get(i + 1);
+
+            Player team1Chaser = MCETeamUtils.getPlayers(team1).stream()
+                    .filter(p -> p.getScoreboardTags().contains("chaser")).findFirst().orElse(null);
+            Player team2Chaser = MCETeamUtils.getPlayers(team2).stream()
+                    .filter(p -> p.getScoreboardTags().contains("chaser")).findFirst().orElse(null);
+
+            if (team1Chaser == null) {
+                ArrayList<Player> t1Players = MCETeamUtils.getPlayers(team1);
+                if (!t1Players.isEmpty()) {
+                    Player selected = t1Players.get((int) (Math.random() * t1Players.size()));
+                    MCEPlayerUtils.clearTag(selected);
+                    selected.addScoreboardTag("chaser");
+                    MCEMessenger.sendInfoToTeam(team1,
+                            "你们未选择抓捕者，系统已随机指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
+                    MCEMessenger.sendInfoToTeam(team2,
+                            team1.getName() + " 未选择抓捕者，系统已指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
+                }
+            }
+
+            if (team2Chaser == null) {
+                ArrayList<Player> t2Players = MCETeamUtils.getPlayers(team2);
+                if (!t2Players.isEmpty()) {
+                    Player selected = t2Players.get((int) (Math.random() * t2Players.size()));
+                    MCEPlayerUtils.clearTag(selected);
+                    selected.addScoreboardTag("chaser");
+                    MCEMessenger.sendInfoToTeam(team2,
+                            "你们未选择抓捕者，系统已随机指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
+                    MCEMessenger.sendInfoToTeam(team1,
+                            team2.getName() + " 未选择抓捕者，系统已指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
+                }
             }
         }
     }
@@ -148,8 +190,7 @@ public class ParkourTagFuncImpl {
                         ((team1time > team2time) ? MCETeamUtils.getUncoloredTeamName(team1) : team1.getName()) +
                         " VS " +
                         ((team1time > team2time) ? team2.getName() : MCETeamUtils.getUncoloredTeamName(team2)) +
-                        "<newline>"
-                );
+                        "<newline>");
             }
         });
         MCETimerUtils.setDelayedTask(15, () -> MCEMessenger.sendGlobalText("本回合存活队伍："));
@@ -169,5 +210,6 @@ public class ParkourTagFuncImpl {
     }
 
     // 关闭对方逃脱者发光
-    protected static void DisableTeamGlowing() {}
+    protected static void DisableTeamGlowing() {
+    }
 }

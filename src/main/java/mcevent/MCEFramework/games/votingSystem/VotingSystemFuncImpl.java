@@ -22,22 +22,22 @@ import static mcevent.MCEFramework.miscellaneous.Constants.*;
  * VotingSystemFuncImpl: 投票系统功能实现
  */
 public class VotingSystemFuncImpl {
-    
+
     // 投票统计 - 游戏ID -> 票数
     private static final HashMap<Integer, Integer> votes = new HashMap<>();
-    
+
     // 玩家已投票的游戏 - 玩家UUID -> 游戏ID
     private static final HashMap<String, Integer> playerVotes = new HashMap<>();
-    
+
     // 投票是否已初始化
     private static boolean isVotingInitialized = false;
-    
+
     // 是否跳过Intro
     private static boolean skipIntro = false;
-    
+
     // 游戏名称映射
     private static final String[] gameNames = {
-        "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏"
+            "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏"
     };
 
     /**
@@ -62,19 +62,19 @@ public class VotingSystemFuncImpl {
         // 清空投票记录
         votes.clear();
         playerVotes.clear();
-        
+
         // 初始化所有游戏的投票数为0
         for (int i = 0; i < gameNames.length; i++) {
             votes.put(i, 0);
         }
-        
+
         // 清空所有玩家的投票记录
         playerVotes.clear();
-        
+
         isVotingInitialized = true;
         skipIntro = false; // 重置跳过Intro状态
     }
-    
+
     /**
      * 检查投票是否已初始化，如果没有则初始化
      */
@@ -83,14 +83,14 @@ public class VotingSystemFuncImpl {
             initializeVoting();
         }
     }
-    
+
     /**
      * 切换跳过Intro状态
      */
     public static void toggleSkipIntro() {
         skipIntro = !skipIntro;
     }
-    
+
     /**
      * 获取跳过Intro状态
      */
@@ -103,19 +103,19 @@ public class VotingSystemFuncImpl {
      */
     public static boolean vote(Player player, int gameId) {
         String playerUUID = player.getUniqueId().toString();
-        
+
         // 检查游戏ID是否有效
         if (gameId < 0 || gameId >= gameNames.length) {
             MCEMessenger.sendInfoToPlayer("<red>无效的游戏选择！", player);
             return false;
         }
-        
+
         // 检查是否已经为同一个游戏投票
         if (playerVotes.containsKey(playerUUID) && playerVotes.get(playerUUID) == gameId) {
             MCEMessenger.sendInfoToPlayer("<yellow>您已经为 <gold>" + gameNames[gameId] + " <yellow>投过票了！", player);
             return false;
         }
-        
+
         // 如果玩家之前投过其他游戏，先减去之前的票数
         if (playerVotes.containsKey(playerUUID)) {
             int previousGameId = playerVotes.get(playerUUID);
@@ -124,18 +124,18 @@ public class VotingSystemFuncImpl {
                 votes.put(previousGameId, previousVotes - 1);
             }
         }
-        
+
         // 记录新投票
         playerVotes.put(playerUUID, gameId);
         votes.put(gameId, votes.getOrDefault(gameId, 0) + 1);
-        
+
         // 发送投票成功消息
         String gameName = gameNames[gameId];
         MCEMessenger.sendInfoToPlayer("<green>您已为 <yellow>" + gameName + " <green>投票！", player);
-        
+
         // 刷新所有打开的投票GUI
         VotingGUI.refreshAllVotingGUIs();
-        
+
         return true;
     }
 
@@ -155,19 +155,19 @@ public class VotingSystemFuncImpl {
         for (int voteCount : votes.values()) {
             totalVotes += voteCount;
         }
-        
+
         // 调试：输出详细投票统计
         plugin.getLogger().info("========== 投票结果统计 ==========");
         plugin.getLogger().info("总投票数: " + totalVotes);
         plugin.getLogger().info("各游戏得票情况:");
-        
+
         for (int gameId = 0; gameId < gameNames.length; gameId++) {
             int voteCount = votes.getOrDefault(gameId, 0);
             double percentage = totalVotes > 0 ? (double) voteCount / totalVotes * 100 : 0;
-            plugin.getLogger().info(String.format("  %d. %-12s: %2d票 (%.1f%%)", 
-                gameId, gameNames[gameId], voteCount, percentage));
+            plugin.getLogger().info(String.format("  %d. %-12s: %2d票 (%.1f%%)",
+                    gameId, gameNames[gameId], voteCount, percentage));
         }
-        
+
         // 检查无效的游戏ID
         for (Map.Entry<Integer, Integer> entry : votes.entrySet()) {
             int gameId = entry.getKey();
@@ -175,46 +175,62 @@ public class VotingSystemFuncImpl {
                 plugin.getLogger().warning("发现无效的游戏ID: " + gameId + " 得票: " + entry.getValue());
             }
         }
-        
+
         plugin.getLogger().info("================================");
-        
+
         // 找到得票最多的游戏
         int winningGameId = -1;
         int maxVotes = -1;
-        
+
         for (Map.Entry<Integer, Integer> entry : votes.entrySet()) {
             if (entry.getValue() > maxVotes) {
                 maxVotes = entry.getValue();
                 winningGameId = entry.getKey();
             }
         }
-        
-        plugin.getLogger().info("获胜游戏: " + (winningGameId >= 0 && winningGameId < gameNames.length ? 
-                              gameNames[winningGameId] + " (ID:" + winningGameId + ")" : "无效ID:" + winningGameId) 
-                              + ", 得票数: " + maxVotes);
-        
+
+        plugin.getLogger()
+                .info("获胜游戏: "
+                        + (winningGameId >= 0 && winningGameId < gameNames.length
+                                ? gameNames[winningGameId] + " (ID:" + winningGameId + ")"
+                                : "无效ID:" + winningGameId)
+                        + ", 得票数: " + maxVotes);
+
         // 处理没有投票的情况 - 停止投票，不启动游戏
         if (maxVotes == 0) {
-            MCEMessenger.sendGlobalTitle("<red><bold>无人投票！</bold></red>", 
-                                       "<yellow>投票系统停止，请手动重启游戏</yellow>");
+            MCEMessenger.sendGlobalTitle("<red><bold>无人投票！</bold></red>",
+                    "<yellow>投票系统停止，请手动重启游戏</yellow>");
             plugin.getLogger().info("无人投票，投票系统停止");
-            
+
             // 收回所有投票卡
             removeAllVotingCards();
-            
+
             // 停止音乐播放
             MCEPlayerUtils.globalStopMusic();
-            
+
             // 将游戏运行状态设置为false，允许重新启动投票
             MCEMainController.setRunningGame(false);
             MCEMainController.setCurrentRunningGame(null);
-            
+
             // 启动欢迎标语动画
             MCEMainController.startWelcomeMessage();
-            
+
+            // 无人投票：为每位在线玩家发放风弹发射器与“前往Duel”指南针
+            mcevent.MCEFramework.customHandler.LobbyItemHandler lih = mcevent.MCEFramework.MCEMainController
+                    .getLobbyItemHandler();
+            if (lih != null) {
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    lih.giveLobbyItems(p);
+                }
+            }
+
+            // 打开全局PVP与友伤
+            mcevent.MCEFramework.MCEMainController.getGlobalPVPHandler().suspend();
+            mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().suspend();
+
             return; // 直接返回，不启动任何游戏
         }
-        
+
         // 处理平票的情况
         if (winningGameId == -1 || hasTie(maxVotes)) {
             // 仅在平票的游戏中随机选择
@@ -228,39 +244,39 @@ public class VotingSystemFuncImpl {
             if (!tieCandidates.isEmpty()) {
                 Random random = new Random();
                 winningGameId = tieCandidates.get(random.nextInt(tieCandidates.size()));
-                MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>", 
-                                           "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
+                MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>",
+                        "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
             } else {
                 // 理论上不会发生：降级为全局随机
                 Random random = new Random();
                 winningGameId = random.nextInt(gameNames.length);
-                MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>", 
-                                           "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
+                MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>",
+                        "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
             }
         } else {
             // 再次验证winningGameId有效性
             if (winningGameId >= 0 && winningGameId < gameNames.length) {
-                MCEMessenger.sendGlobalTitle("<gold><bold>投票结果</bold></gold>", 
-                                           "<yellow>获胜游戏: " + gameNames[winningGameId] + "</yellow>");
+                MCEMessenger.sendGlobalTitle("<gold><bold>投票结果</bold></gold>",
+                        "<yellow>获胜游戏: " + gameNames[winningGameId] + "</yellow>");
             } else {
                 // 如果winningGameId无效，随机选择
                 Random random = new Random();
                 winningGameId = random.nextInt(gameNames.length);
-                MCEMessenger.sendGlobalTitle("<gold><bold>检测到错误，随机选择</bold></gold>", 
-                                           "<yellow>游戏: " + gameNames[winningGameId] + "</yellow>");
+                MCEMessenger.sendGlobalTitle("<gold><bold>检测到错误，随机选择</bold></gold>",
+                        "<yellow>游戏: " + gameNames[winningGameId] + "</yellow>");
             }
         }
-        
+
         // 显示投票结果后立即收回所有投票卡
         removeAllVotingCards();
-        
+
         // 等待5秒后启动游戏（确保onEnd阶段完成）
         int finalWinningGameId = winningGameId;
         boolean finalSkipIntro = skipIntro; // 保存skipIntro状态
         votingSystem.setDelayedTask(5, () -> {
             // 在启动游戏前检查并自动分队
             checkAndAutoShuffleTeams();
-            
+
             // 在启动游戏前清空所有玩家的物品栏
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.getInventory().clear();
@@ -291,7 +307,7 @@ public class VotingSystemFuncImpl {
         StringBuilder stats = new StringBuilder("§6投票统计:\n");
         for (int i = 0; i < gameNames.length; i++) {
             stats.append("§e").append(gameNames[i]).append(": §f")
-                 .append(votes.getOrDefault(i, 0)).append("票\n");
+                    .append(votes.getOrDefault(i, 0)).append("票\n");
         }
         return stats.toString();
     }
@@ -305,7 +321,7 @@ public class VotingSystemFuncImpl {
         isVotingInitialized = false;
         skipIntro = false;
     }
-    
+
     /**
      * 移除所有玩家的投票卡
      */
@@ -328,7 +344,7 @@ public class VotingSystemFuncImpl {
         }
         plugin.getLogger().info("已收回所有玩家的投票卡");
     }
-    
+
     /**
      * 检查是否有未分队的玩家，如果有则自动执行分队
      */
@@ -337,7 +353,7 @@ public class VotingSystemFuncImpl {
         if (onlinePlayers.isEmpty()) {
             return; // 没有在线玩家，无需分队
         }
-        
+
         // 检查是否有未分队的玩家
         List<Player> unassignedPlayers = new ArrayList<>();
         for (Player player : onlinePlayers) {
@@ -346,43 +362,43 @@ public class VotingSystemFuncImpl {
                 unassignedPlayers.add(player);
             }
         }
-        
+
         // 如果有未分队的玩家，执行自动分队
         if (!unassignedPlayers.isEmpty()) {
             plugin.getLogger().info("发现 " + unassignedPlayers.size() + " 个未分队玩家，执行自动分队...");
-            
+
             // 每个玩家一个队伍（一人一队）
             int teamCount = onlinePlayers.size();
-            
+
             // 确保队伍数量不超过可用队伍数量
             teamCount = Math.min(teamCount, teams.length);
-            
+
             // 执行自动分队
             autoShuffleTeams(teamCount, new ArrayList<>(onlinePlayers));
-            
+
             MCEMessenger.sendGlobalInfo("<green><bold>检测到未分队玩家，已自动分队！</bold></green>");
             plugin.getLogger().info("自动分队完成：将 " + onlinePlayers.size() + " 名玩家分成 " + teamCount + " 个队伍");
         } else {
             plugin.getLogger().info("所有玩家已分队，无需自动分队");
         }
     }
-    
+
     /**
      * 执行自动分队（基于ShuffleTeam命令的逻辑）
      */
     private static void autoShuffleTeams(int teamCount, List<Player> players) {
         Collections.shuffle(players);
-        
+
         // 清空现有队伍
         clearExistingTeams();
-        
+
         // 创建需要的队伍数量
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         for (int i = 0; i < teamCount; ++i) {
             Team team = scoreboard.registerNewTeam(teams[i].teamName());
             team.color(teams[i].teamColor());
         }
-        
+
         // 将玩家分配到队伍（一人一队）
         for (int i = 0; i < players.size(); ++i) {
             Player player = players.get(i);
@@ -401,13 +417,13 @@ public class VotingSystemFuncImpl {
             }
         }
     }
-    
+
     /**
      * 清空现有队伍（基于ShuffleTeam命令的逻辑）
      */
     private static void clearExistingTeams() {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        
+
         // 清空所有队伍
         for (Team team : new HashSet<>(scoreboard.getTeams())) {
             team.unregister();

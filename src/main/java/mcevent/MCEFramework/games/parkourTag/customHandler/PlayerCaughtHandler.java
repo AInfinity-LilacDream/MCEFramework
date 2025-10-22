@@ -7,6 +7,7 @@ import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import mcevent.MCEFramework.tools.MCETeamUtils;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 import org.bukkit.entity.Player;
+import org.bukkit.GameMode;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.scoreboard.Team;
@@ -41,8 +42,10 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
             return;
 
         runner.addScoreboardTag("caught");
-        // 统一淘汰处理
-        mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(runner);
+        // 本地淘汰处理：不走全局监听器
+        runner.addScoreboardTag("dead");
+        runner.removeScoreboardTag("Active");
+        runner.setGameMode(GameMode.SPECTATOR);
 
         Team runnerTeam = MCETeamUtils.getTeam(runner);
         Team catcherTeam = MCETeamUtils.getTeam(catcher);
@@ -61,11 +64,13 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
         // 检查队伍是否被抓完：被抓人数 = 队伍总人数 - 1（因为每队有一个抓人者）
         // 由全局淘汰监听器负责队伍团灭提示；此处仅更新内部计数
         int survivingMembers = pkt.getSurvivePlayerTot().get(runnerTeamPos);
-        if (survivingMembers <= 1) { // 只剩1人（抓人者）时，队伍被抓完
-            pkt.completeMatchesTot++;
+        // survivePlayerTot 统计的是“逃跑者”人数，初始为队伍总人数-1（不含抓人者）
+        // 因此当 survivingMembers == 0 才表示该队所有逃跑者被抓完
+        if (survivingMembers <= 0) {
+            // 记录本方完成时间
             pkt.setTeamCompleteTime(catcherTeam, pkt.getTimeline().getCurrentTimelineNodeDuration() - 10);
-            // 交给全局处理器发送团灭提示；这里无需改抓捕者模式
             MCEMessenger.sendTitleToPlayer(catcher, "<green>专业猎手！</green>", "<green>干得漂亮！</green>");
+            // 若对手尚未完成，发送“率先抓完”相关提示
             if (pkt.getTeamCompleteTime(runnerTeam) == 0) {
                 MCEMessenger.sendInfoToTeam(catcherTeam, "<green>[✅] 你们比对手更快抓住了所有猎物( " +
                         pkt.getTeamCompleteTime(catcherTeam) +
@@ -74,9 +79,16 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
                 MCEMessenger.sendInfoToTeam(runnerTeam, "<red>[⚠] 你们被对方抓完了</red>");
                 MCEMessenger.sendInfoToPlayer("<green>[✅] 你抓完了所有猎物，你做的好啊！</green>", catcher);
             }
+
+            // 若对手也已记录完成时间（双方均完成），则该对局计为完成+1
+            Team opponentTeam = pkt.getOpponentTeam(catcherTeam);
+            if (pkt.getTeamCompleteTime(opponentTeam) > 0) {
+                pkt.completeMatchesTot++;
+            }
         }
 
-        if (pkt.completeMatchesTot == pkt.getActiveTeams().size()) {
+        // 每个小局由两支队伍对抗，因此全部小局完成的数量应为 活跃队伍数/2
+        if (pkt.completeMatchesTot >= Math.max(1, pkt.getActiveTeams().size() / 2)) {
             pkt.completeMatchesTot = 0; // 防止重复触发nextState
             pkt.getTimeline().nextState();
         }

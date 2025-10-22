@@ -103,6 +103,18 @@ public class CrazyMiner extends MCEGame {
         // Initialize players
         initializePlayers();
 
+        // 开局给予30秒抗火
+        try {
+            MCEPlayerUtils.grantGlobalPotionEffect(new org.bukkit.potion.PotionEffect(
+                    org.bukkit.potion.PotionEffectType.FIRE_RESISTANCE,
+                    20 * 30, // 30秒
+                    0,
+                    false,
+                    false,
+                    false));
+        } catch (Throwable ignored) {
+        }
+
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
         MCEPlayerUtils.clearGlobalTags();

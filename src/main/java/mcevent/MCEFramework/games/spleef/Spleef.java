@@ -44,12 +44,19 @@ public class Spleef extends MCEGame {
 
     // 游戏状态追踪
     private List<String> deathOrder = new ArrayList<>();
+    private List<Team> teamEliminationOrder = new ArrayList<>();
     private Map<String, Integer> playerSnowballCount = new HashMap<>();
 
     // 游戏配置
     private static final int FALL_Y_THRESHOLD = 26;
     private static final Material SHOVEL_MATERIAL = Material.GOLDEN_SHOVEL;
     private static final int SHOVEL_EFFICIENCY_LEVEL = 5;
+
+    // 缩圈中心与高度范围（基于当前Spleef地图）
+    private static final double RING_CENTER_X = 8.0;
+    private static final double RING_CENTER_Z = 8.0;
+    private static final int RING_MIN_Y = 28; // 可破坏雪层下界
+    private static final int RING_MAX_Y = 35; // 可破坏雪层上界
 
     // 地图复制配置
     private static final String SOURCE_WORLD = "spleef_christmas_original";
@@ -86,47 +93,32 @@ public class Spleef extends MCEGame {
 
     @Override
     protected void checkGameEndCondition() {
-        // 统计还活着的队伍数量
-        Set<Team> aliveTeams = new HashSet<>();
-        int totalPlayers = 0;
-        int alivePlayers = 0;
+        // 统计还活着的“队伍”数量（以 activeTeams 为准，避免按玩家个体误判）
+        Set<Team> teams = new HashSet<>(
+                getActiveTeams() != null ? getActiveTeams() : java.util.Collections.emptyList());
+        int aliveTeamCount = 0;
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            totalPlayers++;
-            plugin.getLogger().info("调试 - 玩家 " + player.getName() +
-                    ": 游戏模式=" + player.getGameMode() +
-                    ", Active=" + player.getScoreboardTags().contains("Active") +
-                    ", dead=" + player.getScoreboardTags().contains("dead"));
-
-            if (player.getScoreboardTags().contains("Active") &&
-                    !player.getScoreboardTags().contains("dead")) {
-                alivePlayers++;
+        for (Team team : teams) {
+            boolean anyAliveInTeam = false;
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!player.getScoreboardTags().contains("Active") || player.getScoreboardTags().contains("dead"))
+                    continue;
                 Team playerTeam = MCETeamUtils.getTeam(player);
-                if (playerTeam != null) {
-                    aliveTeams.add(playerTeam);
-                    plugin.getLogger().info("调试 - 存活玩家 " + player.getName() + " 在队伍: " + playerTeam.getName());
+                if (playerTeam != null && playerTeam.equals(team)) {
+                    anyAliveInTeam = true;
+                    break;
                 }
             }
+            if (anyAliveInTeam)
+                aliveTeamCount++;
         }
 
-        plugin.getLogger()
-                .info("调试 - 总玩家: " + totalPlayers + ", 存活玩家: " + alivePlayers + ", 存活队伍: " + aliveTeams.size());
+        plugin.getLogger().info("Spleef: 存活队伍数=" + aliveTeamCount);
 
-        if (aliveTeams.size() <= 1) {
-            // 只剩一个队伍或没有队伍，立即结束当前回合
-            plugin.getLogger().info("Spleef: 只剩" + aliveTeams.size() + "个队伍，结束当前回合");
-
-            if (!aliveTeams.isEmpty()) {
-                Team winningTeam = aliveTeams.iterator().next();
-                plugin.getLogger().info("获胜队伍: " + winningTeam.getName());
-            }
-
-            // 强制结束当前cycle
+        if (aliveTeamCount <= 1) {
+            // 只剩一个队伍或没有队伍 -> 进入回合结束（cycleEnd），不要直接跳到下一回合准备
             if (getTimeline() != null) {
-                plugin.getLogger().info("调试 - 调用timeline.nextState()");
-                getTimeline().nextState();
-            } else {
-                plugin.getLogger().warning("调试 - timeline为null！");
+                getTimeline().nextState(); // 由时间线进入 onCycleEnd
             }
         }
     }
@@ -148,7 +140,8 @@ public class Spleef extends MCEGame {
         MCEWorldUtils.enablePVP();
         MCETeamUtils.disableFriendlyFire();
         MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
-        MCEPlayerUtils.globalHideNameTag();
+        // 冰雪掘战需要彼此可见名牌
+        MCEPlayerUtils.globalShowNameTag();
 
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
@@ -183,6 +176,9 @@ public class Spleef extends MCEGame {
     @Override
     public void onCyclePreparation() {
         this.getGameBoard().setStateTitle("<yellow><bold> 回合准备中：</bold></yellow>");
+
+        // 清空上回合的队伍淘汰顺序
+        teamEliminationOrder.clear();
 
         // 重置所有玩家的状态标签
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -225,6 +221,9 @@ public class Spleef extends MCEGame {
         snowBreakHandler.start();
         snowballThrowHandler.start();
         craftingDisableHandler.start();
+
+        // 调度两次缩圈：60s 移除内环 [10,18)，120s 移除外环 [18,22]
+        startRingShrinks();
     }
 
     @Override
@@ -240,6 +239,15 @@ public class Spleef extends MCEGame {
         snowBreakHandler.suspend();
         snowballThrowHandler.suspend();
         craftingDisableHandler.suspend();
+
+        // 将所有玩家传送回本图世界出生点
+        World world = Bukkit.getWorld(this.getWorldName());
+        if (world != null) {
+            Location spawnLocation = world.getSpawnLocation();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.teleport(spawnLocation);
+            }
+        }
 
         MCEPlayerUtils.globalClearInventory();
 
@@ -263,8 +271,8 @@ public class Spleef extends MCEGame {
         snowballThrowHandler.suspend();
         craftingDisableHandler.suspend();
 
-        // 显示最终游戏结果（第三回合不显示淘汰顺序）
-        showFinalGameResults();
+        // 第三回合同样按“本回合”结果播报
+        showRoundResults();
 
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
         setDelayedTask(getEndDuration(), () -> {
@@ -343,28 +351,9 @@ public class Spleef extends MCEGame {
         } else {
             MCEMessenger.sendGlobalInfo("<gold>回合结束！没有获胜者</gold>");
         }
-    }
 
-    /**
-     * 显示最终游戏结果
-     */
-    private void showFinalGameResults() {
-        // 找出获胜队伍
-        Team winningTeam = findWinningTeam();
-
-        if (winningTeam != null) {
-            String teamName = MCETeamUtils.getTeamColoredName(winningTeam);
-            MCEMessenger.sendGlobalTitle("<gold><bold>游戏结束！</bold></gold>", "<yellow>获胜队伍: " + teamName + "</yellow>");
-            MCEMessenger.sendGlobalInfo("恭喜 " + teamName + " 队获得胜利！");
-        } else {
-            MCEMessenger.sendGlobalTitle("<gold><bold>游戏结束！</bold></gold>", "<red>没有获胜者</red>");
-            MCEMessenger.sendGlobalInfo("所有队伍都被淘汰了！");
-        }
-
-        // 显示死亡顺序（非第三回合）
-        if (getCurrentRound() < getRound()) {
-            showDeathOrder();
-        }
+        // 播报本回合队伍淘汰顺序
+        showTeamEliminationOrder();
     }
 
     /**
@@ -380,21 +369,7 @@ public class Spleef extends MCEGame {
         return null;
     }
 
-    /**
-     * 显示死亡顺序
-     */
-    private void showDeathOrder() {
-        if (deathOrder.isEmpty()) {
-            MCEMessenger.sendGlobalInfo("<gray>没有玩家被淘汰</gray>");
-            return;
-        }
-
-        MCEMessenger.sendGlobalInfo("<gold><bold>淘汰顺序：</bold></gold>");
-        for (int i = 0; i < deathOrder.size(); i++) {
-            String playerName = deathOrder.get(i);
-            MCEMessenger.sendGlobalInfo("<gray>第" + (i + 1) + "名淘汰: <white>" + playerName + "</white></gray>");
-        }
-    }
+    // 个人淘汰顺序播报已移除，统一使用队伍淘汰顺序
 
     /**
      * 玩家掉落处理
@@ -410,6 +385,28 @@ public class Spleef extends MCEGame {
             deathOrder.add(player.getName());
         }
 
+        // 预检：在切旁观/传送前，若该玩家掉落导致其队伍无人存活，则登记队伍淘汰
+        Team fallingTeam = MCETeamUtils.getTeam(player);
+        if (fallingTeam != null && !teamEliminationOrder.contains(fallingTeam)) {
+            boolean anyAliveSameTeam = false;
+            java.util.Set<Team> aliveTeamsProbe = new java.util.HashSet<>();
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (p.equals(player))
+                    continue; // 排除当前掉落者自身
+                if (p.getScoreboardTags().contains("Active") && !p.getScoreboardTags().contains("dead")) {
+                    Team pt = MCETeamUtils.getTeam(p);
+                    if (pt != null) {
+                        aliveTeamsProbe.add(pt);
+                        if (pt.equals(fallingTeam))
+                            anyAliveSameTeam = true;
+                    }
+                }
+            }
+            if (!anyAliveSameTeam && aliveTeamsProbe.size() >= 1) {
+                teamEliminationOrder.add(fallingTeam);
+            }
+        }
+
         // 交给全局淘汰处理器统一处理
         mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(player);
 
@@ -423,6 +420,115 @@ public class Spleef extends MCEGame {
 
         // 检查游戏结束条件
         checkGameEndCondition();
+    }
+
+    /**
+     * 播报当前回合队伍淘汰顺序（从最先淘汰到最后淘汰）
+     */
+    private void showTeamEliminationOrder() {
+        java.util.List<Team> active = getActiveTeams() != null ? getActiveTeams() : java.util.Collections.emptyList();
+        java.util.Set<Team> survivors = new java.util.HashSet<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (!p.getScoreboardTags().contains("Active") || p.getScoreboardTags().contains("dead"))
+                continue;
+            Team pt = MCETeamUtils.getTeam(p);
+            if (pt != null)
+                survivors.add(pt);
+        }
+
+        MCEMessenger.sendGlobalInfo("<gold><bold>本回合队伍淘汰顺序：</bold></gold>");
+        int idx = 1;
+        // 先播报已淘汰队伍（按记录顺序）
+        for (Team t : teamEliminationOrder) {
+            if (t == null)
+                continue;
+            if (!active.contains(t))
+                continue; // 仅显示本回合参与的队伍
+            String name = MCETeamUtils.getTeamColoredName(t);
+            MCEMessenger.sendGlobalInfo("<yellow>" + idx + ". </yellow>" + name);
+            idx++;
+        }
+        // 再补齐未被淘汰的存活队伍（确保列表完整）
+        for (Team t : active) {
+            if (teamEliminationOrder.contains(t))
+                continue;
+            String name = MCETeamUtils.getTeamColoredName(t);
+            MCEMessenger.sendGlobalInfo("<yellow>" + idx + ". </yellow>" + name);
+            idx++;
+        }
+    }
+
+    // ===== 缩圈实现（参考占山为王的闪烁/移除逻辑，改为环形） =====
+    private void startRingShrinks() {
+        // 60秒：先移除外环 [18,22]
+        scheduleRingShrink(60, 18.0, 22.0);
+        // 120秒：再移除内环 [10,18)
+        scheduleRingShrink(120, 10.0, 18.0);
+    }
+
+    private void scheduleRingShrink(int delaySeconds, double innerRadius, double outerRadius) {
+        this.setDelayedTask(delaySeconds, () -> {
+            // 缩圈提示音效
+            MCEPlayerUtils.globalPlaySound("minecraft:block.note_block.chime");
+            flashRingAndRemove(innerRadius, outerRadius);
+        });
+    }
+
+    private void flashRingAndRemove(double innerRadius, double outerRadius) {
+        org.bukkit.World world = Bukkit.getWorld(this.getWorldName());
+        if (world == null)
+            return;
+
+        java.util.Map<org.bukkit.Location, org.bukkit.block.data.BlockData> original = new java.util.HashMap<>();
+        for (int y = RING_MIN_Y; y <= RING_MAX_Y; y++) {
+            // 扫描一个较大包围盒（基于最大半径22）
+            for (int x = (int) Math.floor(RING_CENTER_X - outerRadius - 1); x <= (int) Math
+                    .ceil(RING_CENTER_X + outerRadius + 1); x++) {
+                for (int z = (int) Math.floor(RING_CENTER_Z - outerRadius - 1); z <= (int) Math
+                        .ceil(RING_CENTER_Z + outerRadius + 1); z++) {
+                    org.bukkit.Location loc = new org.bukkit.Location(world, x, y, z);
+                    double dx = x + 0.5 - RING_CENTER_X;
+                    double dz = z + 0.5 - RING_CENTER_Z;
+                    double r = Math.sqrt(dx * dx + dz * dz);
+                    if (!isInRingAnnulus(r, innerRadius, outerRadius))
+                        continue;
+                    org.bukkit.block.Block b = world.getBlockAt(loc);
+                    if (b.getType() == org.bukkit.Material.AIR)
+                        continue;
+                    original.put(loc, b.getBlockData().clone());
+                }
+            }
+        }
+
+        new org.bukkit.scheduler.BukkitRunnable() {
+            int flashes = 0;
+
+            @Override
+            public void run() {
+                boolean useSeaLantern = flashes % 2 == 0;
+                for (java.util.Map.Entry<org.bukkit.Location, org.bukkit.block.data.BlockData> e : original
+                        .entrySet()) {
+                    org.bukkit.block.Block b = world.getBlockAt(e.getKey());
+                    if (useSeaLantern) {
+                        b.setType(org.bukkit.Material.SEA_LANTERN, false);
+                    } else {
+                        b.setBlockData(e.getValue(), false);
+                    }
+                }
+                flashes++;
+                if (flashes >= 10) { // 闪烁5次
+                    this.cancel();
+                    // 移除环带
+                    for (org.bukkit.Location loc : original.keySet()) {
+                        world.getBlockAt(loc).setType(org.bukkit.Material.AIR, false);
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 10L); // 0.5s 一次
+    }
+
+    private boolean isInRingAnnulus(double r, double inner, double outer) {
+        return r >= inner && r <= outer;
     }
 
     /**

@@ -483,6 +483,35 @@ public class CrazyMinerFuncImpl {
 
         plugin.getLogger().info("方块替换完成！检查了 " + totalBlocks + " 个位置，替换了 " + replacedBlocks + " 个基岩方块");
 
+        // 额外撒播沙砾（随机生成部分GRAVEL，供玩家获取燧石）
+        int gravelPlaced = 0;
+        final double GRAVEL_SPAWN_CHANCE = 0.03; // 3% 概率
+        for (int x = centerX - halfSizeX; x <= centerX + halfSizeX; x++) {
+            for (int z = centerZ - halfSizeZ; z <= centerZ + halfSizeZ; z++) {
+                // 跳过中心空缺区域
+                CrazyMinerConfigParser config = game.getCrazyMinerConfigParser();
+                int halfClearSize = config.getCenterClearAreaSize() / 2;
+                if (Math.abs(x - centerX) <= halfClearSize && Math.abs(z - centerZ) <= halfClearSize) {
+                    continue;
+                }
+                boolean isOuterBoundary = (x == centerX - halfSizeX || x == centerX + halfSizeX ||
+                        z == centerZ - halfSizeZ || z == centerZ + halfSizeZ);
+                for (int currentY = y + 1; currentY < y + height - 1; currentY++) {
+                    if (isOuterBoundary)
+                        continue; // 保持最外层
+                    if (random.nextDouble() < GRAVEL_SPAWN_CHANCE) {
+                        org.bukkit.block.Block b = world.getBlockAt(x, currentY, z);
+                        Material t = b.getType();
+                        if (t != Material.AIR && t != Material.BEDROCK && t != Material.BARRIER) {
+                            b.setType(Material.GRAVEL, false);
+                            gravelPlaced++;
+                        }
+                    }
+                }
+            }
+        }
+        plugin.getLogger().info("额外生成沙砾方块数量=" + gravelPlaced);
+
         // 清理所有掉落物
         clearAllDroppedItems(world);
     }

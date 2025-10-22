@@ -78,9 +78,14 @@ public class PlayerDeathHandler extends MCEResumableEventHandler implements List
             return;
         }
 
-        // 检查伤害是否会导致死亡 -> 直接交给全局淘汰处理器
+        // 检查伤害是否会导致死亡
         if (victim.getHealth() - event.getFinalDamage() <= 0) {
             event.setCancelled(true);
+            // 先结算击杀加分（仅当存在有效攻击者且非队友时）
+            if (attacker != null && attackerTeam != null && victimTeam != null && !attackerTeam.equals(victimTeam)) {
+                handlePlayerKill(attacker, victim);
+            }
+            // 统一交给全局淘汰处理（处理淘汰消息与团灭判定等）
             mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(victim);
         }
     }

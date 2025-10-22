@@ -84,7 +84,8 @@ public class MCEPlayerUtils {
     public static void globalChangeTeamNameTag() {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         for (Team team : scoreboard.getTeams()) {
-            team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
+            // 仅队友可见名牌：对其他队伍隐藏
+            team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OTHER_TEAMS);
         }
     }
 

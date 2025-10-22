@@ -96,6 +96,8 @@ public class ExtractOwn extends MCEGame {
         // 读取配置文件（包括intro信息）
         loadConfig();
         MCEPlayerUtils.globalClearPotionEffects();
+        // 给予全体饱和效果
+        grantGlobalPotionEffect(mcevent.MCEFramework.miscellaneous.Constants.saturation);
 
         World world = Bukkit.getWorld(this.getWorldName());
         if (world != null) {
@@ -112,6 +114,7 @@ public class ExtractOwn extends MCEGame {
             for (Location spawn : SPAWN_POINTS) {
                 spawn.setWorld(world);
             }
+            MCEWorldUtils.disablePVP();
         }
 
         // 重置游戏状态
@@ -119,6 +122,12 @@ public class ExtractOwn extends MCEGame {
 
         setActiveTeams(MCETeamUtils.getActiveTeams());
         MCETeleporter.globalSwapWorld(this.getWorldName());
+
+        // 仅队友可见名牌
+        MCEPlayerUtils.globalChangeTeamNameTag();
+
+        // 关闭玩家间碰撞
+        setTeamsCollision(false);
 
         // 初始化玩家属性
         initializePlayers();
@@ -180,6 +189,15 @@ public class ExtractOwn extends MCEGame {
 
         // 禁用玩家移动和跳跃
         disablePlayerMovement();
+
+        // 仅队友可见名牌（再次确保）
+        MCEPlayerUtils.globalChangeTeamNameTag();
+
+        // 准备阶段禁用PVP
+        MCEWorldUtils.disablePVP();
+
+        // 准备阶段关闭玩家碰撞
+        setTeamsCollision(false);
     }
 
     @Override
@@ -229,6 +247,9 @@ public class ExtractOwn extends MCEGame {
         this.getGameBoard().setStateTitle("<green><bold> 回合结束：</bold></green>");
         MCEPlayerUtils.globalShowNameTag();
 
+        // 恢复玩家碰撞
+        setTeamsCollision(true);
+
         // 停止当前回合的任务
         stopRoundTasks();
 
@@ -253,6 +274,9 @@ public class ExtractOwn extends MCEGame {
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
         sendWinningMessage();
         MCEPlayerUtils.globalSetGameMode(GameMode.SPECTATOR);
+
+        // 恢复玩家碰撞
+        setTeamsCollision(true);
 
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
         setDelayedTask(getEndDuration(), () -> {
@@ -288,6 +312,9 @@ public class ExtractOwn extends MCEGame {
         autoReloadHandler.suspend();
         crossbowAttackHandler.suspend();
         playerDeathHandler.suspend();
+
+        // 确保恢复玩家碰撞
+        setTeamsCollision(true);
 
         // 重置世界边界
         World world = Bukkit.getWorld(this.getWorldName());
@@ -504,6 +531,20 @@ public class ExtractOwn extends MCEGame {
      */
     private void stopRoundTasks() {
         ExtractOwnFuncImpl.stopAllTasks();
+    }
+
+    // ===== 玩家碰撞控制 =====
+    private void setTeamsCollision(boolean enabled) {
+        org.bukkit.scoreboard.Scoreboard sb = Bukkit.getScoreboardManager().getMainScoreboard();
+        for (Team t : sb.getTeams()) {
+            if (t == null)
+                continue;
+            try {
+                t.setOption(Team.Option.COLLISION_RULE,
+                        enabled ? Team.OptionStatus.ALWAYS : Team.OptionStatus.NEVER);
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     /**

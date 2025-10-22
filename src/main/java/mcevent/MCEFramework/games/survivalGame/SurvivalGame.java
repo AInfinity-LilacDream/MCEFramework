@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.survivalGame.customHandler.MovementRestrictionHandler;
+import mcevent.MCEFramework.games.survivalGame.customHandler.BuildRulesHandler;
 import mcevent.MCEFramework.games.survivalGame.customHandler.PlayerDeathHandler;
+import mcevent.MCEFramework.games.survivalGame.customHandler.AnvilDurabilityHandler;
 import mcevent.MCEFramework.games.survivalGame.gameObject.SurvivalGameGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.*;
@@ -29,7 +31,9 @@ public class SurvivalGame extends MCEGame {
 
     private SurvivalGameConfigParser survivalGameConfigParser = new SurvivalGameConfigParser();
     private MovementRestrictionHandler movementRestrictionHandler = new MovementRestrictionHandler();
+    private BuildRulesHandler buildRulesHandler = new BuildRulesHandler();
     private PlayerDeathHandler playerDeathHandler = new PlayerDeathHandler();
+    private AnvilDurabilityHandler anvilDurabilityHandler = new AnvilDurabilityHandler();
 
     private List<BukkitRunnable> gameTasks = new ArrayList<>();
     private BukkitRunnable musicLoopTask;
@@ -112,6 +116,10 @@ public class SurvivalGame extends MCEGame {
         // 重置游戏板
         resetGameBoard();
 
+        // 回合准备：确保关闭全局 PVP（避免上一回合遗留导致开局可打人）
+        pvpEnabled = false;
+        MCEWorldUtils.disablePVP();
+
         // 额外清理上一回合遗留的死亡箱子
         clearDeathChests();
 
@@ -145,6 +153,10 @@ public class SurvivalGame extends MCEGame {
 
         // 倒计时准备（禁用移动 + 倒计时），在准备阶段进行
         movementRestrictionHandler.start();
+        // 准备阶段允许建造规则启用（可提前放置/记录）
+        buildRulesHandler.start();
+        // 启用铁砧损耗
+        anvilDurabilityHandler.start();
         // 回合准备阶段：使用原版锁机制上锁所有箱子
         lockLootChests();
         // 在准备阶段末尾开始10秒倒计时，使倒计时正好跨到回合开始
@@ -162,6 +174,8 @@ public class SurvivalGame extends MCEGame {
 
         // 在回合开始阶段允许移动并提示开始（准备阶段倒计时结束）
         movementRestrictionHandler.suspend();
+        // 建造规则保持启用
+        buildRulesHandler.start();
         // 回合开始：解除箱子上锁
         unlockLootChests();
         MCEMessenger.sendGlobalInfo("<green><bold>游戏开始！</bold></green>");
@@ -205,8 +219,14 @@ public class SurvivalGame extends MCEGame {
         clearLootChests();
         // 清理死亡箱子
         clearDeathChests();
+        // 处理可能延迟1tick创建的死亡箱：延迟再清理一次
+        setDelayedTask(0.1, SurvivalGameFuncImpl::clearDeathChests);
         // 回溯玩家放置导致的地形变化
         mcevent.MCEFramework.tools.MCEBlockRestoreUtils.restoreAllForWorld(getWorldName());
+        // 清空玩家放置记录
+        mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl.clearPlacedBlocks();
+        // 暂停铁砧损耗
+        anvilDurabilityHandler.suspend();
 
         // 回合结束：发送队伍排名
         sendRoundRanking();
@@ -246,6 +266,8 @@ public class SurvivalGame extends MCEGame {
 
         // 清理死亡箱子，防止遗留到后续流程
         clearDeathChests();
+        // 处理可能延迟1tick创建的死亡箱：延迟再清理一次
+        setDelayedTask(0.1, SurvivalGameFuncImpl::clearDeathChests);
         // 恢复所有被玩家放置覆盖的方块
         mcevent.MCEFramework.tools.MCEBlockRestoreUtils.restoreAllForWorld(getWorldName());
 
@@ -267,7 +289,9 @@ public class SurvivalGame extends MCEGame {
 
         clearGameTasks();
         movementRestrictionHandler.suspend();
+        buildRulesHandler.suspend();
         playerDeathHandler.suspend();
+        anvilDurabilityHandler.suspend();
 
         // 停止循环背景音乐
         stopBackgroundMusic();

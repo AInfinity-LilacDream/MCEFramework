@@ -51,6 +51,8 @@ public class SurvivalGameFuncImpl {
     private static final java.util.Map<java.util.UUID, Integer> playerKillCounts = new java.util.HashMap<>();
     // 记录本回合队伍的淘汰顺序（先被淘汰的先入列）
     private static final java.util.List<Team> teamEliminationOrder = new java.util.ArrayList<>();
+    // 记录玩家在本世界放置的方块坐标（块坐标）
+    private static final java.util.Set<org.bukkit.Location> playerPlacedBlocks = new java.util.HashSet<>();
 
     // 从配置文件加载数据
     protected static void loadConfig() {
@@ -844,6 +846,34 @@ public class SurvivalGameFuncImpl {
         gameBoard.updateTeamRemainTitle(null);
     }
 
+    // =============== 玩家放置方块记录 ===============
+    public static void registerPlacedBlock(org.bukkit.Location loc) {
+        if (loc == null)
+            return;
+        org.bukkit.World w = loc.getWorld();
+        if (w == null)
+            return;
+        if (survivalGame == null || !w.getName().equals(survivalGame.getWorldName()))
+            return;
+        // 归一化到整块坐标
+        org.bukkit.Location key = new org.bukkit.Location(w, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+        playerPlacedBlocks.add(key);
+    }
+
+    public static boolean isPlayerPlaced(org.bukkit.Location loc) {
+        if (loc == null)
+            return false;
+        org.bukkit.World w = loc.getWorld();
+        if (w == null)
+            return false;
+        org.bukkit.Location key = new org.bukkit.Location(w, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+        return playerPlacedBlocks.contains(key);
+    }
+
+    public static void clearPlacedBlocks() {
+        playerPlacedBlocks.clear();
+    }
+
     // 发送获胜消息
     protected static void sendWinningMessage() {
         StringBuilder message = new StringBuilder();
@@ -878,7 +908,7 @@ public class SurvivalGameFuncImpl {
         MCEMainController.setRunningGame(false);
     }
 
-    // 创建玩家死亡掉落箱子
+    // 创建玩家死亡掉落箱子（从玩家当前背包快照复制）
     public static void createDeathChest(Player player, Location location) {
         World world = location.getWorld();
         if (world == null)
@@ -886,44 +916,91 @@ public class SurvivalGameFuncImpl {
 
         Block block = world.getBlockAt(location);
         block.setType(Material.CHEST);
+        // 记录该位置为死亡箱位置（使用整块坐标）
+        Location keyLoc = new Location(world, block.getX(), block.getY(), block.getZ());
+        deathChestLocations.add(keyLoc);
+        plugin.getLogger().info("[SG][DeathDebug] chest placed at " + keyLoc.getBlockX() + "," + keyLoc.getBlockY()
+                + "," + keyLoc.getBlockZ());
 
         if (block.getState() instanceof Chest chest) {
-            Inventory chestInv = chest.getInventory();
+            Inventory chestInv = chest.getBlockInventory();
             PlayerInventory playerInv = player.getInventory();
 
-            // 复制玩家背包内容到箱子
-            for (int i = 0; i < playerInv.getSize(); i++) {
-                ItemStack item = playerInv.getItem(i);
-                if (item != null && item.getType() != Material.AIR) {
-                    chestInv.addItem(item.clone());
+            // 主物品栏（不包含护甲/副手）
+            ItemStack[] storage = playerInv.getStorageContents();
+            if (storage != null) {
+                for (ItemStack it : storage) {
+                    if (it != null && it.getType() != Material.AIR) {
+                        chestInv.addItem(it.clone());
+                    }
                 }
             }
 
-            // 复制装备
-            if (playerInv.getHelmet() != null)
-                chestInv.addItem(playerInv.getHelmet().clone());
-            if (playerInv.getChestplate() != null)
-                chestInv.addItem(playerInv.getChestplate().clone());
-            if (playerInv.getLeggings() != null)
-                chestInv.addItem(playerInv.getLeggings().clone());
-            if (playerInv.getBoots() != null)
-                chestInv.addItem(playerInv.getBoots().clone());
-            if (playerInv.getItemInOffHand() != null)
-                chestInv.addItem(playerInv.getItemInOffHand().clone());
-
-            chest.update();
-
-            // 标记为死亡箱子（TileState PDC）并记录位置
-            if (block.getState() instanceof TileState tile) {
-                tile.getPersistentDataContainer().set(deathChestKey(), PersistentDataType.BYTE, (byte) 1);
-                tile.update();
-                // 归一化到整数方块坐标，避免浮点误差
-                Location keyLoc = new Location(world, block.getX(), block.getY(), block.getZ());
-                deathChestLocations.add(keyLoc);
+            // 护甲
+            ItemStack[] armor = playerInv.getArmorContents();
+            if (armor != null) {
+                for (ItemStack it : armor) {
+                    if (it != null && it.getType() != Material.AIR) {
+                        chestInv.addItem(it.clone());
+                    }
+                }
             }
 
-            // 清空玩家背包
+            // 副手
+            ItemStack off = playerInv.getItemInOffHand();
+            if (off != null && off.getType() != Material.AIR) {
+                chestInv.addItem(off.clone());
+            }
+
+            // 不调用 update(true) 以免覆盖库存
+
+            // 清空玩家背包（主物品、护甲、副手）
             playerInv.clear();
+            playerInv.setArmorContents(null);
+            playerInv.setItemInOffHand(null);
+        }
+    }
+
+    // 创建玩家死亡掉落箱子（从事件 drops 列表复制）
+    public static void createDeathChest(Player player, Location location, java.util.Collection<ItemStack> drops) {
+        World world = location.getWorld();
+        if (world == null)
+            return;
+
+        Block block = world.getBlockAt(location);
+        block.setType(Material.CHEST);
+        Location keyLoc = new Location(world, block.getX(), block.getY(), block.getZ());
+        deathChestLocations.add(keyLoc);
+        plugin.getLogger().info("[SG][DeathDebug] chest placed at " + keyLoc.getBlockX() + "," + keyLoc.getBlockY()
+                + "," + keyLoc.getBlockZ());
+
+        if (block.getState() instanceof Chest chest) {
+            Inventory chestInv = chest.getBlockInventory();
+
+            if (drops != null) {
+                for (ItemStack it : drops) {
+                    if (it == null || it.getType() == Material.AIR)
+                        continue;
+                    plugin.getLogger().info("[SG][DeathDebug] add to chest: " + it.getType() + " x" + it.getAmount());
+                    java.util.Map<Integer, ItemStack> leftover = chestInv.addItem(it.clone());
+                    if (!leftover.isEmpty()) {
+                        // 背包放不下的，丢在地上避免丢失
+                        for (ItemStack rem : leftover.values()) {
+                            if (rem != null && rem.getType() != Material.AIR) {
+                                world.dropItemNaturally(location, rem);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 调试：统计箱子内容
+            int nonAir = 0;
+            for (ItemStack c : chestInv.getContents()) {
+                if (c != null && c.getType() != Material.AIR)
+                    nonAir++;
+            }
+            plugin.getLogger().info("[SG][DeathDebug] chest non-air count=" + nonAir);
         }
     }
 
@@ -941,17 +1018,13 @@ public class SurvivalGameFuncImpl {
                 it.remove();
                 continue;
             }
-            if (!world.getName().equals(loc.getWorld() != null ? loc.getWorld().getName() : null)) {
-                it.remove();
-                continue;
-            }
             Block block = world.getBlockAt(loc);
-            if (block.getState() instanceof TileState tile) {
-                Byte flag = tile.getPersistentDataContainer().get(deathChestKey(), PersistentDataType.BYTE);
-                if (flag != null && flag == 1) {
-                    block.setType(Material.AIR, false);
-                    removed++;
-                }
+            if (block.getType() == Material.CHEST) {
+                block.setType(Material.AIR, false);
+                removed++;
+            } else {
+                // 无论如何尝试清理该位置，避免残留
+                block.setType(Material.AIR, false);
             }
             it.remove();
         }

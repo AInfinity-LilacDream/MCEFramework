@@ -39,6 +39,8 @@ public class ParkourTag extends MCEGame {
     @Getter
     protected boolean showSurvivePlayer = false;
 
+    private BukkitRunnable pktSaturationTask;
+
     // 玩家被抓住事件监听器
     PlayerCaughtHandler playerCaughtHandler = new PlayerCaughtHandler();
     OpponentTeamGlowingHandler opponentTeamGlowingHandler = new OpponentTeamGlowingHandler();
@@ -128,6 +130,11 @@ public class ParkourTag extends MCEGame {
         MCEPlayerUtils.globalGrantTag("Active"); // 重新添加Active标签
         MCEPlayerUtils.globalGrantTag("runner");
         MCEPlayerUtils.globalSetGameMode(GameMode.SURVIVAL);
+        grantGlobalPotionEffect(saturation);
+
+        // 开始回合背景音乐
+        MCEPlayerUtils.globalStopMusic();
+        MCEPlayerUtils.globalPlaySound("minecraft:parkour_tag");
 
         setActiveTeams(MCETeamUtils.rotateTeam(this.getActiveTeams())); // 更新本回合队伍匹配列表
         sendCurrentRoundMatchTitle();
@@ -142,7 +149,11 @@ public class ParkourTag extends MCEGame {
         resetChoiceRoom(parkourTagConfigParser);
         showSurvivePlayer = true;
 
+        // 在传送到场地前，确保每队必须有且只有一名抓捕者；若未选择则随机指定并提示双方
+        ensureChasersSelectedAndNotify();
+
         globalTeleportToStadium(parkourTagConfigParser);
+        grantGlobalPotionEffect(saturation);
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             Objects.requireNonNull(player.getAttribute(Attribute.MOVEMENT_SPEED)).setBaseValue(0);
@@ -164,6 +175,8 @@ public class ParkourTag extends MCEGame {
     public void onCycleEnd() {
         opponentTeamGlowingHandler.suspend();
         showSurvivePlayer = false;
+        // 结束回合时停止背景音乐
+        MCEPlayerUtils.globalStopMusic();
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 下一回合：</bold></red>");
     }
@@ -194,6 +207,11 @@ public class ParkourTag extends MCEGame {
         opponentTeamGlowingHandler.suspend();
         playerCaughtHandler.suspend();
         showSurvivePlayer = false;
+        if (pktSaturationTask != null) {
+            pktSaturationTask.cancel();
+            pktSaturationTask = null;
+        }
+        MCEPlayerUtils.globalStopMusic();
         MCEPlayerUtils.globalShowNameTag();
     }
 

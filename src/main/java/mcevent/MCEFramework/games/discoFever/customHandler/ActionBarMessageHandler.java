@@ -25,7 +25,8 @@ public class ActionBarMessageHandler extends MCEResumableEventHandler {
     private String actionBarMessage;
 
     public void showMessage() {
-        if (isSuspended()) return;
+        if (isSuspended())
+            return;
 
         MCEMessenger.sendGlobalActionBarMessage(actionBarMessage);
     }

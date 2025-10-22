@@ -22,34 +22,36 @@ import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
  * 将聊天消息格式化为: <带颜色的玩家名称（如果有队伍）>: xxx
  */
 public class ChatFormatHandler extends MCEResumableEventHandler implements Listener {
-    
+
     public ChatFormatHandler() {
         setSuspended(false); // 始终启用
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
-    
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onAsyncChat(AsyncChatEvent event) {
-        if (isSuspended()) return;
-        
+        if (isSuspended())
+            return;
+
         Player player = event.getPlayer();
         Component originalMessage = event.message();
-        
+
         // 获取玩家队伍信息
         Team team = MCETeamUtils.getTeam(player);
         String teamName = team != null ? team.getName() : null;
-        
-        // 使用Component Builder API构建聊天消息
+
+        // 构建原版格式: <名字> 消息，其中名字保留队伍颜色
         Component chatMessage = Component.text()
+                .append(Component.text("<", NamedTextColor.WHITE))
                 .append(createPlayerNameComponent(player, teamName))
-                .append(Component.text(": ", NamedTextColor.WHITE))
+                .append(Component.text("> ", NamedTextColor.WHITE))
                 .append(originalMessage)
                 .build();
-        
+
         // 替换原始消息格式
         event.renderer((source, sourceDisplayName, message, viewer) -> chatMessage);
     }
-    
+
     /**
      * 创建带颜色的玩家名称组件
      */

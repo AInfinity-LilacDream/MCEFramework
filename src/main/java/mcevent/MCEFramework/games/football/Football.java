@@ -41,14 +41,14 @@ public class Football extends MCEGame {
 
     // 出生点位置
     private Location[] blueSpawns = {
-            new Location(null, 1, -57, 0),
-            new Location(null, -3, -57, 8),
-            new Location(null, 1, -57, 16)
+            new Location(null, 1.5, -57, 16.5),
+            new Location(null, -2.5, -57, 8.5),
+            new Location(null, 1.5, -57, 0.5)
     };
     private Location[] redSpawns = {
-            new Location(null, 15, -57, 0),
-            new Location(null, 19, -57, 8),
-            new Location(null, 15, -57, 16)
+            new Location(null, 15.5, -57, 0.5),
+            new Location(null, 19.5, -57, 8.5),
+            new Location(null, 15.5, -57, 16.5)
     };
 
     // 球门位置 - 人工划定的精确球门范围
@@ -60,7 +60,7 @@ public class Football extends MCEGame {
     private Location blueGoalMax = new Location(null, -20, -54, 11);
 
     // 球的初始位置
-    private Location ballSpawn = new Location(null, 8, -57, 8);
+    private Location ballSpawn = new Location(null, 8.5, -57, 8.5);
 
     // Music looping task
     private BukkitRunnable musicLoopTask;

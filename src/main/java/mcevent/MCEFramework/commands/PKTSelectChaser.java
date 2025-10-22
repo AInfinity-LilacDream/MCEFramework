@@ -41,31 +41,41 @@ public class PKTSelectChaser extends BaseCommand {
         Location blockLocation = commandBlock.getLocation();
 
         Player nearestPlayer = findNearestPlayer(blockLocation);
-        if (nearestPlayer.getScoreboardTags().contains("chaser")) return;
+
+        Team ownTeam = MCETeamUtils.getTeam(nearestPlayer);
+        // 同队只允许存在一个抓捕者，若已有则忽略本次选择
+        if (ownTeam != null) {
+            for (Player p : MCETeamUtils.getPlayers(ownTeam)) {
+                if (p.getScoreboardTags().contains("chaser")) {
+                    return;
+                }
+            }
+        }
+
+        if (nearestPlayer.getScoreboardTags().contains("chaser"))
+            return;
 
         MCEPlayerUtils.clearTag(nearestPlayer);
         nearestPlayer.addScoreboardTag("chaser");
 
-        Team ownTeam = MCETeamUtils.getTeam(nearestPlayer);
         ArrayList<Team> activeTeam = pkt.getActiveTeams();
 
         int teamPos = activeTeam.indexOf(ownTeam);
         Team opponentTeam = pkt.getOpponentTeam(ownTeam);
 
         int offset = teamPos / 2;
-        
+
         // 从配置文件获取位置信息
         ParkourTagConfigParser config = pkt.getParkourTagConfigParser();
         Location pktOffset = config.getLocation("pktOffset");
-        
+
         Location locDown, locUp;
         if (teamPos % 2 == 0) {
             Location pktDoorLocation1down = config.getLocation("pktDoorLocation1down");
             Location pktDoorLocation1up = config.getLocation("pktDoorLocation1up");
             locDown = MCEWorldUtils.teleportLocation(pktDoorLocation1down, pktOffset, offset);
             locUp = MCEWorldUtils.teleportLocation(pktDoorLocation1up, pktOffset, offset);
-        }
-        else {
+        } else {
             Location pktDoorLocation2down = config.getLocation("pktDoorLocation2down");
             Location pktDoorLocation2up = config.getLocation("pktDoorLocation2up");
             locDown = MCEWorldUtils.teleportLocation(pktDoorLocation2down, pktOffset, offset);
@@ -79,7 +89,8 @@ public class PKTSelectChaser extends BaseCommand {
         blockUp.setType(Material.RED_STAINED_GLASS_PANE);
 
         if (ownTeam != null) {
-            MCEMessenger.sendInfoToTeam(opponentTeam, ownTeam.getName() + "选择了" + MCEPlayerUtils.getColoredPlayerName(nearestPlayer) + "来抓捕你们！");
+            MCEMessenger.sendInfoToTeam(opponentTeam,
+                    ownTeam.getName() + "选择了" + MCEPlayerUtils.getColoredPlayerName(nearestPlayer) + "来抓捕你们！");
         }
     }
 
