@@ -22,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.NamespacedKey;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
@@ -46,6 +47,8 @@ public class Spleef extends MCEGame {
     private List<String> deathOrder = new ArrayList<>();
     private List<Team> teamEliminationOrder = new ArrayList<>();
     private Map<String, Integer> playerSnowballCount = new HashMap<>();
+    // 缩圈环闪烁任务集合（用于跨回合/结束取消）
+    private final java.util.List<BukkitRunnable> ringFlashTasks = new java.util.ArrayList<>();
 
     // 游戏配置
     private static final int FALL_Y_THRESHOLD = 26;
@@ -177,6 +180,10 @@ public class Spleef extends MCEGame {
     public void onCyclePreparation() {
         this.getGameBoard().setStateTitle("<yellow><bold> 回合准备中：</bold></yellow>");
 
+        // 取消上一回合遗留的延时与闪烁任务，避免跨回合触发
+        clearDelayedTasks();
+        cancelRingFlashTasks();
+
         // 清空上回合的队伍淘汰顺序
         teamEliminationOrder.clear();
 
@@ -184,9 +191,6 @@ public class Spleef extends MCEGame {
         for (Player player : Bukkit.getOnlinePlayers()) {
             // 移除死亡标签，确保玩家重新激活
             player.removeScoreboardTag("dead");
-            if (!player.getScoreboardTags().contains("Active")) {
-                player.addScoreboardTag("Active");
-            }
             plugin.getLogger().info("调试 - 重置玩家 " + player.getName() + " 状态标签");
         }
 
@@ -195,13 +199,21 @@ public class Spleef extends MCEGame {
         if (world != null) {
             Location spawnLocation = world.getSpawnLocation();
             for (Player player : Bukkit.getOnlinePlayers()) {
-                player.teleport(spawnLocation);
+                // 仅传送参与者
+                if (player.getScoreboardTags().contains("Participant")) {
+                    player.teleport(spawnLocation);
+                }
             }
             plugin.getLogger().info("Spleef: 已将所有玩家传送到出生点: " + spawnLocation);
         }
 
-        // 将玩家游戏模式设置为生存模式（准备阶段）
-        MCEPlayerUtils.globalSetGameMode(GameMode.SURVIVAL);
+        // 仅将参与者设置为生存模式，非参与者保持旁观
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getScoreboardTags().contains("Participant"))
+                p.setGameMode(GameMode.SURVIVAL);
+            else
+                p.setGameMode(GameMode.SPECTATOR);
+        }
     }
 
     @Override
@@ -214,7 +226,7 @@ public class Spleef extends MCEGame {
         // 给所有玩家发放效率5金铲子
         giveGoldenShovels();
 
-        // 游戏模式已在回合准备阶段设为生存模式，无需在此重复设置
+        // Active 标签由基类统一管理
 
         // 启动所有事件处理器
         playerFallHandler.start();
@@ -233,6 +245,10 @@ public class Spleef extends MCEGame {
 
         // 停止背景音乐
         stopBackgroundMusic();
+
+        // 取消本回合所有延时缩圈任务与闪烁任务
+        clearDelayedTasks();
+        cancelRingFlashTasks();
 
         // 暂停所有事件处理器（为下一回合准备）
         playerFallHandler.suspend();
@@ -289,6 +305,10 @@ public class Spleef extends MCEGame {
         snowBreakHandler.suspend();
         snowballThrowHandler.suspend();
         craftingDisableHandler.suspend();
+
+        // 取消所有延时与闪烁任务
+        clearDelayedTasks();
+        cancelRingFlashTasks();
 
         super.stop();
     }
@@ -500,7 +520,7 @@ public class Spleef extends MCEGame {
             }
         }
 
-        new org.bukkit.scheduler.BukkitRunnable() {
+        BukkitRunnable task = new org.bukkit.scheduler.BukkitRunnable() {
             int flashes = 0;
 
             @Override
@@ -518,17 +538,31 @@ public class Spleef extends MCEGame {
                 flashes++;
                 if (flashes >= 10) { // 闪烁5次
                     this.cancel();
+                    ringFlashTasks.remove(this);
                     // 移除环带
                     for (org.bukkit.Location loc : original.keySet()) {
                         world.getBlockAt(loc).setType(org.bukkit.Material.AIR, false);
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 10L); // 0.5s 一次
+        };
+        ringFlashTasks.add(task);
+        task.runTaskTimer(plugin, 0L, 10L); // 0.5s 一次
     }
 
     private boolean isInRingAnnulus(double r, double inner, double outer) {
         return r >= inner && r <= outer;
+    }
+
+    private void cancelRingFlashTasks() {
+        for (BukkitRunnable r : new java.util.ArrayList<>(ringFlashTasks)) {
+            try {
+                if (r != null && !r.isCancelled())
+                    r.cancel();
+            } catch (Throwable ignored) {
+            }
+        }
+        ringFlashTasks.clear();
     }
 
     /**

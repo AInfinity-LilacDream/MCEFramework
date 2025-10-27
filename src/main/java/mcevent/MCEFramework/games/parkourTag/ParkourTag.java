@@ -119,17 +119,15 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onCyclePreparation() {
-        playerCaughtHandler.start();
-        MCEWorldUtils.enablePVP();
+        // 选队阶段不允许抓捕与PVP，防止误判导致被切旁观
+        playerCaughtHandler.suspend();
+        MCEWorldUtils.disablePVP();
         clearMatchCompleteState();
         getGameBoard().setStateTitle("<red><bold> 选择结束：</bold></red>");
         getGameBoard().updateRoundTitle(getCurrentRound());
         resetSurvivePlayerTot();
 
-        MCEPlayerUtils.clearGlobalTags();
-        MCEPlayerUtils.globalGrantTag("Active"); // 重新添加Active标签
-        MCEPlayerUtils.globalGrantTag("runner");
-        MCEPlayerUtils.globalSetGameMode(GameMode.SURVIVAL);
+        // Active/Participant 由基类管理，不在此阶段清全局标签或统一改模式
         grantGlobalPotionEffect(saturation);
 
         // 开始回合背景音乐
@@ -144,6 +142,9 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onCycleStart() {
+        // 正式开始小局，开启抓捕与PVP
+        playerCaughtHandler.start();
+        MCEWorldUtils.enablePVP();
         opponentTeamGlowingHandler.start();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
         resetChoiceRoom(parkourTagConfigParser);

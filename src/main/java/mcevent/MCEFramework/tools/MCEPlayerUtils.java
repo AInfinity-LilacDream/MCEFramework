@@ -125,6 +125,18 @@ public class MCEPlayerUtils {
         }
     }
 
+    /**
+     * 清空所有玩家的主物品栏、护甲栏与副手物品
+     */
+    public static void globalClearInventoryAllSlots() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            var inv = player.getInventory();
+            inv.clear();
+            inv.setArmorContents(null);
+            inv.setItemInOffHand(null);
+        }
+    }
+
     public static void globalClearPotionEffects() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));

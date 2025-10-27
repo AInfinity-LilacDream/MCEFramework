@@ -57,7 +57,7 @@ public class AnvilDurabilityHandler extends MCEResumableEventHandler implements 
         if (!(event.getInventory() instanceof AnvilInventory))
             return;
         if (event.getRawSlot() != 2)
-            return; // 仅结果槽
+            return; // 仅结果槽 
         if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR)
             return;
 

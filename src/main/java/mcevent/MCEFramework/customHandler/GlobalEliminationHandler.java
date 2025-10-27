@@ -4,7 +4,6 @@ import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.captureCenter.CaptureCenter;
 import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
-import mcevent.MCEFramework.games.extractOwn.ExtractOwn;
 import mcevent.MCEFramework.games.sandRun.SandRun;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl;
@@ -51,6 +50,9 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
             return;
 
         Player victim = event.getEntity();
+        // 非参与者（未持有 Active 或不在游戏世界）完全忽略
+        if (current != null && !current.isGameParticipant(victim))
+            return;
         // SG 特化：用事件drops创建死亡箱并清空掉落，避免玩家背包被系统先清空
         if (current instanceof SurvivalGame) {
             // 调试：打印玩家背包与事件掉落
@@ -104,9 +106,8 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
             return;
         MCEGame current = MCEMainController.getCurrentRunningGame();
 
-        // 统一标记与旁观
+        // 统一标记与旁观：仅标记 dead，不移除 Active（Active 代表本局参赛资格）
         victim.addScoreboardTag("dead");
-        victim.removeScoreboardTag("Active");
         victim.setGameMode(GameMode.SPECTATOR);
 
         // 玩家淘汰提示与音效

@@ -8,12 +8,18 @@ import mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl;
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
 import mcevent.MCEFramework.tools.MCEBlockRestoreUtils;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.WorldBorder;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.block.Action;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
 
@@ -32,8 +38,31 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
+    // 禁止编辑告示牌（生存模式下）
+    @EventHandler
+    public void onSignChange(SignChangeEvent event) {
+        if (isSuspended())
+            return;
+        Player player = event.getPlayer();
+        if (!isSurvival(player))
+            return;
+        // 统一禁止编辑（无论是否在边界外）
+        event.setCancelled(true);
+    }
+
     private boolean isSurvival(Player player) {
         return player.getGameMode() == GameMode.SURVIVAL;
+    }
+
+    private boolean isOutsideBorder(org.bukkit.Location loc) {
+        if (loc == null || loc.getWorld() == null)
+            return false;
+        try {
+            WorldBorder wb = loc.getWorld().getWorldBorder();
+            return wb != null && !wb.isInside(loc);
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private boolean isCurrentGame(Class<?> clazz) {
@@ -47,6 +76,10 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
             return;
         Player player = event.getPlayer();
         if (!isSurvival(player))
+            return;
+
+        // 边界外一律允许破坏
+        if (isOutsideBorder(event.getBlock().getLocation()))
             return;
 
         // 在未运行任何游戏（主城）或投票系统阶段：默认禁止破坏
@@ -87,12 +120,56 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
         event.setCancelled(true);
     }
 
+    // 禁止“劈树皮”等使用斧头对木类方块的右键改性（生存模式下）
+    @EventHandler
+    public void onBlockInteract(PlayerInteractEvent event) {
+        if (isSuspended())
+            return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
+            return;
+        Player player = event.getPlayer();
+        if (!isSurvival(player))
+            return;
+        Block clicked = event.getClickedBlock();
+        if (clicked == null)
+            return;
+        // 边界外一律允许右键交互（包括劈树皮）
+        if (isOutsideBorder(clicked.getLocation()))
+            return;
+        if (event.getItem() == null)
+            return;
+        Material tool = event.getItem().getType();
+        if (!isAxe(tool))
+            return;
+        if (!isStrippable(clicked.getType()))
+            return;
+
+        // 默认全面禁止生存模式下的“劈树皮”改性
+        event.setCancelled(true);
+    }
+
+    private boolean isAxe(Material tool) {
+        String n = tool.name();
+        return n.endsWith("_AXE");
+    }
+
+    private boolean isStrippable(Material type) {
+        String n = type.name();
+        // 包含所有可被斧头右键改性的木本/菌类方块族
+        return n.endsWith("_LOG") || n.endsWith("_WOOD") || n.endsWith("_STEM") || n.endsWith("_HYPHAE")
+                || n.equals("BAMBOO_BLOCK") || n.equals("PALE_OAK_LOG") || n.equals("PALE_OAK_WOOD");
+    }
+
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
         if (isSuspended())
             return;
         Player player = event.getPlayer();
         if (!isSurvival(player))
+            return;
+
+        // 边界外一律允许放置
+        if (isOutsideBorder(event.getBlockPlaced().getLocation()))
             return;
 
         // 在未运行任何游戏（主城）或投票系统阶段：默认禁止放置

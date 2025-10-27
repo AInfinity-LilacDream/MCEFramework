@@ -14,7 +14,8 @@ import java.util.Map;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 
-@Setter @Getter
+@Setter
+@Getter
 public class CaptureCenterGameBoard extends MCEGameBoard {
     private int playerCount;
     private int teamCount;
@@ -28,15 +29,22 @@ public class CaptureCenterGameBoard extends MCEGameBoard {
     }
 
     public void updatePlayerCount(int playerCount) {
-        this.playerCount = playerCount;
-        this.playerCountTitle = "<green><bold> 剩余玩家：</bold></green>" +
-                playerCount + "/" + Bukkit.getOnlinePlayers().size();
+        int alive = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipants();
+        int total = 0;
+        for (org.bukkit.entity.Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getWorld().getName().equals(captureCenter.getWorldName())
+                    && p.getScoreboardTags().contains("Participant"))
+                total++;
+        }
+        this.playerCount = alive;
+        this.playerCountTitle = "<green><bold> 剩余玩家：</bold></green>" + alive + "/" + total;
     }
 
     public void updateTeamCount(int teamCount) {
-        this.teamCount = teamCount;
-        this.teamCountTitle = "<blue><bold> 剩余队伍：</bold></blue>" +
-                teamCount + "/" + captureCenter.getActiveTeams().size();
+        int aliveTeams = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipantTeams();
+        int totalTeams = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countParticipantTeamsTotal();
+        this.teamCount = aliveTeams;
+        this.teamCountTitle = "<blue><bold> 剩余队伍：</bold></blue>" + aliveTeams + "/" + totalTeams;
     }
 
     public void updateTeamScores(Map<String, Integer> teamScores) {
@@ -71,22 +79,25 @@ public class CaptureCenterGameBoard extends MCEGameBoard {
         int minute = seconds / 60;
         int second = seconds % 60;
         String time = String.format("%02d:%02d", minute, second);
-        
+
         for (Player player : Bukkit.getOnlinePlayers()) {
             FastBoard board = new FastBoard(player);
             board.updateTitle(MiniMessage.miniMessage().deserialize(getMainTitle()));
-            
+
+            // 刷新玩家/队伍数
+            updatePlayerCount(0);
+            updateTeamCount(0);
+
             board.updateLines(
                     MiniMessage.miniMessage().deserialize(" "),
                     MiniMessage.miniMessage().deserialize(getGameTitle()),
                     MiniMessage.miniMessage().deserialize(getMapTitle()),
                     MiniMessage.miniMessage().deserialize(getStateTitle() + time),
                     MiniMessage.miniMessage().deserialize(getPlayerCountTitle()),
-                    MiniMessage.miniMessage().deserialize(getTeamCountTitle())
-            );
+                    MiniMessage.miniMessage().deserialize(getTeamCountTitle()));
         }
     }
-    
+
     /**
      * 获取玩家的队伍分数信息
      */
@@ -94,23 +105,23 @@ public class CaptureCenterGameBoard extends MCEGameBoard {
         if (teamScores == null || teamScores.isEmpty()) {
             return "<yellow><bold> 队伍得分：</bold></yellow>暂无数据";
         }
-        
+
         Team playerTeam = MCETeamUtils.getTeam(player);
         if (playerTeam == null) {
             return "<yellow><bold> 队伍得分：</bold></yellow>未分队";
         }
-        
+
         String teamName = MCETeamUtils.getUncoloredTeamName(playerTeam);
         int teamScore = teamScores.getOrDefault(teamName, 0);
-        
+
         // 计算总分
         int totalScore = teamScores.values().stream().mapToInt(Integer::intValue).sum();
-        
+
         // 计算占比
         double percentage = totalScore > 0 ? (double) teamScore / totalScore * 100 : 0;
-        
+
         return "<yellow><bold> 队伍得分：</bold></yellow>" +
-               "<aqua>" + teamName + "</aqua><white>(" + teamScore + "分, " + 
-               String.format("%.1f", percentage) + "%)</white>";
+                "<aqua>" + teamName + "</aqua><white>(" + teamScore + "分, " +
+                String.format("%.1f", percentage) + "%)</white>";
     }
 }

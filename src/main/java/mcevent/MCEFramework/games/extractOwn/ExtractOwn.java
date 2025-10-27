@@ -138,11 +138,25 @@ public class ExtractOwn extends MCEGame {
         // 设置传送阶段状态标题
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
-        // 传送所有玩家到世界出生点
-        teleportPlayersToWorldSpawn();
+        // 仅传送参与者到世界出生点
+        World w = Bukkit.getWorld(this.getWorldName());
+        if (w != null) {
+            Location worldSpawn = w.getSpawnLocation();
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (p.getScoreboardTags().contains("Participant"))
+                    p.teleport(worldSpawn);
+            }
+        }
 
-        // 延迟5tick设置生存模式
-        MCEPlayerUtils.globalSetGameModeDelayed(GameMode.SURVIVAL, 5L);
+        // 仅将参与者设置为生存模式（延迟以确保传送后应用）
+        this.setDelayedTask(0.25, () -> {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (p.getScoreboardTags().contains("Participant") && this.getWorldName().equals(p.getWorld().getName()))
+                    p.setGameMode(GameMode.SURVIVAL);
+                else
+                    p.setGameMode(GameMode.SPECTATOR);
+            }
+        });
 
         // 注册事件处理器
         autoReloadHandler.register(this);
@@ -158,9 +172,21 @@ public class ExtractOwn extends MCEGame {
 
     @Override
     public void onCyclePreparation() {
-        this.getGameBoard().setStateTitle("<yellow><bold> 回合准备：</bold></yellow>");
-        this.getGameBoard().updateRoundTitle(getCurrentRound());
-        this.getGameBoard().globalDisplay(); // 刷新展示板显示回合更新
+        // 每局开始前的准备阶段
+        this.getGameBoard().setStateTitle("<yellow><bold> 准备阶段：</bold></yellow>");
+        if (this.getGameBoard() != null)
+            this.getGameBoard().updateRoundTitle(this.getCurrentRound());
+        MCEWorldUtils.disablePVP();
+
+        // 仅传送参与者到游戏世界的出生点
+        World w2 = Bukkit.getWorld(this.getWorldName());
+        if (w2 != null) {
+            Location worldSpawn = w2.getSpawnLocation();
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (p.getScoreboardTags().contains("Participant"))
+                    p.teleport(worldSpawn);
+            }
+        }
 
         // 重置回合状态
         eliminatedTeams.clear(); // 清空淘汰队伍列表
@@ -168,14 +194,32 @@ public class ExtractOwn extends MCEGame {
         // 重置世界边界到初始状态
         resetWorldBorder();
 
-        // 重置所有玩家状态（移除死亡标签，设为生存模式）
-        resetAllPlayersForNewRound();
+        // 重置所有玩家状态（仅对参与者：移除死亡标签，设为生存模式；非参与者保持旁观）
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getScoreboardTags().contains("Participant")
+                    && this.getWorldName().equals(player.getWorld().getName())) {
+                player.removeScoreboardTag("dead");
+                player.setGameMode(GameMode.SURVIVAL);
+                player.setHealth(player.getMaxHealth());
+                player.getInventory().clear();
+            } else {
+                player.setGameMode(GameMode.SPECTATOR);
+            }
+        }
 
         // 重新随机分配队伍出生点
         reassignTeamSpawnPoints();
 
-        // 传送玩家到新的出生点
-        teleportPlayersToSpawnPoints();
+        // 仅将参与者传送到新的出生点
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!player.getScoreboardTags().contains("Participant"))
+                continue;
+            Team playerTeam = MCETeamUtils.getTeam(player);
+            if (playerTeam != null && teamSpawnPoints.containsKey(playerTeam)) {
+                Location spawnPoint = teamSpawnPoints.get(playerTeam);
+                player.teleport(spawnPoint);
+            }
+        }
 
         // 给玩家弩和箭
         giveCrossbowAndArrows();
@@ -203,6 +247,8 @@ public class ExtractOwn extends MCEGame {
     @Override
     public void onPreparation() {
         resetGameBoard();
+        if (this.getGameBoard() != null)
+            this.getGameBoard().updateRoundTitle(this.getCurrentRound());
         this.getGameBoard().setStateTitle("<yellow><bold> 准备阶段：</bold></yellow>");
     }
 
@@ -210,6 +256,8 @@ public class ExtractOwn extends MCEGame {
     public void onCycleStart() {
         MCEPlayerUtils.globalChangeTeamNameTag();
         resetGameBoard();
+        if (this.getGameBoard() != null)
+            this.getGameBoard().updateRoundTitle(this.getCurrentRound());
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
 
         // 恢复玩家移动和跳跃
@@ -222,10 +270,13 @@ public class ExtractOwn extends MCEGame {
         // 开始自动回血功能
         startAutoHealing();
 
-        MCEPlayerUtils.globalGrantTag("Active");
-
-        // 设置为生存模式开始游戏
-        MCEPlayerUtils.globalSetGameMode(GameMode.SURVIVAL);
+        // 仅将参与者设置为生存模式，非参与者保持旁观
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getScoreboardTags().contains("Participant") && this.getWorldName().equals(p.getWorld().getName()))
+                p.setGameMode(GameMode.SURVIVAL);
+            else
+                p.setGameMode(GameMode.SPECTATOR);
+        }
 
         // 启动缩圈机制
         startShrinkingBorder();
@@ -675,10 +726,10 @@ public class ExtractOwn extends MCEGame {
             public void run() {
                 int healedPlayerCount = 0;
 
-                // 为所有冒险模式且有Active标签且未死亡的玩家回复0.5颗心
+                // 为所有生存模式且是参与者且未死亡的玩家回复0.5颗心
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     if (player.getGameMode() == GameMode.SURVIVAL &&
-                            player.getScoreboardTags().contains("Active") &&
+                            player.getScoreboardTags().contains("Participant") &&
                             !player.getScoreboardTags().contains("dead") &&
                             player.getWorld().getName().equals(getWorldName())) {
 

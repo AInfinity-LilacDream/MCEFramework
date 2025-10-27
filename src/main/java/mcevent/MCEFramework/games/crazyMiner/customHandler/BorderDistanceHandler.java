@@ -72,10 +72,10 @@ public class BorderDistanceHandler extends MCEResumableEventHandler {
         double borderRadius = borderSize / 2.0;
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            // 只检查在游戏世界中且为冒险模式并有Active标签的玩家
+            // 仅检查当前世界且为生存模式且为参与者的玩家
             if (!player.getWorld().equals(world) ||
                     player.getGameMode() != GameMode.SURVIVAL ||
-                    !player.getScoreboardTags().contains("Active")) {
+                    !player.getScoreboardTags().contains("Participant")) {
                 continue;
             }
 

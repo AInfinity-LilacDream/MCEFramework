@@ -89,19 +89,14 @@ public class LobbyItemHandler extends MCEResumableEventHandler implements Listen
         }
         player.getInventory().setItem(0, blazeRod);
 
-        // 追溯指南针（前往 Duel）
-        ItemStack compass = new ItemStack(Material.COMPASS);
-        ItemMeta cmeta = compass.getItemMeta();
-        if (cmeta != null) {
-            Component name = MiniMessage.miniMessage().deserialize("<green><bold>前往Duel</bold></green>");
-            java.util.List<Component> lore = java.util.Arrays.asList(
-                    MiniMessage.miniMessage().deserialize("<yellow>右键传送到 <aqua>duel</aqua> 世界</yellow>"),
-                    MiniMessage.miniMessage().deserialize("<gray>仅在主城可用</gray>"));
-            cmeta.displayName(name);
-            cmeta.lore(lore);
-            compass.setItemMeta(cmeta);
+        // 按当前世界发放对应指南针：主城->前往Duel；Duel->返回主城
+        if ("lobby".equals(player.getWorld().getName())) {
+            player.getInventory().setItem(8,
+                    mcevent.MCEFramework.customHandler.LobbyTeleportCompassHandler.createToDuelCompass());
+        } else if ("duel".equals(player.getWorld().getName())) {
+            player.getInventory().setItem(8,
+                    mcevent.MCEFramework.customHandler.LobbyTeleportCompassHandler.createBackToLobbyCompass());
         }
-        player.getInventory().setItem(8, compass);
 
         player.updateInventory();
     }

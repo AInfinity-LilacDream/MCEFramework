@@ -323,6 +323,21 @@ public class VotingSystemFuncImpl {
     }
 
     /**
+     * 清空指定玩家的投票记录（进入 duel 时调用）
+     */
+    public static void clearVotingDataForPlayer(org.bukkit.entity.Player player) {
+        if (player == null)
+            return;
+        String uuid = player.getUniqueId().toString();
+        Integer prev = playerVotes.remove(uuid);
+        if (prev != null) {
+            int count = votes.getOrDefault(prev, 0);
+            if (count > 0)
+                votes.put(prev, count - 1);
+        }
+    }
+
+    /**
      * 移除所有玩家的投票卡
      */
     public static void removeAllVotingCards() {

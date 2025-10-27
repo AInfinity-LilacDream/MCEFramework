@@ -27,8 +27,8 @@ public class TNTTagGameBoard extends MCEGameBoard {
     }
 
     public void updateAlivePlayersTitle(int alivePlayers) {
-        this.alivePlayers = alivePlayers;
-        this.alivePlayersTitle = "<green><bold> 剩余玩家：</bold></green>" + alivePlayers;
+        this.alivePlayers = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipants();
+        this.alivePlayersTitle = "<green><bold> 剩余玩家：</bold></green>" + this.alivePlayers;
     }
 
     @Override

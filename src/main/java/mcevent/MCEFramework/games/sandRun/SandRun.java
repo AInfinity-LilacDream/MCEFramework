@@ -71,12 +71,12 @@ public class SandRun extends MCEGame {
     @Override
     public void onCycleStart() {
         SandRunFuncImpl.resetGameBoard();
-        this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
+        this.getGameBoard().setStateTitle("<yellow><bold> 游戏进行中：</bold></yellow>");
 
         // 播放背景音乐
         MCEPlayerUtils.globalPlaySound("minecraft:sand_run");
 
-        MCEPlayerUtils.globalGrantTag("Active");
+        MCEWorldUtils.enablePVP();
 
         sandFallHandler.startSandFall();
 

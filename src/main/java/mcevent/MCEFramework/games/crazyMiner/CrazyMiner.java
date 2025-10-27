@@ -21,7 +21,7 @@ import org.bukkit.scoreboard.Team;
 
 import static mcevent.MCEFramework.games.crazyMiner.CrazyMinerFuncImpl.*;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
-import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
+// import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
 
 /*
 CrazyMiner: 惊天矿工团游戏完整实现
@@ -143,12 +143,27 @@ public class CrazyMiner extends MCEGame {
         // 播放背景音乐并开始循环
         startBackgroundMusic();
 
-        MCEPlayerUtils.globalGrantTag("Active");
-
         // 回合准备阶段已设置为生存模式
 
         // 给玩家初始物品（木镐和牛排）
         giveInitialItems();
+
+        // 给所有玩家上 急迫 II 效果（持续全局，显示粒子，隐藏图标）
+        try {
+            org.bukkit.potion.PotionEffect haste2 = new org.bukkit.potion.PotionEffect(
+                    org.bukkit.potion.PotionEffectType.HASTE,
+                    Integer.MAX_VALUE, // 持续整局
+                    1, // 等级II -> amplifier=1
+                    false,
+                    false,
+                    false);
+            for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                if (p.getWorld() != null && p.getWorld().getName().equals(getWorldName())) {
+                    p.addPotionEffect(haste2);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
 
         // 给所有玩家指向中心的指南针
         giveCompassToAllPlayers();

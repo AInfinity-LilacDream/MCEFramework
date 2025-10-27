@@ -507,10 +507,11 @@ public class DuelKitManager implements Listener {
     }
 
     private static void giveSummoner(Player p) {
-        ItemStack helm = new ItemStack(Material.CHAINMAIL_HELMET);
-        ItemStack chest = new ItemStack(Material.CHAINMAIL_CHESTPLATE);
-        ItemStack legs = new ItemStack(Material.CHAINMAIL_LEGGINGS);
-        ItemStack boots = new ItemStack(Material.CHAINMAIL_BOOTS);
+        // 全套铁甲 保护II
+        ItemStack helm = new ItemStack(Material.IRON_HELMET);
+        ItemStack chest = new ItemStack(Material.IRON_CHESTPLATE);
+        ItemStack legs = new ItemStack(Material.IRON_LEGGINGS);
+        ItemStack boots = new ItemStack(Material.IRON_BOOTS);
         enchant(helm, Enchantment.PROTECTION, 2);
         enchant(chest, Enchantment.PROTECTION, 2);
         enchant(legs, Enchantment.PROTECTION, 2);
@@ -638,28 +639,48 @@ public class DuelKitManager implements Listener {
         long until = summonCooldownUntil.getOrDefault(p.getUniqueId(), 0L);
         if (now < until)
             return;
-        // 容量限制：每个玩家最多4个召唤物（本次将同时召唤2个，因此仅当现有<=2时才允许）
+        // 容量限制：每个玩家最多6个召唤物（每次召唤2个，因此仅当现有<=4时允许）
         java.util.List<UUID> existing = ownerToZombies.getOrDefault(p.getUniqueId(), java.util.Collections.emptyList());
-        if (existing.size() > 2)
+        if (existing.size() > 4)
             return;
 
-        // 召唤僵尸
         org.bukkit.Location loc = p.getLocation().add(0, 0, 0);
-        org.bukkit.entity.Zombie z = p.getWorld().spawn(loc, org.bukkit.entity.Zombie.class, e -> {
-            e.setAdult();
-            // 使用字符串名称，避免不同服务端API差异
-            e.setCustomName(p.getName() + "'s Undead Soldier");
-            e.setCustomNameVisible(true);
-            e.getPersistentDataContainer().set(KEY_SUMMON_OWNER, PersistentDataType.STRING, p.getUniqueId().toString());
-            e.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.SPEED,
-                    Integer.MAX_VALUE, 2, false, false));
-            e.setRemoveWhenFarAway(false);
-            try {
-                e.setShouldBurnInDay(false);
-            } catch (Throwable ignored) {
+
+        // 检查是否已有骷髅，决定本次召唤组合
+        boolean hasSkeleton = false;
+        {
+            java.util.List<UUID> list = ownerToZombies.get(p.getUniqueId());
+            if (list != null) {
+                for (UUID id : list) {
+                    org.bukkit.entity.Entity ent = Bukkit.getEntity(id);
+                    if (ent instanceof org.bukkit.entity.Skeleton) {
+                        hasSkeleton = true;
+                        break;
+                    }
+                }
             }
-        });
-        ownerToZombies.computeIfAbsent(p.getUniqueId(), k -> new java.util.ArrayList<>()).add(z.getUniqueId());
+        }
+
+        java.util.List<org.bukkit.entity.Mob> spawned = new java.util.ArrayList<>();
+
+        // 工具：创建强化僵尸
+        java.util.function.Supplier<org.bukkit.entity.Zombie> spawnZombie = () -> p.getWorld().spawn(loc,
+                org.bukkit.entity.Zombie.class, e -> {
+                    e.setAdult();
+                    // 使用字符串名称，避免不同服务端API差异
+                    e.setCustomName(p.getName() + "'s Undead Soldier");
+                    e.setCustomNameVisible(true);
+                    e.getPersistentDataContainer().set(KEY_SUMMON_OWNER, PersistentDataType.STRING,
+                            p.getUniqueId().toString());
+                    // 速度V：放大等级4
+                    e.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.SPEED,
+                            Integer.MAX_VALUE, 4, false, false));
+                    e.setRemoveWhenFarAway(false);
+                    try {
+                        e.setShouldBurnInDay(false);
+                    } catch (Throwable ignored) {
+                    }
+                });
 
         // 设置初始目标：最近的其他玩家
         Player target = null;
@@ -674,50 +695,122 @@ public class DuelKitManager implements Listener {
             }
         }
         if (target != null) {
-            try {
-                z.setTarget(target);
-            } catch (Throwable ignored) {
+            for (org.bukkit.entity.Mob m : spawned) {
+                if (m.getWorld().equals(target.getWorld())) {
+                    try {
+                        m.setTarget(target);
+                    } catch (Throwable ignored) {
+                    }
+                }
             }
         }
 
-        // 同时召唤一个骷髅
-        org.bukkit.entity.Skeleton sk = p.getWorld().spawn(loc, org.bukkit.entity.Skeleton.class, e -> {
-            e.setCustomName(p.getName() + "'s Undead Soldier");
-            e.setCustomNameVisible(true);
-            e.getPersistentDataContainer().set(KEY_SUMMON_OWNER, PersistentDataType.STRING, p.getUniqueId().toString());
-            e.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.SPEED,
-                    Integer.MAX_VALUE, 2, false, false));
-            e.setRemoveWhenFarAway(false);
-            try {
-                e.setShouldBurnInDay(false);
-            } catch (Throwable ignored) {
-            }
-        });
-        ownerToZombies.computeIfAbsent(p.getUniqueId(), k -> new java.util.ArrayList<>()).add(sk.getUniqueId());
-        // 给予骷髅冲击I的弓
+        // 工具：创建强化骷髅
+        java.util.function.Supplier<org.bukkit.entity.Skeleton> spawnSkeleton = () -> p.getWorld().spawn(loc,
+                org.bukkit.entity.Skeleton.class, e -> {
+                    e.setCustomName(p.getName() + "'s Undead Soldier");
+                    e.setCustomNameVisible(true);
+                    e.getPersistentDataContainer().set(KEY_SUMMON_OWNER, PersistentDataType.STRING,
+                            p.getUniqueId().toString());
+                    // 可保留速度或不加，未指定则不强制
+                    e.setRemoveWhenFarAway(false);
+                    try {
+                        e.setShouldBurnInDay(false);
+                    } catch (Throwable ignored) {
+                    }
+                });
+        // 给予骷髅 力量IV 冲击II 的弓
         ItemStack sbow = new ItemStack(Material.BOW);
-        enchant(sbow, Enchantment.PUNCH, 1);
-        sk.getEquipment().setItemInMainHand(sbow);
-        // 僵尸手持金剑
-        z.getEquipment().setItemInMainHand(new ItemStack(Material.GOLDEN_SWORD));
+        enchant(sbow, Enchantment.POWER, 4);
+        enchant(sbow, Enchantment.PUNCH, 2);
+        // 召唤组合
+        if (hasSkeleton) {
+            org.bukkit.entity.Zombie z1 = spawnZombie.get();
+            org.bukkit.entity.Zombie z2 = spawnZombie.get();
+            spawned.add(z1);
+            spawned.add(z2);
+        } else {
+            org.bukkit.entity.Skeleton sk = spawnSkeleton.get();
+            sk.getEquipment().setItemInMainHand(sbow);
+            spawned.add(sk);
+            org.bukkit.entity.Zombie z = spawnZombie.get();
+            spawned.add(z);
+        }
 
-        // 随机护甲材质：金、皮革（染色为队伍色）、锁链
-        java.util.function.Supplier<ItemStack> randHelm = () -> randomArmorPiece(Material.GOLDEN_HELMET,
-                Material.LEATHER_HELMET, Material.CHAINMAIL_HELMET, p);
-        java.util.function.Supplier<ItemStack> randChest = () -> randomArmorPiece(Material.GOLDEN_CHESTPLATE,
-                Material.LEATHER_CHESTPLATE, Material.CHAINMAIL_CHESTPLATE, p);
-        java.util.function.Supplier<ItemStack> randLegs = () -> randomArmorPiece(Material.GOLDEN_LEGGINGS,
-                Material.LEATHER_LEGGINGS, Material.CHAINMAIL_LEGGINGS, p);
-        java.util.function.Supplier<ItemStack> randBoots = () -> randomArmorPiece(Material.GOLDEN_BOOTS,
-                Material.LEATHER_BOOTS, Material.CHAINMAIL_BOOTS, p);
-        z.getEquipment().setHelmet(randHelm.get());
-        z.getEquipment().setChestplate(randChest.get());
-        z.getEquipment().setLeggings(randLegs.get());
-        z.getEquipment().setBoots(randBoots.get());
-        sk.getEquipment().setHelmet(randHelm.get());
-        sk.getEquipment().setChestplate(randChest.get());
-        sk.getEquipment().setLeggings(randLegs.get());
-        sk.getEquipment().setBoots(randBoots.get());
+        // 将生成实体登记到 ownerToZombies
+        for (org.bukkit.entity.Mob m : spawned) {
+            ownerToZombies.computeIfAbsent(p.getUniqueId(), k -> new java.util.ArrayList<>()).add(m.getUniqueId());
+        }
+        // 僵尸手持 锋利III 钻石剑
+        ItemStack zs = new ItemStack(Material.DIAMOND_SWORD);
+        enchant(zs, Enchantment.SHARPNESS, 5);
+        // 给所有生成的僵尸配置武器与护甲
+        for (org.bukkit.entity.Mob m : spawned) {
+            if (m instanceof org.bukkit.entity.Zombie zmb) {
+                zmb.getEquipment().setItemInMainHand(zs.clone());
+            }
+        }
+
+        // 僵尸全套金甲 保护II
+        ItemStack zHelm = new ItemStack(Material.GOLDEN_HELMET);
+        ItemStack zChest = new ItemStack(Material.GOLDEN_CHESTPLATE);
+        ItemStack zLegs = new ItemStack(Material.GOLDEN_LEGGINGS);
+        ItemStack zBoots = new ItemStack(Material.GOLDEN_BOOTS);
+        enchant(zHelm, Enchantment.PROTECTION, 2);
+        enchant(zChest, Enchantment.PROTECTION, 2);
+        enchant(zLegs, Enchantment.PROTECTION, 2);
+        enchant(zBoots, Enchantment.PROTECTION, 2);
+        for (org.bukkit.entity.Mob m : spawned) {
+            if (m instanceof org.bukkit.entity.Zombie zmb) {
+                zmb.getEquipment().setHelmet(zHelm.clone());
+                zmb.getEquipment().setChestplate(zChest.clone());
+                zmb.getEquipment().setLeggings(zLegs.clone());
+                zmb.getEquipment().setBoots(zBoots.clone());
+            }
+        }
+
+        // 骷髅全套锁链 保护IV
+        ItemStack sHelm = new ItemStack(Material.CHAINMAIL_HELMET);
+        ItemStack sChest = new ItemStack(Material.CHAINMAIL_CHESTPLATE);
+        ItemStack sLegs = new ItemStack(Material.CHAINMAIL_LEGGINGS);
+        ItemStack sBoots = new ItemStack(Material.CHAINMAIL_BOOTS);
+        enchant(sHelm, Enchantment.PROTECTION, 4);
+        enchant(sChest, Enchantment.PROTECTION, 4);
+        enchant(sLegs, Enchantment.PROTECTION, 4);
+        enchant(sBoots, Enchantment.PROTECTION, 4);
+        for (org.bukkit.entity.Mob m : spawned) {
+            if (m instanceof org.bukkit.entity.Skeleton skm) {
+                skm.getEquipment().setHelmet(sHelm.clone());
+                skm.getEquipment().setChestplate(sChest.clone());
+                skm.getEquipment().setLeggings(sLegs.clone());
+                skm.getEquipment().setBoots(sBoots.clone());
+                // 确保弓已赋予
+                if (skm.getEquipment().getItemInMainHand() == null
+                        || skm.getEquipment().getItemInMainHand().getType() == Material.AIR) {
+                    skm.getEquipment().setItemInMainHand(sbow.clone());
+                }
+            }
+        }
+
+        // 装备掉落几率设为0
+        try {
+            for (org.bukkit.entity.Mob m : spawned) {
+                if (m instanceof org.bukkit.entity.Zombie zmb) {
+                    zmb.getEquipment().setItemInMainHandDropChance(0f);
+                    zmb.getEquipment().setHelmetDropChance(0f);
+                    zmb.getEquipment().setChestplateDropChance(0f);
+                    zmb.getEquipment().setLeggingsDropChance(0f);
+                    zmb.getEquipment().setBootsDropChance(0f);
+                } else if (m instanceof org.bukkit.entity.Skeleton skm) {
+                    skm.getEquipment().setItemInMainHandDropChance(0f);
+                    skm.getEquipment().setHelmetDropChance(0f);
+                    skm.getEquipment().setChestplateDropChance(0f);
+                    skm.getEquipment().setLeggingsDropChance(0f);
+                    skm.getEquipment().setBootsDropChance(0f);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
 
         // 设置冷却（仅在成功召唤后）
         summonCooldownUntil.put(p.getUniqueId(), now + 5000);
@@ -762,6 +855,28 @@ public class DuelKitManager implements Listener {
 
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent event) {
+        // 三叉戟命中时，所有召唤物立刻锁定被击中的实体
+        if (event.getDamager() instanceof org.bukkit.entity.Trident trident
+                && event.getEntity() instanceof org.bukkit.entity.LivingEntity hit) {
+            org.bukkit.projectiles.ProjectileSource src = trident.getShooter();
+            if (src instanceof Player owner && isInDuel(owner)) {
+                // 仅当命中目标为玩家时，才让召唤物锁定该目标
+                if (!(hit instanceof Player))
+                    return;
+                java.util.List<UUID> ids = ownerToZombies.get(owner.getUniqueId());
+                if (ids != null) {
+                    for (UUID id : new java.util.ArrayList<>(ids)) {
+                        org.bukkit.entity.Entity ent = Bukkit.getEntity(id);
+                        if (ent instanceof org.bukkit.entity.Mob mob && ent.getWorld().equals(hit.getWorld())) {
+                            try {
+                                mob.setTarget(hit);
+                            } catch (Throwable ignored) {
+                            }
+                        }
+                    }
+                }
+            }
+        }
         // Melee damage by summoned mobs
         org.bukkit.entity.Entity damager = event.getDamager();
         if (damager instanceof org.bukkit.entity.LivingEntity le) {
@@ -820,6 +935,20 @@ public class DuelKitManager implements Listener {
         try {
             event.setDroppedExp(0);
         } catch (Throwable ignored) {
+        }
+        // 从召唤物列表中移除，释放名额
+        String owner = pdc.get(KEY_SUMMON_OWNER, PersistentDataType.STRING);
+        if (owner != null) {
+            try {
+                UUID ou = UUID.fromString(owner);
+                java.util.List<UUID> ids = ownerToZombies.get(ou);
+                if (ids != null) {
+                    ids.remove(le.getUniqueId());
+                    if (ids.isEmpty())
+                        ownerToZombies.remove(ou);
+                }
+            } catch (Throwable ignored) {
+            }
         }
     }
 

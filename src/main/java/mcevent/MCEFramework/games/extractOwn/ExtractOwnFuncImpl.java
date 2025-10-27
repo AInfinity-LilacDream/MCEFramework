@@ -67,6 +67,8 @@ public class ExtractOwnFuncImpl {
     public static void initializeTeamScores() {
         teamScores.clear();
         for (Team team : MCETeamUtils.getActiveTeams()) {
+            if (team == null || team.getName() == null)
+                continue;
             teamScores.put(team.getName(), 0);
         }
     }
@@ -190,16 +192,21 @@ public class ExtractOwnFuncImpl {
      */
     private static void checkTeamElimination(ExtractOwn game) {
         for (Team team : MCETeamUtils.getActiveTeams()) {
+            if (team == null)
+                continue;
             boolean hasAlivePlayers = false;
 
             for (Player player : MCETeamUtils.getPlayers(team)) {
-                if (player.getGameMode() == GameMode.SURVIVAL && !player.getScoreboardTags().contains("dead")) {
+                if (player.getWorld().getName().equals(game.getWorldName()) &&
+                        player.getScoreboardTags().contains("Participant") &&
+                        player.getGameMode() == GameMode.SURVIVAL &&
+                        !player.getScoreboardTags().contains("dead")) {
                     hasAlivePlayers = true;
                     break;
                 }
             }
 
-            if (!hasAlivePlayers && !game.getEliminatedTeams().contains(team.getName())) {
+            if (!hasAlivePlayers && team.getName() != null && !game.getEliminatedTeams().contains(team.getName())) {
                 // 队伍被淘汰
                 game.addEliminatedTeam(team.getName());
 
@@ -293,11 +300,16 @@ public class ExtractOwnFuncImpl {
         List<Team> survivingTeams = new ArrayList<>();
 
         for (Team team : MCETeamUtils.getActiveTeams()) {
+            if (team == null)
+                continue;
             boolean hasAlivePlayers = false;
 
-            // 使用与getSurvivingTeamCount相同的逻辑
+            // 与 getSurvivingTeamCount 一致：仅统计本游戏世界中的 Participant 且存活的玩家
             for (Player player : MCETeamUtils.getPlayers(team)) {
-                if (player.getGameMode() == GameMode.SURVIVAL && !player.getScoreboardTags().contains("dead")) {
+                if (player.getWorld().getName().equals(game.getWorldName()) &&
+                        player.getScoreboardTags().contains("Participant") &&
+                        player.getGameMode() == GameMode.SURVIVAL &&
+                        !player.getScoreboardTags().contains("dead")) {
                     hasAlivePlayers = true;
                     break;
                 }
@@ -311,7 +323,7 @@ public class ExtractOwnFuncImpl {
         // 应该只有一个存活队伍
         if (survivingTeams.size() == 1) {
             return survivingTeams.get(0);
-        } else if (survivingTeams.size() == 0) {
+        } else if (survivingTeams.isEmpty()) {
             plugin.getLogger().warning("没有找到存活队伍！");
             return null;
         } else {
@@ -448,6 +460,8 @@ public class ExtractOwnFuncImpl {
 
         // 添加未获胜的队伍
         for (Team team : MCETeamUtils.getActiveTeams()) {
+            if (team == null)
+                continue;
             String teamName = team.getName();
             if (!roundWins.containsKey(teamName)) {
                 message.append("\n<gray>").append(teamName).append(" - 0回合胜利</gray>");

@@ -48,8 +48,13 @@ public class CrossbowAttackHandler extends MCEResumableEventHandler implements L
 
         // 检查是否是箭击中玩家
         if (event.getDamager() instanceof Arrow arrow && event.getEntity() instanceof Player victim) {
+            // 仅对参与者生效
+            if (!victim.getScoreboardTags().contains("Participant"))
+                return;
             // 检查射箭者是否是玩家
             if (arrow.getShooter() instanceof Player shooter) {
+                if (!shooter.getScoreboardTags().contains("Participant"))
+                    return;
                 Team shooterTeam = MCETeamUtils.getTeam(shooter);
                 Team victimTeam = MCETeamUtils.getTeam(victim);
 
@@ -103,6 +108,8 @@ public class CrossbowAttackHandler extends MCEResumableEventHandler implements L
             return;
 
         Player player = event.getPlayer();
+        if (!player.getScoreboardTags().contains("Participant"))
+            return;
         Material droppedItem = event.getItemDrop().getItemStack().getType();
 
         // 检查玩家是否在游戏中

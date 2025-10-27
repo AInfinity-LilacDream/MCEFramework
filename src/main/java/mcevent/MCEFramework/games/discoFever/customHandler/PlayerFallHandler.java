@@ -77,8 +77,8 @@ public class PlayerFallHandler extends MCEResumableEventHandler implements Liste
             return;
         }
 
-        // 进行期：执行淘汰逻辑（与全局死亡监听一致）
-        if (!player.getScoreboardTags().contains("Active") || player.getScoreboardTags().contains("dead"))
+        // 进行期：仅对参与者（Participant）生效
+        if (!player.getScoreboardTags().contains("Participant") || player.getScoreboardTags().contains("dead"))
             return;
 
         // 标记淘汰并旁观
@@ -120,6 +120,33 @@ public class PlayerFallHandler extends MCEResumableEventHandler implements Liste
                 String tname = MCETeamUtils.getTeamColoredName(vteam);
                 MCEMessenger.sendGlobalInfo(tname + " <gray>已被团灭！</gray>");
                 MCEPlayerUtils.globalPlaySound("minecraft:team_eliminated");
+            }
+        }
+
+        // 全局结束检测：仅当无存活玩家时，提前结束本局
+        int alivePlayers = 0;
+        java.util.Set<String> aliveTeamNames = new java.util.HashSet<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (!p.getWorld().getName().equals(discoFever.getWorldName()))
+                continue;
+            if (!p.getScoreboardTags().contains("Active") || p.getScoreboardTags().contains("dead"))
+                continue;
+            if (p.getGameMode() == GameMode.SPECTATOR)
+                continue;
+            alivePlayers++;
+            Team pt = MCETeamUtils.getTeam(p);
+            if (pt != null)
+                aliveTeamNames.add(pt.getName());
+        }
+        if (alivePlayers == 0) {
+            try {
+                // 停止后续平台调度
+                discoFever.clearBossBarTask();
+            } catch (Throwable ignored) {
+            }
+            // 跳转到时间线下一阶段（onEnd）
+            if (discoFever.getTimeline() != null) {
+                discoFever.getTimeline().nextState();
             }
         }
     }

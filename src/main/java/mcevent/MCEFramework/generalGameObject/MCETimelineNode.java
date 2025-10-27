@@ -33,7 +33,8 @@ public class MCETimelineNode {
     }
 
     public void suspend() {
-        if (canSuspend) timer.pause();
+        if (canSuspend)
+            timer.pause();
     }
 
     public void resume() {
@@ -44,8 +45,8 @@ public class MCETimelineNode {
         if (!isSwitchNode) {
             timer.start();
             onRunning.onRunning();
-        }
-        else MCEMainController.switchToTimeline(switchedTimeline, parentTimeline); // 切换到游戏时间线
+        } else
+            MCEMainController.switchToTimeline(switchedTimeline, parentTimeline); // 切换到游戏时间线
     }
 
     public void stop() {

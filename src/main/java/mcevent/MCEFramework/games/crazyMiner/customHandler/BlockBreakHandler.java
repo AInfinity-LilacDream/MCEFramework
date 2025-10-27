@@ -40,9 +40,9 @@ public class BlockBreakHandler implements Listener {
 
         Player player = event.getPlayer();
 
-        // Only handle blocks broken by survival players with Active tag
+        // Only handle blocks broken by survival players with Participant tag
         if (player.getGameMode() != GameMode.SURVIVAL ||
-                !player.getScoreboardTags().contains("Active")) {
+                !player.getScoreboardTags().contains("Participant")) {
             return;
         }
 
@@ -67,9 +67,9 @@ public class BlockBreakHandler implements Listener {
 
                 // 远古残骸特殊处理
                 if (brokenBlock == Material.ANCIENT_DEBRIS) {
-                    // 额外掉落：2-4块远古残片 + 1个下界合金升级模板
+                    // 额外掉落：1-2块远古残片 + 1个下界合金升级模板
                     Location loc = event.getBlock().getLocation();
-                    int scraps = 2 + (int) (Math.random() * 3);
+                    int scraps = 1 + (int) (Math.random() * 2);
                     event.getBlock().getWorld().dropItemNaturally(loc, new ItemStack(Material.NETHERITE_SCRAP, scraps));
                     event.getBlock().getWorld().dropItemNaturally(loc,
                             new ItemStack(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE, 1));
@@ -96,8 +96,8 @@ public class BlockBreakHandler implements Listener {
 
         Player deadPlayer = event.getEntity();
 
-        // Only handle active game players
-        if (!deadPlayer.getScoreboardTags().contains("Active")) {
+        // Only handle active game players (Participant)
+        if (!deadPlayer.getScoreboardTags().contains("Participant")) {
             return;
         }
 
@@ -243,8 +243,8 @@ public class BlockBreakHandler implements Listener {
             return true;
         }
 
-        // 泥土/粗泥土：2% 概率生成奖励箱
-        if (blockType == Material.DIRT || blockType == Material.COARSE_DIRT) {
+        // 泥土/粗泥土/灵魂沙：2% 概率生成奖励箱
+        if (blockType == Material.DIRT || blockType == Material.COARSE_DIRT || blockType == Material.SOUL_SAND) {
             if (Math.random() < 0.02) {
                 // 阻止默认掉落，1tick后在方块原位置生成箱子并填充战利品
                 event.setDropItems(false);
@@ -306,7 +306,7 @@ public class BlockBreakHandler implements Listener {
                 }
 
                 // 再抽具体物品（数量从0开始，可能不生成）
-                int type = r.nextInt(9); // 7类 + 末影珍珠 + TNT
+                int type = r.nextInt(13); // 原9类 + 4种药水/图腾
                 Material mat;
                 int amount;
                 switch (type) {
@@ -342,10 +342,61 @@ public class BlockBreakHandler implements Listener {
                         mat = Material.ENDER_PEARL;
                         amount = r.nextInt(2);
                     } // 0-1
-                    default -> {
+                    case 8 -> {
                         mat = Material.TNT;
                         amount = 1 + r.nextInt(3);
                     } // 1-3
+                    case 9 -> {
+                        // 不死图腾 0-1
+                        mat = Material.TOTEM_OF_UNDYING;
+                        amount = r.nextInt(2);
+                    }
+                    case 10 -> {
+                        // 喷溅型剧毒药水 0-1
+                        org.bukkit.inventory.ItemStack item = new org.bukkit.inventory.ItemStack(Material.SPLASH_POTION,
+                                1);
+                        org.bukkit.inventory.meta.PotionMeta pm = (org.bukkit.inventory.meta.PotionMeta) item
+                                .getItemMeta();
+                        if (pm != null) {
+                            pm.setBasePotionType(org.bukkit.potion.PotionType.POISON);
+                            item.setItemMeta(pm);
+                        }
+                        if (r.nextBoolean())
+                            inv.setItem(chosenSlot, item);
+                        continue; // 已直接放入
+                    }
+                    case 11 -> {
+                        // 滞留型治疗药水 0-1（瞬间治疗）
+                        org.bukkit.inventory.ItemStack item = new org.bukkit.inventory.ItemStack(
+                                Material.LINGERING_POTION, 1);
+                        org.bukkit.inventory.meta.PotionMeta pm = (org.bukkit.inventory.meta.PotionMeta) item
+                                .getItemMeta();
+                        if (pm != null) {
+                            pm.setBasePotionType(org.bukkit.potion.PotionType.HEALING);
+                            item.setItemMeta(pm);
+                        }
+                        if (r.nextBoolean())
+                            inv.setItem(chosenSlot, item);
+                        continue;
+                    }
+                    case 12 -> {
+                        // 喷溅型瞬间伤害药水 0-1
+                        org.bukkit.inventory.ItemStack item = new org.bukkit.inventory.ItemStack(Material.SPLASH_POTION,
+                                1);
+                        org.bukkit.inventory.meta.PotionMeta pm = (org.bukkit.inventory.meta.PotionMeta) item
+                                .getItemMeta();
+                        if (pm != null) {
+                            pm.setBasePotionType(org.bukkit.potion.PotionType.HARMING);
+                            item.setItemMeta(pm);
+                        }
+                        if (r.nextBoolean())
+                            inv.setItem(chosenSlot, item);
+                        continue;
+                    }
+                    default -> {
+                        mat = Material.AIR;
+                        amount = 0;
+                    }
                 }
                 if (amount <= 0) {
                     continue; // 本次不放置物品
@@ -364,7 +415,7 @@ public class BlockBreakHandler implements Listener {
         if (event.getBlock().getType() != Material.GRAVEL)
             return;
         if (event.getPlayer().getGameMode() != GameMode.SURVIVAL
-                || !event.getPlayer().getScoreboardTags().contains("Active"))
+                || !event.getPlayer().getScoreboardTags().contains("Participant"))
             return;
         if (Math.random() < 0.20) {
             event.setDropItems(false);

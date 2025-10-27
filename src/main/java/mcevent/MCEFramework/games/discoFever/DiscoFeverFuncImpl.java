@@ -2,7 +2,6 @@ package mcevent.MCEFramework.games.discoFever;
 
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.discoFever.gameObject.DiscoFeverGameBoard;
-import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import mcevent.MCEFramework.tools.MCETeamUtils;
@@ -28,7 +27,8 @@ public class DiscoFeverFuncImpl {
 
     // 从配置文件加载数据
     protected static void loadConfig() {
-        discoFever.setIntroTextList(discoFever.getDiscoFeverConfigParser().openAndParse(discoFever.getConfigFileName()));
+        discoFever
+                .setIntroTextList(discoFever.getDiscoFeverConfigParser().openAndParse(discoFever.getConfigFileName()));
         discoFever.setCurrentState(0);
         discoFever.setMaxState(discoFeverConfigParser.getMaxState());
         discoFever.setTimeList(discoFeverConfigParser.getTimeList());
@@ -93,8 +93,7 @@ public class DiscoFeverFuncImpl {
                 loc.getWorld(),
                 loc.getX() + 4,
                 loc.getY(),
-                loc.getZ()
-        ));
+                loc.getZ()));
     }
 
     protected static void resetPlatform(String worldName) {
@@ -138,13 +137,23 @@ public class DiscoFeverFuncImpl {
     // 初始化游戏展示板
     protected static void resetGameBoard() {
         DiscoFeverGameBoard gameBoard = (DiscoFeverGameBoard) discoFever.getGameBoard();
-        gameBoard.updatePlayerRemainTitle(Bukkit.getOnlinePlayers().size());
-        gameBoard.setTeamRemainCount(discoFever.getActiveTeams().size());
-        for (int i = 0; i < discoFever.getActiveTeams().size(); ++i)
+        // 基于 Participant 的初始化统计
+        gameBoard.updatePlayerRemainTitle(0);
+        java.util.List<Team> teams = discoFever.getActiveTeams();
+        int teamSize = teams != null ? teams.size() : 0;
+        gameBoard.setTeamRemainCount(
+                mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipantTeams());
+        for (int i = 0; i < teamSize; ++i)
             gameBoard.getTeamRemain()[i] = 0;
         for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!player.getScoreboardTags().contains("Participant") || player.getGameMode() == GameMode.SPECTATOR)
+                continue;
             Team team = MCETeamUtils.getTeam(player);
-            gameBoard.getTeamRemain()[discoFever.getTeamId(team)]++;
+            if (team == null)
+                continue;
+            int idx = discoFever.getTeamId(team);
+            if (idx >= 0 && idx < gameBoard.getTeamRemain().length)
+                gameBoard.getTeamRemain()[idx]++;
         }
         gameBoard.updateTeamRemainTitle(null);
     }
@@ -156,14 +165,17 @@ public class DiscoFeverFuncImpl {
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getGameMode() != GameMode.SPECTATOR) {
-                message.append(isFirst ? MCEPlayerUtils.getColoredPlayerName(player) : "<dark_aqua>, </dark_aqua>" +
-                        MCEPlayerUtils.getColoredPlayerName(player));
+                message.append(isFirst ? MCEPlayerUtils.getColoredPlayerName(player)
+                        : "<dark_aqua>, </dark_aqua>" +
+                                MCEPlayerUtils.getColoredPlayerName(player));
                 isFirst = false;
             }
         }
 
-        if (isFirst) message.append("<red>所有玩家已被团灭！</red>");
-        else message.append("<dark_aqua>是最后存活的玩家！</dark_aqua>");
+        if (isFirst)
+            message.append("<red>所有玩家已被团灭！</red>");
+        else
+            message.append("<dark_aqua>是最后存活的玩家！</dark_aqua>");
         MCEMessenger.sendGlobalInfo(message.toString());
 
         MCEMainController.setRunningGame(false);

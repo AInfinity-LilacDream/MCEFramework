@@ -4,14 +4,10 @@ import lombok.Data;
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.tools.*;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-
-import static mcevent.MCEFramework.miscellaneous.Constants.discoFever;
 
 /*
 MCEGame: 游戏基类，定义通用游戏接口属性与游戏流程框架
@@ -97,8 +93,15 @@ public class MCEGame {
         this.setCurrentRound(1);
 
         this.setTimeline(new MCETimeline());
+        // Wrap launch: run game-specific launch, then immediately grant Active &
+        // Participant and apply gamemode
         this.getTimeline().addTimelineNode(
-                new MCETimelineNode(launchDuration, false, this::onLaunch, this.getTimeline(), this.getGameBoard()));
+                new MCETimelineNode(launchDuration, false, () -> {
+                    this.onLaunch();
+                    MCEPlayerUtils.globalGrantTag("Active");
+                    markParticipantsByWorld();
+                    applyGamemodeByParticipation();
+                }, this.getTimeline(), this.getGameBoard()));
         if (intro) {
             this.getTimeline().addTimelineNode(
                     new MCETimelineNode(introDuration, false, this::intro, this.getTimeline(), this.getGameBoard()));
@@ -111,9 +114,11 @@ public class MCEGame {
             this.getTimeline().addTimelineNode(
                     new MCETimelineNode(cyclePreparationDuration, true, this::onCyclePreparation, this.getTimeline(),
                             this.getGameBoard()));
+            // cycleStart: only run game-specific start; do NOT re-grant Participant here
             this.getTimeline().addTimelineNode(
-                    new MCETimelineNode(cycleStartDuration, false, this::onCycleStart, this.getTimeline(),
-                            this.getGameBoard()));
+                    new MCETimelineNode(cycleStartDuration, false, () -> {
+                        this.onCycleStart();
+                    }, this.getTimeline(), this.getGameBoard()));
             if (i < round) {
                 this.getTimeline().addTimelineNode(
                         new MCETimelineNode(cycleEndDuration, true, this::onCycleEnd, this.getTimeline(),
@@ -121,8 +126,14 @@ public class MCEGame {
             }
         }
 
+        // Wrap end to always cleanup Participant
         this.getTimeline().addTimelineNode(
-                new MCETimelineNode(endDuration, false, this::onEnd, this.getTimeline(), this.getGameBoard()));
+                new MCETimelineNode(endDuration, false, () -> {
+                    this.onEnd();
+                    for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                        p.removeScoreboardTag("Participant");
+                    }
+                }, this.getTimeline(), this.getGameBoard()));
     }
 
     public int getTeamId(Team team) {
@@ -168,15 +179,11 @@ public class MCEGame {
     public void onPreparation() {
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
-        // 给所有在线玩家添加Active标签，标记为活跃游戏玩家
-        MCEPlayerUtils.globalGrantTag("Active");
+        // 取消每回合阶段的 Active 发放（已在 onLaunch 统一发放）
     }
 
     public void onCyclePreparation() {
-        // 确保Active标签存在（如果子类没有覆盖此方法）
-        MCEPlayerUtils.globalGrantTag("Active");
-        // 统一回合准备阶段为生存模式
-        MCEPlayerUtils.globalSetGameMode(org.bukkit.GameMode.SURVIVAL);
+        // 保留其它准备逻辑，移除 Active 发放（onLaunch 已发放）
     }
 
     public void onCycleStart() {
@@ -186,9 +193,38 @@ public class MCEGame {
     }
 
     public void onEnd() {
+        // 回收参与者标记
+        for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+            p.removeScoreboardTag("Participant");
+        }
     }
 
     public void initGameBoard() {
+    }
+
+    /**
+     * 将当前位于本游戏世界的玩家标记为参与者（Participant），其他玩家移除该标记。
+     */
+    protected void markParticipantsByWorld() {
+        for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+            if (p.getWorld().getName().equals(getWorldName())) {
+                p.addScoreboardTag("Participant");
+            } else {
+                p.removeScoreboardTag("Participant");
+            }
+        }
+    }
+
+    /**
+     * 基于参与者标记设置游戏模式：参与者为生存，非参与者为旁观。
+     */
+    protected void applyGamemodeByParticipation() {
+        for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+            if (isGameParticipant(p))
+                p.setGameMode(org.bukkit.GameMode.SURVIVAL);
+            else
+                p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+        }
     }
 
     /**

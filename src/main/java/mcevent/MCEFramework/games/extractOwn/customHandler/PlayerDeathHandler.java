@@ -50,8 +50,8 @@ public class PlayerDeathHandler extends MCEResumableEventHandler implements List
             return;
         }
 
-        // 检查玩家是否在游戏中
-        if (victim.getGameMode() != GameMode.SURVIVAL) {
+        // 仅对参与者且在生存模式的玩家生效
+        if (victim.getGameMode() != GameMode.SURVIVAL || !victim.getScoreboardTags().contains("Participant")) {
             return;
         }
 
@@ -65,7 +65,8 @@ public class PlayerDeathHandler extends MCEResumableEventHandler implements List
         }
 
         // 如果没有攻击者或攻击者不在游戏中，跳过
-        if (attacker == null || attacker.getGameMode() != GameMode.SURVIVAL) {
+        if (attacker == null || attacker.getGameMode() != GameMode.SURVIVAL
+                || !attacker.getScoreboardTags().contains("Participant")) {
             return;
         }
 

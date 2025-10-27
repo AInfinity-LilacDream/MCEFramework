@@ -826,7 +826,13 @@ public class SurvivalGameFuncImpl {
     // 初始化游戏展示板
     protected static void resetGameBoard() {
         SurvivalGameGameBoard gameBoard = (SurvivalGameGameBoard) survivalGame.getGameBoard();
-        gameBoard.updatePlayerRemainTitle(Bukkit.getOnlinePlayers().size());
+        int participants = 0;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getWorld().getName().equals(survivalGame.getWorldName())
+                    && p.getScoreboardTags().contains("Participant") && p.getGameMode() != GameMode.SPECTATOR)
+                participants++;
+        }
+        gameBoard.updatePlayerRemainTitle(participants);
         gameBoard.setTeamRemainCount(survivalGame.getActiveTeams().size());
 
         for (int i = 0; i < survivalGame.getActiveTeams().size(); ++i) {
@@ -834,6 +840,10 @@ public class SurvivalGameFuncImpl {
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!player.getWorld().getName().equals(survivalGame.getWorldName()))
+                continue;
+            if (!player.getScoreboardTags().contains("Participant") || player.getGameMode() == GameMode.SPECTATOR)
+                continue;
             Team team = MCETeamUtils.getTeam(player);
             if (team != null) {
                 int teamId = survivalGame.getTeamId(team);
@@ -872,6 +882,28 @@ public class SurvivalGameFuncImpl {
 
     public static void clearPlacedBlocks() {
         playerPlacedBlocks.clear();
+    }
+
+    // 将记录的玩家放置方块一一清理为 AIR，并清空记录
+    public static void restoreAndClearPlayerPlacedBlocks() {
+        org.bukkit.World world = org.bukkit.Bukkit.getWorld(survivalGame.getWorldName());
+        if (world == null) {
+            playerPlacedBlocks.clear();
+            return;
+        }
+        int removed = 0;
+        java.util.Iterator<org.bukkit.Location> it = playerPlacedBlocks.iterator();
+        while (it.hasNext()) {
+            org.bukkit.Location loc = it.next();
+            if (loc == null || loc.getWorld() == null || !loc.getWorld().equals(world)) {
+                it.remove();
+                continue;
+            }
+            world.getBlockAt(loc).setType(org.bukkit.Material.AIR, false);
+            it.remove();
+            removed++;
+        }
+        plugin.getLogger().info("[SurvivalGame] 已清理玩家放置方块数量=" + removed);
     }
 
     // 发送获胜消息

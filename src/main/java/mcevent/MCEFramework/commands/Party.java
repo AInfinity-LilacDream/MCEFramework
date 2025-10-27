@@ -10,8 +10,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 
-import java.util.Objects;
-
 /*
 Party: 控制玩家加入队伍逻辑
 usage: party join <team>
@@ -27,10 +25,26 @@ public class Party extends BaseCommand {
     @Subcommand("join")
     @Syntax("<team>")
     public void onPartyJoin(CommandSender sender, @Single String team) {
-        if (!(sender instanceof Player player)) return;
+        if (!(sender instanceof Player player))
+            return;
         for (TeamWithDetails teamWithDetails : Constants.teams) {
-            if (Objects.equals(teamWithDetails.alias(), team)) {
-                Objects.requireNonNull(teamBoard.getTeam(teamWithDetails.teamName())).addEntry(player.getName());
+            if (teamWithDetails != null && teamWithDetails.alias() != null
+                    && teamWithDetails.alias().equalsIgnoreCase(team)) {
+                String teamName = teamWithDetails.teamName();
+                if (teamName == null || teamName.isEmpty()) {
+                    MCEMessenger.sendInfoToPlayer("队伍未配置有效名称！", player);
+                    return;
+                }
+                org.bukkit.scoreboard.Team t = teamBoard.getTeam(teamName);
+                if (t == null) {
+                    try {
+                        t = teamBoard.registerNewTeam(teamName);
+                    } catch (IllegalArgumentException e) {
+                        MCEMessenger.sendInfoToPlayer("无法创建队伍：" + teamName, player);
+                        return;
+                    }
+                }
+                t.addEntry(player.getName());
                 return;
             }
         }
@@ -40,7 +54,8 @@ public class Party extends BaseCommand {
     @Subcommand("join")
     @Syntax("<player> <team>")
     public void onPlayerPartyJoin(CommandSender sender, @Single String playerName, @Single String team) {
-        if (!(sender instanceof Player)) return;
+        if (!(sender instanceof Player))
+            return;
 
         Player player = Bukkit.getPlayer(playerName);
         if (player == null) {
@@ -49,8 +64,23 @@ public class Party extends BaseCommand {
         }
 
         for (TeamWithDetails teamWithDetails : Constants.teams) {
-            if (Objects.equals(teamWithDetails.alias(), team)) {
-                Objects.requireNonNull(teamBoard.getTeam(teamWithDetails.teamName())).addEntry(player.getName());
+            if (teamWithDetails != null && teamWithDetails.alias() != null
+                    && teamWithDetails.alias().equalsIgnoreCase(team)) {
+                String teamName = teamWithDetails.teamName();
+                if (teamName == null || teamName.isEmpty()) {
+                    MCEMessenger.sendInfoToPlayer("队伍未配置有效名称！", (Player) sender);
+                    return;
+                }
+                org.bukkit.scoreboard.Team t = teamBoard.getTeam(teamName);
+                if (t == null) {
+                    try {
+                        t = teamBoard.registerNewTeam(teamName);
+                    } catch (IllegalArgumentException e) {
+                        MCEMessenger.sendInfoToPlayer("无法创建队伍：" + teamName, (Player) sender);
+                        return;
+                    }
+                }
+                t.addEntry(player.getName());
                 return;
             }
         }

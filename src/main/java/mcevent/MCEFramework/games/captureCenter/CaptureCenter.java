@@ -79,9 +79,6 @@ public class CaptureCenter extends MCEGame {
         // 播放背景音乐
         MCEPlayerUtils.globalPlaySound("minecraft:capture_center");
 
-        // 确保所有玩家都有Active标签
-        MCEPlayerUtils.globalGrantTag("Active");
-
         // 开启全局PVP
         MCEWorldUtils.enablePVP();
 

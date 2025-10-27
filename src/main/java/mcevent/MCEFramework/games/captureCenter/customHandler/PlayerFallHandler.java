@@ -44,10 +44,9 @@ public class PlayerFallHandler implements Listener {
 
         // 检查玩家是否掉落到虚空（只处理活跃游戏玩家）
         if (player.getLocation().getY() <= -65 && player.getGameMode() == GameMode.SURVIVAL &&
-                player.getScoreboardTags().contains("Active")) {
+                player.getScoreboardTags().contains("Participant")) {
             // 玩家被击溃
-            Team playerTeam = MCETeamUtils.getTeam(player);
-            String teamName = playerTeam != null ? MCETeamUtils.getUncoloredTeamName(playerTeam) : "未知队伍";
+            // 保持逻辑简单：此处不需要使用队伍信息
 
             CaptureCenterFuncImpl.handlePlayerFallIntoVoid(player);
         }
@@ -58,8 +57,8 @@ public class PlayerFallHandler implements Listener {
         // 处理PVP击杀奖励（只处理活跃游戏玩家）
         if (event.getEntity() instanceof Player victim && event.getDamager() instanceof Player attacker) {
             if (victim.getGameMode() != GameMode.SURVIVAL || attacker.getGameMode() != GameMode.SURVIVAL ||
-                    !victim.getScoreboardTags().contains("Active")
-                    || !attacker.getScoreboardTags().contains("Active")) {
+                    !victim.getScoreboardTags().contains("Participant")
+                    || !attacker.getScoreboardTags().contains("Participant")) {
                 return;
             }
 

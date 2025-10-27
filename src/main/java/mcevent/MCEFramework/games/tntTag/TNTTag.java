@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-import static mcevent.MCEFramework.games.tntTag.TNTTagFuncImpl.*;
+// import static mcevent.MCEFramework.games.tntTag.TNTTagFuncImpl.*;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
 
@@ -295,9 +295,9 @@ public class TNTTag extends MCEGame {
 
             // 给予TNT头盔（带绑定诅咒）
             selected.getInventory().setHelmet(createTNTHelmet());
-            // 给予携带者速度I，覆盖30秒（与阶段时长一致）
+            // 给予携带者速度II，覆盖30秒（与阶段时长一致）
             try {
-                selected.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0, false, false));
+                selected.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 1, false, false));
             } catch (Throwable ignored) {
             }
         }
@@ -347,13 +347,13 @@ public class TNTTag extends MCEGame {
             redTeam.addEntry(to.getName());
         }
 
-        // 更新速度效果：移除原携带者速度，给予新携带者速度I（30秒）
+        // 更新速度效果：移除原携带者速度，给予新携带者速度II（30秒）
         try {
             from.removePotionEffect(PotionEffectType.SPEED);
         } catch (Throwable ignored) {
         }
         try {
-            to.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0, false, false));
+            to.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 1, false, false));
         } catch (Throwable ignored) {
         }
 

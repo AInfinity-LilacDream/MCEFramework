@@ -38,7 +38,10 @@ public class MCETeamUtils {
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             Team team = MCETeamUtils.getTeam(player);
-            if (!teams.contains(team)) teams.add(team);
+            if (team == null)
+                continue;
+            if (!teams.contains(team))
+                teams.add(team);
         }
 
         return teams;
@@ -48,13 +51,16 @@ public class MCETeamUtils {
         ArrayList<Team> newTeams = new ArrayList<>();
         newTeams.add(teams.getFirst());
         newTeams.add(teams.getLast());
-        for (int i = 1; i < teams.size() - 1; i++) newTeams.add(teams.get(i));
+        for (int i = 1; i < teams.size() - 1; i++)
+            newTeams.add(teams.get(i));
         return newTeams;
     }
 
     // 获得当前队伍的玩家列表
     public static ArrayList<Player> getPlayers(Team team) {
         ArrayList<Player> players = new ArrayList<>();
+        if (team == null)
+            return players;
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (team.getEntries().contains(player.getName())) {
@@ -85,7 +91,7 @@ public class MCETeamUtils {
                 };
             }
         }
-        return new String[] {"<black>", "</black>"};
+        return new String[] { "<black>", "</black>" };
     }
 
     public static String getUncoloredTeamName(Team team) {
@@ -100,7 +106,8 @@ public class MCETeamUtils {
     public static String getTeamColoredName(Team team) {
         for (TeamWithDetails teamWithDetails : Constants.teams) {
             if (Objects.equals(teamWithDetails.teamName(), team.getName())) {
-                return teamWithDetails.textColorPre() + teamWithDetails.teamNameNoColor() + teamWithDetails.textColorPost();
+                return teamWithDetails.textColorPre() + teamWithDetails.teamNameNoColor()
+                        + teamWithDetails.textColorPost();
             }
         }
         return team.getName();
@@ -116,16 +123,16 @@ public class MCETeamUtils {
 
         return players;
     }
-    
+
     // 友伤系统控制方法
     public static void enableFriendlyFire() {
         mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().suspend(); // suspend=true 激活友伤
     }
-    
+
     public static void disableFriendlyFire() {
         mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().start(); // suspended=false 关闭友伤
     }
-    
+
     public static boolean isFriendlyFireEnabled() {
         return mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().isSuspended(); // suspended=true 代表友伤启用
     }

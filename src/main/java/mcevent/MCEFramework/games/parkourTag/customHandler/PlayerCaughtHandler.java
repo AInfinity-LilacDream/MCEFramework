@@ -36,6 +36,9 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
         if (Objects.requireNonNull(MCETeamUtils.getTeam(catcher)).getName()
                 .equals(Objects.requireNonNull(MCETeamUtils.getTeam(runner)).getName()))
             return;
+        // 仅对参与者（Participant）进行抓捕判定
+        if (!catcher.getScoreboardTags().contains("Participant") || !runner.getScoreboardTags().contains("Participant"))
+            return;
         if (catcher.getScoreboardTags().contains("runner"))
             return;
         if (runner.getScoreboardTags().contains("caught"))

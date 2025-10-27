@@ -78,7 +78,10 @@ public class VotingGUI {
      * 创建游戏选项物品
      */
     private static ItemStack createGameItem(int gameId) {
-        ItemStack item = new ItemStack(GAME_MATERIALS[gameId]);
+        // 用物品数量展示票数（最少为1以避免空堆显示异常）
+        int votes = VotingSystemFuncImpl.getVotes(gameId);
+        int amount = Math.min(64, Math.max(1, votes));
+        ItemStack item = new ItemStack(GAME_MATERIALS[gameId], amount);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
@@ -86,9 +89,6 @@ public class VotingGUI {
             Component displayName = MiniMessage.miniMessage()
                     .deserialize("<gold><bold>" + GAME_NAMES[gameId] + "</bold></gold>");
             meta.displayName(displayName);
-
-            // 获取当前票数
-            int votes = VotingSystemFuncImpl.getVotes(gameId);
 
             // 设置描述 - 使用MiniMessage
             List<Component> lore = Arrays.asList(

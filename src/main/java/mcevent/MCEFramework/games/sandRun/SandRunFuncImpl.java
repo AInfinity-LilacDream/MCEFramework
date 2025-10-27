@@ -51,13 +51,21 @@ public class SandRunFuncImpl {
      */
     protected static void resetGameBoard() {
         SandRunGameBoard gameBoard = (SandRunGameBoard) sandRun.getGameBoard();
-        gameBoard.updatePlayerRemainTitle(Bukkit.getOnlinePlayers().size());
-        gameBoard.setTeamRemainCount(sandRun.getActiveTeams().size());
-        for (int i = 0; i < sandRun.getActiveTeams().size(); ++i)
+        gameBoard.updatePlayerRemainTitle(0);
+        int teamSize = sandRun.getActiveTeams() != null ? sandRun.getActiveTeams().size() : 0;
+        gameBoard.setTeamRemainCount(
+                mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipantTeams());
+        for (int i = 0; i < teamSize; ++i)
             gameBoard.getTeamRemain()[i] = 0;
         for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!player.getScoreboardTags().contains("Participant") || player.getGameMode() == GameMode.SPECTATOR)
+                continue;
             Team team = MCETeamUtils.getTeam(player);
-            gameBoard.getTeamRemain()[sandRun.getTeamId(team)]++;
+            if (team == null)
+                continue;
+            int idx = sandRun.getTeamId(team);
+            if (idx >= 0 && idx < gameBoard.getTeamRemain().length)
+                gameBoard.getTeamRemain()[idx]++;
         }
         gameBoard.updateTeamRemainTitle(null);
     }

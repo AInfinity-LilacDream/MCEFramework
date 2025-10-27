@@ -77,7 +77,12 @@ public class CaptureCenterFuncImpl {
         teamScores.clear();
         if (captureCenter.getActiveTeams() != null) {
             for (Team team : captureCenter.getActiveTeams()) {
-                teamScores.put(team.getName(), 0);
+                if (team == null)
+                    continue;
+                String name = team.getName();
+                if (name == null)
+                    continue;
+                teamScores.put(name, 0);
             }
         }
     }
@@ -152,7 +157,9 @@ public class CaptureCenterFuncImpl {
 
         Location spawnLocation = new Location(world, CAPTURE_CENTER_X, SPAWN_Y, CAPTURE_CENTER_Z);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.teleport(spawnLocation);
+            if (player.getScoreboardTags().contains("Participant")) {
+                player.teleport(spawnLocation);
+            }
         }
     }
 
@@ -192,7 +199,7 @@ public class CaptureCenterFuncImpl {
      */
     public static void giveKnockbackStick() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Active")) {
+            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Participant")) {
                 player.getInventory().clear();
                 int level = getKnockbackLevelForLocation(player.getLocation());
                 giveKnockbackStickToPlayer(player, level);
@@ -205,7 +212,7 @@ public class CaptureCenterFuncImpl {
      */
     public static void giveKnockbackStick(int knockbackLevel) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Active")) {
+            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Participant")) {
                 player.getInventory().clear();
                 giveKnockbackStickToPlayer(player, Math.max(0, knockbackLevel));
             }
@@ -249,8 +256,8 @@ public class CaptureCenterFuncImpl {
      */
     public static void resetGameBoard() {
         CaptureCenterGameBoard gameBoard = (CaptureCenterGameBoard) captureCenter.getGameBoard();
-        gameBoard.updatePlayerCount(Bukkit.getOnlinePlayers().size());
-        gameBoard.updateTeamCount(captureCenter.getActiveTeams().size());
+        gameBoard.updatePlayerCount(0);
+        gameBoard.updateTeamCount(0);
 
         // 击退等级由玩家所在半径决定
         initializeTeamScores();
@@ -268,7 +275,7 @@ public class CaptureCenterFuncImpl {
                 updateCapturePoints();
                 // 实时校准击退棒等级（玩家移动半径时）
                 for (Player p : Bukkit.getOnlinePlayers()) {
-                    if (p.getGameMode() != GameMode.SURVIVAL || !p.getScoreboardTags().contains("Active"))
+                    if (p.getGameMode() != GameMode.SURVIVAL || !p.getScoreboardTags().contains("Participant"))
                         continue;
                     int expected = getKnockbackLevelForLocation(p.getLocation());
                     ItemStack held = p.getInventory().getItem(0);

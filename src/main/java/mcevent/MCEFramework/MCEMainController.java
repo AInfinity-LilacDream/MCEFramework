@@ -162,11 +162,13 @@ public final class MCEMainController extends JavaPlugin {
         lobbyDoubleJumpHandler = new LobbyDoubleJumpHandler();
         windLauncherHandler = new WindLauncherHandler();
         lobbyTeleportCompassHandler = new LobbyTeleportCompassHandler();
+        new mcevent.MCEFramework.customHandler.WorldDaylightFreezeHandler();
         new DuelKitManager();
         chatFormatHandler = new ChatFormatHandler();
         new mcevent.MCEFramework.customHandler.LobbySaturationHandler(); // 主城饱和效果
         new mcevent.MCEFramework.customHandler.GlobalEliminationHandler(); // 全局淘汰监听器
         new mcevent.MCEFramework.customHandler.GlobalBlockInteractionHandler(); // 全局方块交互监听器
+        new mcevent.MCEFramework.customHandler.GlobalWorldBorderHandler(); // 全局自定义世界边界伤害
         new WelcomeMessageHandler(); // 欢迎标语处理器
         Bukkit.getPluginManager()
                 .registerEvents(new mcevent.MCEFramework.games.survivalGame.customHandler.ChestSelectorHandler(), this); // 箱子标注器

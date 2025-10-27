@@ -29,6 +29,9 @@ public class PlayerDeathHandler extends MCEResumableEventHandler implements List
             return;
 
         Player player = event.getPlayer();
+        // 非参与者（未持有 Active 或不在本游戏世界）不处理
+        if (!survivalGame.isGameParticipant(player))
+            return;
         Player killer = player.getKiller();
 
         // 在玩家死亡位置创建战利品箱

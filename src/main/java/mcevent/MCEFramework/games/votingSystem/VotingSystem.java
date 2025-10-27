@@ -15,13 +15,15 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Objects;
 
 import static mcevent.MCEFramework.games.votingSystem.VotingSystemFuncImpl.*;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
-import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
+// import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
 
 /**
  * VotingSystem: 游戏投票系统
@@ -49,12 +51,13 @@ public class VotingSystem extends MCEGame {
         loadConfig();
         MCEPlayerUtils.globalClearPotionEffects();
 
-        // 传送不在主城的玩家到主城并清理发光效果
+        // 传送非主城且非 duel 的玩家到主城，并清理发光效果
         for (Player player : Bukkit.getOnlinePlayers()) {
             // 清理玩家的发光效果
             MCEGlowingEffectManager.clearPlayerGlowingEffect(player);
 
-            if (!player.getWorld().getName().equals("lobby")) {
+            String wn = player.getWorld().getName();
+            if (!"lobby".equals(wn) && !"duel".equals(wn)) {
                 player.teleport(Objects.requireNonNull(Bukkit.getWorld("lobby")).getSpawnLocation());
             }
         }
@@ -87,7 +90,7 @@ public class VotingSystem extends MCEGame {
         // 播放背景音乐
         MCEPlayerUtils.globalPlaySound("minecraft:vote");
 
-        // 给所有玩家投票卡
+        // 给所有玩家投票卡（排除 duel 世界玩家）
         giveVotingCards();
 
         // 启动投票系统
@@ -100,7 +103,7 @@ public class VotingSystem extends MCEGame {
         for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
             mcevent.MCEFramework.customHandler.LobbyItemHandler lih = mcevent.MCEFramework.MCEMainController
                     .getLobbyItemHandler();
-            if (lih != null && "lobby".equals(p.getWorld().getName())) {
+            if (lih != null && ("lobby".equals(p.getWorld().getName()) || "duel".equals(p.getWorld().getName()))) {
                 lih.giveLobbyItems(p);
             }
         }
@@ -135,23 +138,51 @@ public class VotingSystem extends MCEGame {
         ItemStack votingCard = createVotingCard();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            // 保存烈焰棒
+            // duel 世界玩家不参与投票：不发卡
+            if (player.getWorld() != null && "duel".equals(player.getWorld().getName()))
+                continue;
+            // 保存或准备恢复烈焰棒（风弹发射器）
             ItemStack blazeRod = null;
+            Component blazeName = MiniMessage.miniMessage().deserialize("<red><bold>风弹发射器</bold></red>");
             for (ItemStack item : player.getInventory().getContents()) {
                 if (item != null && item.getType() == Material.BLAZE_ROD &&
-                        item.hasItemMeta() && item.getItemMeta().hasDisplayName() &&
-                        "§c§l风弹发射器".equals(item.getItemMeta().getDisplayName())) {
-                    blazeRod = item.clone();
-                    break;
+                        item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+                    Component dn = item.getItemMeta().displayName();
+                    if (dn != null && dn.equals(blazeName)) {
+                        blazeRod = item.clone();
+                        break;
+                    }
                 }
             }
 
             player.getInventory().clear();
             player.getInventory().setItem(4, votingCard); // 放在第5个槽位（中间）
 
-            // 恢复烈焰棒
+            // 恢复烈焰棒；如未找到则补发一个
             if (blazeRod != null) {
-                player.getInventory().setItem(0, blazeRod); // 放在第一个槽位
+                player.getInventory().setItem(0, blazeRod);
+            } else {
+                ItemStack newRod = new ItemStack(Material.BLAZE_ROD);
+                ItemMeta meta = newRod.getItemMeta();
+                if (meta != null) {
+                    meta.displayName(blazeName);
+                    java.util.List<Component> lore = java.util.Arrays.asList(
+                            MiniMessage.miniMessage().deserialize("<yellow>右键发射风弹</yellow>"),
+                            MiniMessage.miniMessage().deserialize("<gray>击中玩家给予发光效果</gray>"),
+                            MiniMessage.miniMessage().deserialize("<red>冷却时间: 3秒</red>"));
+                    meta.lore(lore);
+                    newRod.setItemMeta(meta);
+                }
+                player.getInventory().setItem(0, newRod);
+            }
+
+            // 始终补发指南针：主城->前往Duel（投票期也可进入Duel）
+            try {
+                if (player.getWorld() != null && "lobby".equals(player.getWorld().getName())) {
+                    player.getInventory().setItem(8,
+                            mcevent.MCEFramework.customHandler.LobbyTeleportCompassHandler.createToDuelCompass());
+                }
+            } catch (Throwable ignored) {
             }
 
             player.updateInventory();
@@ -165,10 +196,12 @@ public class VotingSystem extends MCEGame {
         ItemStack card = new ItemStack(Material.PAPER);
         ItemMeta meta = card.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName("§6§l投票卡");
-            meta.setLore(java.util.Arrays.asList(
-                    "§e右键点击打开投票界面",
-                    "§7选择您想要游玩的下一个游戏"));
+            Component name = MiniMessage.miniMessage().deserialize("<gold><bold>投票卡</bold></gold>");
+            java.util.List<Component> lore = java.util.Arrays.asList(
+                    MiniMessage.miniMessage().deserialize("<yellow>右键点击打开投票界面</yellow>"),
+                    MiniMessage.miniMessage().deserialize("<gray>选择您想要游玩的下一个游戏</gray>"));
+            meta.displayName(name);
+            meta.lore(lore);
             card.setItemMeta(meta);
         }
         return card;
@@ -181,8 +214,10 @@ public class VotingSystem extends MCEGame {
         // 创建BossBar
         votingBossBar = Bukkit.createBossBar("§6§l投票倒计时", BarColor.YELLOW, BarStyle.SOLID);
 
-        // 为所有在线玩家显示BossBar
+        // 为所有在线玩家显示BossBar（排除 duel 世界玩家）
         for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getWorld() != null && "duel".equals(player.getWorld().getName()))
+                continue;
             votingBossBar.addPlayer(player);
         }
 

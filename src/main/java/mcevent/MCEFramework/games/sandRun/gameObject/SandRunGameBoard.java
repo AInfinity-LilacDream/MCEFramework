@@ -14,7 +14,8 @@ import static mcevent.MCEFramework.miscellaneous.Constants.*;
 /*
 SandRunGameBoard: sand run 游戏展示板
  */
-@Setter @Getter
+@Setter
+@Getter
 public class SandRunGameBoard extends MCEGameBoard {
     private int playerRemain;
     private int teamRemainCount = 0;
@@ -27,26 +28,23 @@ public class SandRunGameBoard extends MCEGameBoard {
     }
 
     public void updatePlayerRemainTitle(int playerRemain) {
-        this.playerRemain = playerRemain;
-        this.playerRemainTitle = "<green><bold> 剩余玩家：</bold></green>" +
-                playerRemain + "/" + Bukkit.getOnlinePlayers().size();
+        int alive = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipants();
+        int total = 0;
+        for (org.bukkit.entity.Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getWorld().getName().equals(sandRun.getWorldName()) && p.getScoreboardTags().contains("Participant"))
+                total++;
+        }
+        this.playerRemain = alive;
+        this.playerRemainTitle = "<green><bold> 剩余玩家：</bold></green>" + alive + "/" + total;
     }
 
     public void updateTeamRemainTitle(Team team) {
 
         // null为初始化
-        if (team == null) {
-            this.teamRemainTitle = "<green><bold> 剩余队伍：</bold></green>" +
-                    teamRemainCount + "/" + sandRun.getActiveTeams().size();
-            return;
-        }
-
-        this.teamRemain[sandRun.getTeamId(team)]--;
-        if (teamRemain[sandRun.getTeamId(team)] == 0) {
-            this.teamRemainCount--;
-            this.teamRemainTitle = "<green><bold> 剩余队伍：</bold></green>" +
-                    teamRemainCount + "/" + sandRun.getActiveTeams().size();
-        }
+        int aliveTeams = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipantTeams();
+        int totalTeams = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countParticipantTeamsTotal();
+        this.teamRemainCount = aliveTeams;
+        this.teamRemainTitle = "<green><bold> 剩余队伍：</bold></green>" + aliveTeams + "/" + totalTeams;
     }
 
     @Override
@@ -65,8 +63,7 @@ public class SandRunGameBoard extends MCEGameBoard {
                     MiniMessage.miniMessage().deserialize(getMapTitle()),
                     MiniMessage.miniMessage().deserialize(getStateTitle() + time),
                     MiniMessage.miniMessage().deserialize(getPlayerRemainTitle()),
-                    MiniMessage.miniMessage().deserialize(getTeamRemainTitle())
-            );
+                    MiniMessage.miniMessage().deserialize(getTeamRemainTitle()));
         }
     }
 }

@@ -18,7 +18,8 @@ import static mcevent.MCEFramework.miscellaneous.Constants.*;
 /*
 MusicDodgeGameBoard: music dodge游戏展示板
  */
-@Setter @Getter
+@Setter
+@Getter
 public class MusicDodgeGameBoard extends MCEGameBoard {
     private int playerRemain;
     private int teamRemainCount = 0;
@@ -31,26 +32,18 @@ public class MusicDodgeGameBoard extends MCEGameBoard {
     }
 
     public void updatePlayerRemainTitle(int playerRemain) {
-        this.playerRemain = playerRemain;
-        this.playerRemainTitle = "<green><bold> 剩余玩家：</bold></green>" +
-                playerRemain + "/" + Bukkit.getOnlinePlayers().size();
+        int alive = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipants();
+        int total = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countParticipantsTotal();
+        this.playerRemain = alive;
+        this.playerRemainTitle = "<green><bold> 剩余玩家：</bold></green>" + alive + "/" + total;
     }
 
     public void updateTeamRemainTitle(Team team) {
 
-        // null为初始化
-        if (team == null) {
-            this.teamRemainTitle = "<green><bold> 剩余队伍：</bold></green>" +
-                    teamRemainCount + "/" + musicDodge.getActiveTeams().size();
-            return;
-        }
-
-        this.teamRemain[musicDodge.getTeamId(team)]--;
-        if (teamRemain[musicDodge.getTeamId(team)] == 0) {
-            this.teamRemainCount--;
-            this.teamRemainTitle = "<green><bold> 剩余队伍：</bold></green>" +
-                    teamRemainCount + "/" + musicDodge.getActiveTeams().size();
-        }
+        int aliveTeams = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipantTeams();
+        int totalTeams = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countParticipantTeamsTotal();
+        this.teamRemainCount = aliveTeams;
+        this.teamRemainTitle = "<green><bold> 剩余队伍：</bold></green>" + aliveTeams + "/" + totalTeams;
     }
 
     @Override
@@ -69,8 +62,7 @@ public class MusicDodgeGameBoard extends MCEGameBoard {
                     MiniMessage.miniMessage().deserialize(getMapTitle()),
                     MiniMessage.miniMessage().deserialize(getStateTitle() + time),
                     MiniMessage.miniMessage().deserialize(getPlayerRemainTitle()),
-                    MiniMessage.miniMessage().deserialize(getTeamRemainTitle())
-            );
+                    MiniMessage.miniMessage().deserialize(getTeamRemainTitle()));
         }
     }
 }

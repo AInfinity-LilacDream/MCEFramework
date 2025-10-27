@@ -98,7 +98,7 @@ public class SandFallHandler implements Listener {
     private void spawnSandForAllPlayers() {
         int activePlayerCount = 0;
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Active")) {
+            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Participant")) {
                 activePlayerCount++;
                 spawnSandAbovePlayer(player);
             }
@@ -139,8 +139,8 @@ public class SandFallHandler implements Listener {
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
-            // 只处理有Active标签的游戏玩家
-            if (!player.getScoreboardTags().contains("Active")) {
+            // 只处理参与者
+            if (!player.getScoreboardTags().contains("Participant")) {
                 return;
             }
 

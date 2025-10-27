@@ -4,7 +4,6 @@ import mcevent.MCEFramework.games.crazyMiner.gameObject.CrazyMinerGameBoard;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import mcevent.MCEFramework.tools.MCETeamUtils;
-import mcevent.MCEFramework.tools.MCETimerUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
@@ -99,6 +98,44 @@ public class CrazyMinerFuncImpl {
 
         // 填充游戏区域边界为基岩
         fillGameAreaBoundaries(world, (int) centerX, (int) centerZ, y, game);
+
+        // 在中心空缺区域底下设置虚空坠落判定：y <= -63 给予10秒漂浮
+        try {
+            org.bukkit.scheduler.BukkitRunnable task = new org.bukkit.scheduler.BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (plugin == null || crazyMiner == null)
+                        return;
+                    org.bukkit.World w = Bukkit.getWorld(crazyMiner.getWorldName());
+                    if (w == null)
+                        return;
+                    for (org.bukkit.entity.Player p : Bukkit.getOnlinePlayers()) {
+                        if (!p.getWorld().equals(w))
+                            continue;
+                        if (p.getLocation().getY() <= -63 && p.getGameMode() == org.bukkit.GameMode.SURVIVAL
+                                && p.getScoreboardTags().contains("Participant")) {
+                            // 若此时速度向上，则不处理
+                            org.bukkit.util.Vector v = p.getVelocity();
+                            if (v.getY() > 0.0) {
+                                continue;
+                            }
+                            // 重置垂直动量，再给予漂浮
+                            v.setY(0.0);
+                            p.setVelocity(v);
+                            p.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                                    org.bukkit.potion.PotionEffectType.LEVITATION,
+                                    100, // 10秒
+                                    5, // 漂浮 VI
+                                    false,
+                                    false,
+                                    false));
+                        }
+                    }
+                }
+            };
+            task.runTaskTimer(plugin, 0L, 10L);
+        } catch (Throwable ignored) {
+        }
     }
 
     /**
@@ -293,19 +330,29 @@ public class CrazyMinerFuncImpl {
             return;
         }
 
-        if (activeTeams.isEmpty()) {
-            plugin.getLogger().warning("没有活跃队伍！");
+        // 过滤掉为 null 或无效名称的队伍，避免 NPE
+        List<Team> filteredTeams = new ArrayList<>();
+        if (activeTeams != null) {
+            for (Team t : activeTeams) {
+                if (t != null && t.getName() != null) {
+                    filteredTeams.add(t);
+                }
+            }
+        }
+
+        if (filteredTeams.isEmpty()) {
+            plugin.getLogger().warning("没有可用的活跃队伍！");
             return;
         }
 
-        plugin.getLogger().info("开始为 " + activeTeams.size() + " 个队伍分配出生点...");
+        plugin.getLogger().info("开始为 " + filteredTeams.size() + " 个队伍分配出生点...");
 
         // 根据队伍数量选择最优分配策略
-        List<Integer> selectedSpawnIndices = selectOptimalSpawnPoints(spawnPoints, activeTeams.size());
+        List<Integer> selectedSpawnIndices = selectOptimalSpawnPoints(spawnPoints, filteredTeams.size());
 
         Map<Team, Location> teamSpawnPoints = new HashMap<>();
-        for (int i = 0; i < activeTeams.size(); i++) {
-            Team team = activeTeams.get(i);
+        for (int i = 0; i < filteredTeams.size(); i++) {
+            Team team = filteredTeams.get(i);
             int spawnIndex = selectedSpawnIndices.get(i);
             Location spawnPoint = spawnPoints.get(spawnIndex);
             teamSpawnPoints.put(team, spawnPoint);
@@ -672,17 +719,23 @@ public class CrazyMinerFuncImpl {
      */
     public static void resetGameBoard(CrazyMiner game) {
         CrazyMinerGameBoard gameBoard = (CrazyMinerGameBoard) game.getGameBoard();
-        gameBoard.updatePlayerRemainTitle(Bukkit.getOnlinePlayers().size());
-        gameBoard.setTeamRemainCount(game.getActiveTeams().size());
+        gameBoard.updatePlayerRemainTitle(0);
+        int teamSize = game.getActiveTeams() != null ? game.getActiveTeams().size() : 0;
+        gameBoard.setTeamRemainCount(
+                mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipantTeams());
 
-        for (int i = 0; i < game.getActiveTeams().size(); ++i) {
+        for (int i = 0; i < teamSize; ++i) {
             gameBoard.getTeamRemain()[i] = 0;
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!player.getScoreboardTags().contains("Participant") || player.getGameMode() == GameMode.SPECTATOR)
+                continue;
             Team team = MCETeamUtils.getTeam(player);
             if (team != null) {
-                gameBoard.getTeamRemain()[game.getTeamId(team)]++;
+                int idx = game.getTeamId(team);
+                if (idx >= 0 && idx < gameBoard.getTeamRemain().length)
+                    gameBoard.getTeamRemain()[idx]++;
             }
         }
         gameBoard.updateTeamRemainTitle(null);
@@ -695,16 +748,12 @@ public class CrazyMinerFuncImpl {
         CrazyMinerGameBoard gameBoard = (CrazyMinerGameBoard) game.getGameBoard();
         Team playerTeam = MCETeamUtils.getTeam(deadPlayer);
 
-        // 更新剩余玩家数（死亡的玩家还没有被设置为观察者模式，所以要手动减1）
-        int alivePlayerCount = 0;
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.SURVIVAL && player.getScoreboardTags().contains("Active")) {
-                alivePlayerCount++;
-            }
-        }
-        // 减去当前死亡的玩家
-        if (deadPlayer.getGameMode() == GameMode.SURVIVAL) {
-            alivePlayerCount--;
+        // 基于 Participant 统计（死亡玩家未切旁观前需手动减1）
+        int alivePlayerCount = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipants();
+        if (deadPlayer.getGameMode() == GameMode.SURVIVAL &&
+                deadPlayer.getScoreboardTags().contains("Participant") &&
+                deadPlayer.getWorld().getName().equals(game.getWorldName())) {
+            alivePlayerCount = Math.max(0, alivePlayerCount - 1);
         }
         gameBoard.updatePlayerRemainTitle(alivePlayerCount);
 
@@ -829,6 +878,8 @@ public class CrazyMinerFuncImpl {
         CrazyMinerGameBoard gameBoard = (CrazyMinerGameBoard) game.getGameBoard();
         int[] teamRemain = gameBoard.getTeamRemain();
         List<Team> activeTeams = game.getActiveTeams();
+        if (activeTeams == null || activeTeams.isEmpty())
+            return aliveTeams;
 
         // 确保不会越界
         int maxIndex = Math.min(teamRemain.length, activeTeams.size());

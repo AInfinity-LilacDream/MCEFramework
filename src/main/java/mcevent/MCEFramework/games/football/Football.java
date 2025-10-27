@@ -126,9 +126,6 @@ public class Football extends MCEGame {
         this.getGameBoard().setStateTitle("<yellow><bold> 第" + getCurrentRound() + "局准备：</bold></yellow>");
         this.getGameBoard().updateRoundTitle(getCurrentRound());
 
-        // 给所有在线玩家添加Active标签，标记为活跃游戏玩家
-        MCEPlayerUtils.globalGrantTag("Active");
-
         // 传送玩家到出生点
         teleportPlayersToSpawns();
 
