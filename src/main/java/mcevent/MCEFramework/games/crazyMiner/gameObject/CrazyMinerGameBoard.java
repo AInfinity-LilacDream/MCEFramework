@@ -4,6 +4,8 @@ import fr.mrmicky.fastboard.adventure.FastBoard;
 import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.generalGameObject.MCEGameBoard;
+import mcevent.MCEFramework.tools.MCETeamUtils;
+import org.bukkit.GameMode;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -40,12 +42,51 @@ public class CrazyMinerGameBoard extends MCEGameBoard {
     }
 
     public void updateTeamRemainTitle(Team team) {
-        // null为初始化
-        int aliveTeams = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countRemainingParticipantTeams();
-        int totalTeams = mcevent.MCEFramework.generalGameObject.MCEGameBoard.countParticipantTeamsTotal();
+        // 重新统计每支队伍的存活人数（仅统计当前CrazyMiner世界、带有Participant、且非旁观）
+        java.util.List<Team> activeTeams = crazyMiner.getActiveTeams();
+        if (activeTeams == null)
+            activeTeams = java.util.Collections.emptyList();
+
+        // 清零当前计数（按activeTeams大小）
+        int size = Math.min(this.teamRemain.length, activeTeams.size());
+        for (int i = 0; i < size; i++) {
+            this.teamRemain[i] = 0;
+        }
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (!p.getWorld().getName().equals(crazyMiner.getWorldName()))
+                continue;
+            if (!p.getScoreboardTags().contains("Participant"))
+                continue;
+            if (p.getGameMode() == GameMode.SPECTATOR)
+                continue;
+
+            Team pt = MCETeamUtils.getTeam(p);
+            if (pt == null)
+                continue;
+            // 映射到activeTeams索引
+            int idx = -1;
+            for (int i = 0; i < size; i++) {
+                Team at = activeTeams.get(i);
+                if (at != null && at.getName() != null && pt.getName() != null && at.getName().equals(pt.getName())) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx >= 0 && idx < size)
+                this.teamRemain[idx]++;
+        }
+
+        // 计算存活队伍数与总队伍数
+        int aliveTeams = 0;
+        for (int i = 0; i < size; i++) {
+            if (this.teamRemain[i] > 0)
+                aliveTeams++;
+        }
+        int totalTeams = activeTeams.size();
+
         this.teamRemainCount = aliveTeams;
-        this.teamRemainTitle = "<yellow><bold> 剩余队伍：</bold></yellow>" +
-                aliveTeams + "/" + totalTeams;
+        this.teamRemainTitle = "<yellow><bold> 剩余队伍：</bold></yellow>" + aliveTeams + "/" + totalTeams;
     }
 
     @Override

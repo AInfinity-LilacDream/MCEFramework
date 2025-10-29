@@ -6,6 +6,7 @@ import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.crazyMiner.customHandler.BlockBreakHandler;
 import mcevent.MCEFramework.games.crazyMiner.customHandler.BorderDistanceHandler;
 import mcevent.MCEFramework.games.crazyMiner.gameObject.CrazyMinerGameBoard;
+import mcevent.MCEFramework.games.crazyMiner.customHandler.ExplosionDropHandler;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.*;
 import org.bukkit.*;
@@ -34,6 +35,11 @@ public class CrazyMiner extends MCEGame {
     private BorderDistanceHandler borderDistanceHandler = new BorderDistanceHandler();
     private List<BukkitRunnable> gameTasks = new ArrayList<>();
     private CrazyMinerConfigParser crazyMinerConfigParser = new CrazyMinerConfigParser();
+    private ExplosionDropHandler explosionDropHandler = new ExplosionDropHandler();
+
+    // 玩家漂浮保护次数记录与提示节流
+    private java.util.Map<java.util.UUID, Integer> levitationUsed = new java.util.HashMap<>();
+    private java.util.Map<java.util.UUID, Long> levitationLastWarnAt = new java.util.HashMap<>();
 
     // Game area configuration (loaded from config)
     private Location gameAreaCenter;
@@ -119,8 +125,14 @@ public class CrazyMiner extends MCEGame {
 
         MCEPlayerUtils.clearGlobalTags();
 
+        // 重置漂浮次数与提示节流
+        levitationUsed.clear();
+        levitationLastWarnAt.clear();
+
         // Start block break handler
         blockBreakHandler.start();
+        // Start explosion drop handler
+        explosionDropHandler.start();
 
         // 10tick后清理掉落物
         setDelayedTask(0.5, () -> {
@@ -200,11 +212,23 @@ public class CrazyMiner extends MCEGame {
         sendWinningMessage(this);
         // 不在结束阶段修改玩家游戏模式
 
-        // onEnd结束后立即清理展示板和资源，然后启动投票系统
+        // 设置结束阶段标题（让时间线计时继续推进，用于显示结束倒计时）
+        this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
+        // 仅停止音乐；玩法任务与监听器延后到切换回主城时一并停止，避免影响时间线刷新
+        MCEPlayerUtils.globalStopMusic();
+        stopBackgroundMusic();
+        this.getGameBoard().globalDisplay();
+
+        // onEnd结束后等待一段时间，再清理展示板与资源并返回投票系统
         setDelayedTask(getEndDuration(), () -> {
             MCEPlayerUtils.globalClearFastBoard();
-            this.stop(); // 停止所有游戏资源
-            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+            // 结束时统一停止玩法任务与监听器
+            clearGameTasks(this);
+            blockBreakHandler.stop();
+            borderDistanceHandler.stop();
+            explosionDropHandler.stop();
+            this.stop();
+            MCEMainController.returnToLobbyOrLaunchVoting();
         });
     }
 
@@ -223,6 +247,7 @@ public class CrazyMiner extends MCEGame {
         clearGameTasks(this);
         blockBreakHandler.stop();
         borderDistanceHandler.stop();
+        explosionDropHandler.stop();
     }
 
     private void giveInitialItems() {

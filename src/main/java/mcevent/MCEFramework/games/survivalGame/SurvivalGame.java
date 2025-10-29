@@ -318,7 +318,7 @@ public class SurvivalGame extends MCEGame {
         setDelayedTask(getEndDuration(), () -> {
             MCEPlayerUtils.globalClearFastBoard();
             this.stop();
-            MCEMainController.launchVotingSystem();
+            MCEMainController.returnToLobbyOrLaunchVoting();
         });
     }
 

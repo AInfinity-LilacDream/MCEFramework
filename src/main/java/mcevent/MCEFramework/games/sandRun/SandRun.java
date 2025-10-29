@@ -8,13 +8,7 @@ import mcevent.MCEFramework.games.sandRun.gameObject.SandRunGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.tools.*;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,11 +82,19 @@ public class SandRun extends MCEGame {
         SandRunFuncImpl.sendWinningMessage();
         // 不在结束阶段修改玩家游戏模式
 
+        // 进入结束阶段：设置标题并停止音乐与所有定时任务（保留返回主城的延时）
+        this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
+        MCEPlayerUtils.globalStopMusic();
+        // 清理仅与玩法相关的自建任务，避免在结束阶段被意外触发 nextState
+        SandRunFuncImpl.clearGameTasks(this);
+        // 停止落沙任务
+        sandFallHandler.stopSandFall();
+
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
         setDelayedTask(getEndDuration(), () -> {
             MCEPlayerUtils.globalClearFastBoard();
             this.stop(); // 停止所有游戏资源
-            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+            MCEMainController.returnToLobbyOrLaunchVoting();
         });
     }
 

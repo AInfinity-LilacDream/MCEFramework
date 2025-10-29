@@ -159,11 +159,21 @@ public class DiscoFever extends MCEGame {
         sendWinningMessage();
         // 不在结束阶段修改玩家游戏模式
 
+        // 进入结束阶段：停止音乐、停止BossBar与倒计时、清理平台任务、暂停消息与坠落处理器，并显示“游戏结束”标题
+        this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
+        MCEPlayerUtils.globalStopMusic();
+        if (bossBar != null) {
+            bossBar.removeAll();
+        }
+        clearBossBarTask();
+        actionBarMessageHandler.suspend();
+        playerFallHandler.suspend();
+
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
         setDelayedTask(getEndDuration(), () -> {
             MCEPlayerUtils.globalClearFastBoard();
             this.stop(); // 停止所有游戏资源
-            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+            MCEMainController.returnToLobbyOrLaunchVoting();
         });
     }
 

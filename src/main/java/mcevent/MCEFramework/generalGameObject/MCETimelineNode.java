@@ -45,6 +45,10 @@ public class MCETimelineNode {
         if (!isSwitchNode) {
             timer.start();
             onRunning.onRunning();
+            // 首帧渲染：节点开始时立即刷新展示板，避免首秒延迟
+            if (timer.getGameBoard() != null) {
+                timer.getGameBoard().globalDisplay();
+            }
         } else
             MCEMainController.switchToTimeline(switchedTimeline, parentTimeline); // 切换到游戏时间线
     }

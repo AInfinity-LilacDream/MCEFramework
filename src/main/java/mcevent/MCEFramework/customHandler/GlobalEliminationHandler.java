@@ -45,8 +45,10 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
             return;
 
         MCEGame current = MCEMainController.getCurrentRunningGame();
-        // DiscoFever 和 ParkourTag 使用自定义淘汰/抓捕逻辑，不走全局死亡淘汰
-        if (current instanceof DiscoFever || current instanceof mcevent.MCEFramework.games.parkourTag.ParkourTag)
+        // DiscoFever / ParkourTag / CrazyMiner 使用自定义淘汰与结算逻辑，不走全局死亡淘汰
+        if (current instanceof DiscoFever
+                || current instanceof mcevent.MCEFramework.games.parkourTag.ParkourTag
+                || current instanceof CrazyMiner)
             return;
 
         Player victim = event.getEntity();
@@ -171,7 +173,6 @@ public class GlobalEliminationHandler extends MCEResumableEventHandler implement
         // 模式一：只剩一队结束（由各自游戏控制是否在此处推进）
         // 注意：ExtractOwn 自行处理回合结束与存活分统计，这里不推进
         if (current instanceof CaptureCenter
-                || current instanceof CrazyMiner
                 || current instanceof SurvivalGame) { // Spleef 改由自身逻辑推进，保留 cycleEnd 阶段
             if (countAliveTeams() <= 1) {
                 current.getTimeline().nextState();

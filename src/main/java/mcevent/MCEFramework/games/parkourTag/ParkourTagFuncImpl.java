@@ -142,7 +142,11 @@ public class ParkourTagFuncImpl {
                 ArrayList<Player> t1Players = MCETeamUtils.getPlayers(team1);
                 if (!t1Players.isEmpty()) {
                     Player selected = t1Players.get((int) (Math.random() * t1Players.size()));
-                    MCEPlayerUtils.clearTag(selected);
+                    // 仅清理PKT角色相关标签，保留 Participant/Active 等全局标签
+                    selected.removeScoreboardTag("chaser");
+                    selected.removeScoreboardTag("runner");
+                    selected.removeScoreboardTag("caught");
+                    selected.removeScoreboardTag("dead");
                     selected.addScoreboardTag("chaser");
                     MCEMessenger.sendInfoToTeam(team1,
                             "你们未选择抓捕者，系统已随机指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
@@ -155,7 +159,11 @@ public class ParkourTagFuncImpl {
                 ArrayList<Player> t2Players = MCETeamUtils.getPlayers(team2);
                 if (!t2Players.isEmpty()) {
                     Player selected = t2Players.get((int) (Math.random() * t2Players.size()));
-                    MCEPlayerUtils.clearTag(selected);
+                    // 仅清理PKT角色相关标签，保留 Participant/Active 等全局标签
+                    selected.removeScoreboardTag("chaser");
+                    selected.removeScoreboardTag("runner");
+                    selected.removeScoreboardTag("caught");
+                    selected.removeScoreboardTag("dead");
                     selected.addScoreboardTag("chaser");
                     MCEMessenger.sendInfoToTeam(team2,
                             "你们未选择抓捕者，系统已随机指派 " + MCEPlayerUtils.getColoredPlayerName(selected));

@@ -55,7 +55,11 @@ public class PKTSelectChaser extends BaseCommand {
         if (nearestPlayer.getScoreboardTags().contains("chaser"))
             return;
 
-        MCEPlayerUtils.clearTag(nearestPlayer);
+        // 仅清理PKT角色相关标签，保留 Participant/Active 等全局标签
+        nearestPlayer.removeScoreboardTag("chaser");
+        nearestPlayer.removeScoreboardTag("runner");
+        nearestPlayer.removeScoreboardTag("caught");
+        nearestPlayer.removeScoreboardTag("dead");
         nearestPlayer.addScoreboardTag("chaser");
 
         ArrayList<Team> activeTeam = pkt.getActiveTeams();

@@ -117,7 +117,7 @@ public class MusicDodge extends MCEGame {
         setDelayedTask(getEndDuration(), () -> {
             MCEPlayerUtils.globalClearFastBoard();
             this.stop(); // 停止所有游戏资源
-            MCEMainController.launchVotingSystem(); // 立即启动投票系统
+            MCEMainController.returnToLobbyOrLaunchVoting();
         });
     }
 

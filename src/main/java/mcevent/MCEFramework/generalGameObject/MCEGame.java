@@ -97,6 +97,8 @@ public class MCEGame {
         // Participant and apply gamemode
         this.getTimeline().addTimelineNode(
                 new MCETimelineNode(launchDuration, false, () -> {
+                    // 统一清空所有玩家物品（包含护甲与副手）
+                    MCEPlayerUtils.globalClearInventoryAllSlots();
                     this.onLaunch();
                     MCEPlayerUtils.globalGrantTag("Active");
                     markParticipantsByWorld();

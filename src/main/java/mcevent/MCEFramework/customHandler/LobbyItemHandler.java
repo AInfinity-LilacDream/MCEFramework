@@ -89,6 +89,15 @@ public class LobbyItemHandler extends MCEResumableEventHandler implements Listen
         }
         player.getInventory().setItem(0, blazeRod);
 
+        // 游戏设置（命令方块）
+        try {
+            if (mcevent.MCEFramework.MCEMainController.getAdminList().contains(player.getName())) {
+                player.getInventory().setItem(7,
+                        mcevent.MCEFramework.customHandler.GameSettingsHandler.createSettingsItem());
+            }
+        } catch (Throwable ignored) {
+        }
+
         // 按当前世界发放对应指南针：主城->前往Duel；Duel->返回主城
         if ("lobby".equals(player.getWorld().getName())) {
             player.getInventory().setItem(8,

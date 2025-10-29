@@ -99,7 +99,7 @@ public class CrazyMinerFuncImpl {
         // 填充游戏区域边界为基岩
         fillGameAreaBoundaries(world, (int) centerX, (int) centerZ, y, game);
 
-        // 在中心空缺区域底下设置虚空坠落判定：y <= -63 给予10秒漂浮
+        // 在中心空缺区域底下设置虚空坠落判定：y <= -63 给予10秒漂浮（每名玩家仅限一次）
         try {
             org.bukkit.scheduler.BukkitRunnable task = new org.bukkit.scheduler.BukkitRunnable() {
                 @Override
@@ -119,6 +119,17 @@ public class CrazyMinerFuncImpl {
                             if (v.getY() > 0.0) {
                                 continue;
                             }
+                            // 检查是否还有漂浮次数（每人1次）
+                            Integer used = crazyMiner.getLevitationUsed().getOrDefault(p.getUniqueId(), 0);
+                            if (used >= 1) {
+                                // 告知无剩余次数（1秒节流避免刷屏）
+                                long now = System.currentTimeMillis();
+                                Long last = crazyMiner.getLevitationLastWarnAt().get(p.getUniqueId());
+                                if (last == null || (now - last) > 1000L) {
+                                    crazyMiner.getLevitationLastWarnAt().put(p.getUniqueId(), now);
+                                }
+                                continue;
+                            }
                             // 重置垂直动量，再给予漂浮
                             v.setY(0.0);
                             p.setVelocity(v);
@@ -129,6 +140,9 @@ public class CrazyMinerFuncImpl {
                                     false,
                                     false,
                                     false));
+                            crazyMiner.getLevitationUsed().put(p.getUniqueId(), used + 1);
+                            mcevent.MCEFramework.tools.MCEMessenger.sendInfoToPlayer("<green>已使用一次漂浮自救（限一次）。</green>",
+                                    p);
                         }
                     }
                 }

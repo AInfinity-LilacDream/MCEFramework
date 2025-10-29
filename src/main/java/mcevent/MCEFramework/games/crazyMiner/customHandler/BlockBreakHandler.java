@@ -20,6 +20,7 @@ import static mcevent.MCEFramework.miscellaneous.Constants.crazyMiner;
 public class BlockBreakHandler implements Listener {
 
     private boolean isActive = false;
+    private final java.util.Map<java.util.UUID, Long> lastDeathHandledAt = new java.util.HashMap<>();
 
     public BlockBreakHandler() {
         Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -101,17 +102,39 @@ public class BlockBreakHandler implements Listener {
             return;
         }
 
+        // 仅处理 CrazyMiner 游戏世界中的死亡
+        if (deadPlayer.getWorld() == null
+                || crazyMiner == null
+                || !deadPlayer.getWorld().getName().equals(crazyMiner.getWorldName())) {
+            return;
+        }
+
+        // 防抖：短时间内同一玩家重复死亡事件只处理一次
+        long now = System.currentTimeMillis();
+        Long last = lastDeathHandledAt.get(deadPlayer.getUniqueId());
+        if (last != null && (now - last) < 1500L) {
+            return;
+        }
+        lastDeathHandledAt.put(deadPlayer.getUniqueId(), now);
+        // 简单清理过期记录
+        if (lastDeathHandledAt.size() > 128) {
+            java.util.Iterator<java.util.Map.Entry<java.util.UUID, Long>> it = lastDeathHandledAt.entrySet().iterator();
+            while (it.hasNext()) {
+                java.util.Map.Entry<java.util.UUID, Long> e = it.next();
+                if ((now - e.getValue()) > 60000L)
+                    it.remove();
+            }
+        }
+
         // Prevent item dropping on death
         event.getDrops().clear();
         event.setDroppedExp(0);
 
-        // 统一淘汰处理（消息+音效+旁观）
+        // 统一淘汰处理（消息+音效+旁观）与展示板更新（放到淘汰后，确保计数基于旁观状态）
         crazyMiner.setDelayedTask(0.05, () -> {
             mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(deadPlayer);
+            CrazyMinerFuncImpl.updateGameBoardOnPlayerDeath(crazyMiner, deadPlayer);
         });
-
-        // CrazyMiner 特有：更新计分板
-        CrazyMinerFuncImpl.updateGameBoardOnPlayerDeath(crazyMiner, deadPlayer);
     }
 
     /**
@@ -344,8 +367,8 @@ public class BlockBreakHandler implements Listener {
                     } // 0-1
                     case 8 -> {
                         mat = Material.TNT;
-                        amount = 1 + r.nextInt(3);
-                    } // 1-3
+                        amount = 1 + r.nextInt(4);
+                    } // 1-4
                     case 9 -> {
                         // 不死图腾 0-1
                         mat = Material.TOTEM_OF_UNDYING;

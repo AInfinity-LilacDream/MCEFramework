@@ -31,6 +31,7 @@ import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCETimeline;
 import mcevent.MCEFramework.tools.MCEGlowingEffectManager;
+import mcevent.MCEFramework.games.settings.GameSettingsState;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -53,6 +54,9 @@ public final class MCEMainController extends JavaPlugin {
     @Setter
     private static MCETimeline currentTimeline;
     private static final ArrayList<MCEGame> gameList = new ArrayList<>();
+
+    @Getter
+    private static final java.util.Set<String> adminList = new java.util.HashSet<>();
 
     @Getter
     @Setter
@@ -159,6 +163,7 @@ public final class MCEMainController extends JavaPlugin {
         gamePlayerQuitHandler = new GamePlayerQuitHandler();
         lobbyBounceHandler = new LobbyBounceHandler();
         lobbyItemHandler = new LobbyItemHandler();
+        new mcevent.MCEFramework.customHandler.GameSettingsHandler();
         lobbyDoubleJumpHandler = new LobbyDoubleJumpHandler();
         windLauncherHandler = new WindLauncherHandler();
         lobbyTeleportCompassHandler = new LobbyTeleportCompassHandler();
@@ -173,8 +178,12 @@ public final class MCEMainController extends JavaPlugin {
         Bukkit.getPluginManager()
                 .registerEvents(new mcevent.MCEFramework.games.survivalGame.customHandler.ChestSelectorHandler(), this); // 箱子标注器
 
-        // 确保 survival_game_loot_table 资源已复制到数据目录
+        // 确保 admin.cfg 与 survival_game_loot_table 资源已复制到数据目录
+        ensureAdminConfig();
         ensureSurvivalGameLootTable();
+
+        // 读取管理员列表
+        loadAdminList();
 
         // 为主城玩家发放烈焰棒（保留原有便捷行为，不包含饱和/二段跳）
         Bukkit.getScheduler().runTaskLater(this, () -> {
@@ -243,6 +252,48 @@ public final class MCEMainController extends JavaPlugin {
             }
         } catch (Exception e) {
             getLogger().warning("Failed to ensure survival_game_loot_table resources: " + e.getMessage());
+        }
+    }
+
+    private void ensureAdminConfig() {
+        try {
+            java.nio.file.Path target = plugin.getDataPath().resolve("MCEConfig").resolve("admin.cfg");
+            java.nio.file.Files.createDirectories(target.getParent());
+            copyIfMissing(target, "MCEConfig/admin.cfg");
+        } catch (Exception e) {
+            getLogger().warning("Failed to ensure admin.cfg: " + e.getMessage());
+        }
+    }
+
+    private void loadAdminList() {
+        adminList.clear();
+        try {
+            java.nio.file.Path path = plugin.getDataPath().resolve("MCEConfig").resolve("admin.cfg");
+            if (!java.nio.file.Files.exists(path)) {
+                ensureAdminConfig();
+            }
+            java.util.List<String> lines = java.nio.file.Files.readAllLines(path);
+            boolean in = false;
+            for (String line : lines) {
+                String trimmed = line.trim();
+                if (trimmed.isEmpty())
+                    continue;
+                if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                    in = trimmed.equals("[admin_list]");
+                    continue;
+                }
+                if (in) {
+                    adminList.add(trimmed);
+                }
+            }
+            if (adminList.isEmpty()) {
+                adminList.add("AInfinity_Dream");
+            }
+            getLogger().info("Loaded admin list: " + adminList);
+        } catch (Exception e) {
+            getLogger().warning("Failed to load admin.cfg: " + e.getMessage());
+            // fallback
+            adminList.add("AInfinity_Dream");
         }
     }
 
@@ -324,6 +375,31 @@ public final class MCEMainController extends JavaPlugin {
     public static void launchVotingSystem() {
         // 启动投票系统
         immediateLaunchGame(VOTING_SYSTEM_ID, false);
+    }
+
+    /**
+     * 根据全局设置决定：返回主城并不启动投票，或直接启动投票系统。
+     */
+    public static void returnToLobbyOrLaunchVoting() {
+        if (GameSettingsState.isManualStartEnabled()) {
+            // 仅返回主城
+            org.bukkit.World lobby = Bukkit.getWorld("lobby");
+            if (lobby != null) {
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    try {
+                        p.teleport(lobby.getSpawnLocation());
+                        if (getLobbyItemHandler() != null) {
+                            getLobbyItemHandler().giveLobbyItems(p);
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+            // 开启欢迎标语动画
+            startWelcomeMessage();
+        } else {
+            launchVotingSystem();
+        }
     }
 
     // 切换到子时间线之后会自动切换回主时间线
