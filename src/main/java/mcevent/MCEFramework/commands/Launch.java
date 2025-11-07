@@ -25,8 +25,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(pkt.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(pkt.getId(), true);
     }
 
     @Subcommand("pktNoIntro")
@@ -34,8 +34,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(pkt.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(pkt.getId(), false);
     }
 
     @Subcommand("discoFever")
@@ -43,8 +43,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(discoFever.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(discoFever.getId(), true);
     }
 
     @Subcommand("discoFeverNoIntro")
@@ -52,8 +52,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(discoFever.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(discoFever.getId(), false);
     }
 
     @Subcommand("musicDodge")
@@ -61,8 +61,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(musicDodge.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(musicDodge.getId(), true);
     }
 
     @Subcommand("musicDodgeNoIntro")
@@ -70,8 +70,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(musicDodge.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(musicDodge.getId(), false);
     }
 
     @Subcommand("sandRun")
@@ -79,8 +79,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(sandRun.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(sandRun.getId(), true);
     }
 
     @Subcommand("sandRunNoIntro")
@@ -88,8 +88,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(sandRun.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(sandRun.getId(), false);
     }
 
     @Subcommand("captureCenter")
@@ -97,8 +97,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(captureCenter.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(captureCenter.getId(), true);
     }
 
     @Subcommand("captureCenterNoIntro")
@@ -106,8 +106,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(captureCenter.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(captureCenter.getId(), false);
     }
 
     @Subcommand("football")
@@ -115,8 +115,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(football.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(football.getId(), true);
     }
 
     @Subcommand("footballNoIntro")
@@ -124,8 +124,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(football.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(football.getId(), false);
     }
 
     @Subcommand("crazyMiner")
@@ -133,8 +133,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(crazyMiner.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(crazyMiner.getId(), true);
     }
 
     @Subcommand("crazyMinerNoIntro")
@@ -142,8 +142,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(crazyMiner.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(crazyMiner.getId(), false);
     }
 
     @Subcommand("extractOwn")
@@ -151,8 +151,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(extractOwn.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(extractOwn.getId(), true);
     }
 
     @Subcommand("extractOwnNoIntro")
@@ -160,8 +160,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(extractOwn.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(extractOwn.getId(), false);
     }
 
     @Subcommand("TNTTag")
@@ -169,8 +169,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(tnttag.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(tnttag.getId(), true);
     }
 
     @Subcommand("TNTTagNoIntro")
@@ -178,8 +178,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(tnttag.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(tnttag.getId(), false);
     }
 
     @Subcommand("spleef")
@@ -187,8 +187,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(spleef.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(spleef.getId(), true);
     }
 
     @Subcommand("spleefNoIntro")
@@ -196,8 +196,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(spleef.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(spleef.getId(), false);
     }
 
     @Subcommand("survivalgame")
@@ -205,8 +205,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(survivalGame.getId(), true);
+        } else
+            MCEMainController.immediateLaunchGame(survivalGame.getId(), true);
     }
 
     @Subcommand("survivalgamenointro")
@@ -214,8 +214,26 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.immediateLaunchGame(survivalGame.getId(), false);
+        } else
+            MCEMainController.immediateLaunchGame(survivalGame.getId(), false);
+    }
+
+    @Subcommand("hyperSpleef")
+    public void launchHyperSpleef(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        } else
+            MCEMainController.immediateLaunchGame(hyperSpleef.getId(), true);
+    }
+
+    @Subcommand("hyperSpleefNoIntro")
+    public void launchHyperSpleefNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        } else
+            MCEMainController.immediateLaunchGame(hyperSpleef.getId(), false);
     }
 
     @Subcommand("vote")
@@ -223,8 +241,8 @@ public class Launch extends BaseCommand {
         if (checkGameRunning()) {
             if (sender instanceof Player)
                 MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
-        }
-        else MCEMainController.launchVotingSystem();
+        } else
+            MCEMainController.launchVotingSystem();
     }
 
     private boolean checkGameRunning() {

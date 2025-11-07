@@ -6,14 +6,18 @@ import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.captureCenter.customHandler.PlayerFallHandler;
 import mcevent.MCEFramework.games.captureCenter.gameObject.CaptureCenterGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
+import mcevent.MCEFramework.generalGameObject.MCEGameQuitHandler;
 import mcevent.MCEFramework.tools.*;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
@@ -25,6 +29,10 @@ public class CaptureCenter extends MCEGame {
     private PlayerFallHandler playerFallHandler = new PlayerFallHandler();
     private List<BukkitRunnable> gameTask = new ArrayList<>();
     private CaptureCenterConfigParser captureCenterConfigParser = new CaptureCenterConfigParser();
+    
+    // 游戏状态追踪
+    private List<String> deathOrder = new ArrayList<>();
+    private List<Team> teamEliminationOrder = new ArrayList<>();
 
     public CaptureCenter(String title, int id, String mapName, int round, boolean isMultiGame, String configFileName,
             int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
@@ -106,9 +114,69 @@ public class CaptureCenter extends MCEGame {
     }
 
     @Override
+    public void handlePlayerQuitDuringGame(org.bukkit.entity.Player player) {
+        // 使用统一的退出处理逻辑
+        String playerName = player.getName();
+        Team playerTeam = MCETeamUtils.getTeam(player);
+        
+        MCEGameQuitHandler.handlePlayerQuit(this, player, () -> {
+            // 添加到死亡顺序
+            if (!deathOrder.contains(playerName)) {
+                deathOrder.add(playerName);
+            }
+            
+            // 检查队伍淘汰
+            MCEGameQuitHandler.checkTeamElimination(playerName, playerTeam, teamEliminationOrder);
+            
+            // 检查游戏结束条件：当只剩一队或没有队伍时，提前结束游戏
+            checkGameEndCondition();
+        });
+    }
+
+    /**
+     * 检查游戏结束条件
+     */
+    protected void checkGameEndCondition() {
+        // 统计还活着的"队伍"数量
+        Set<Team> teams = new HashSet<>(
+                getActiveTeams() != null ? getActiveTeams() : java.util.Collections.emptyList());
+        int aliveTeamCount = 0;
+
+        for (Team team : teams) {
+            boolean anyAliveInTeam = false;
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!player.getScoreboardTags().contains("Active") || player.getScoreboardTags().contains("dead"))
+                    continue;
+                Team playerTeam = MCETeamUtils.getTeam(player);
+                if (playerTeam != null && playerTeam.equals(team)) {
+                    anyAliveInTeam = true;
+                    break;
+                }
+            }
+            if (anyAliveInTeam)
+                aliveTeamCount++;
+        }
+
+        if (aliveTeamCount <= 1) {
+            // 只剩一个队伍或没有队伍 -> 进入回合结束
+            // 停止所有游戏任务（包括缩圈任务）
+            CaptureCenterFuncImpl.clearGameTasks(this);
+            // 跳转到时间线下一阶段（onEnd）
+            if (getTimeline() != null) {
+                getTimeline().nextState();
+            }
+        }
+    }
+
+    @Override
     public void onEnd() {
         CaptureCenterFuncImpl.sendWinningMessage();
         // 不在结束阶段修改玩家游戏模式
+
+        // 立即停止所有游戏任务（包括缩圈任务）
+        CaptureCenterFuncImpl.clearGameTasks(this);
+        // 停止背景音乐
+        MCEPlayerUtils.globalStopMusic();
 
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
         setDelayedTask(getEndDuration(), () -> {

@@ -9,6 +9,7 @@ import mcevent.MCEFramework.games.spleef.customHandler.SnowBreakHandler;
 import mcevent.MCEFramework.games.spleef.customHandler.SnowballThrowHandler;
 import mcevent.MCEFramework.games.spleef.gameObject.SpleefGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
+import mcevent.MCEFramework.generalGameObject.MCEGameQuitHandler;
 import mcevent.MCEFramework.tools.*;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -85,13 +86,22 @@ public class Spleef extends MCEGame {
 
     @Override
     public void handlePlayerQuitDuringGame(org.bukkit.entity.Player player) {
-        // 将退出玩家添加到死亡顺序
-        if (!deathOrder.contains(player.getName())) {
-            deathOrder.add(player.getName());
-        }
-
-        // 检查游戏结束条件
-        checkGameEndCondition();
+        // 使用统一的退出处理逻辑
+        String playerName = player.getName();
+        Team playerTeam = MCETeamUtils.getTeam(player);
+        
+        MCEGameQuitHandler.handlePlayerQuit(this, player, () -> {
+            // 添加到死亡顺序
+            if (!deathOrder.contains(playerName)) {
+                deathOrder.add(playerName);
+            }
+            
+            // 检查队伍淘汰
+            MCEGameQuitHandler.checkTeamElimination(playerName, playerTeam, teamEliminationOrder);
+            
+            // 检查游戏结束条件
+            checkGameEndCondition();
+        });
     }
 
     @Override

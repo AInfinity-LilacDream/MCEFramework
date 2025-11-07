@@ -25,6 +25,7 @@ import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
 import mcevent.MCEFramework.games.spleef.Spleef;
+import mcevent.MCEFramework.games.hyperSpleef.HyperSpleef;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.tntTag.TNTTag;
 import mcevent.MCEFramework.games.votingSystem.VotingSystem;
@@ -110,6 +111,7 @@ public final class MCEMainController extends JavaPlugin {
         String tntTagMapName = readMapNameFromConfig("MCEConfig/TNTTag.cfg", mapNames[8]);
         String spleefMapName = readMapNameFromConfig("MCEConfig/Spleef.cfg", mapNames[9]);
         String survivalGameMapName = readMapNameFromConfig("MCEConfig/SurvivalGame.cfg", mapNames[10]);
+        String hyperSpleefMapName = readMapNameFromConfig("MCEConfig/HyperSpleef.cfg", mapNames[12]);
         String votingMapName = mapNames[11]; // 投票系统直接使用lobby
 
         // 使用配置文件中的地图名称创建游戏实例
@@ -133,25 +135,29 @@ public final class MCEMainController extends JavaPlugin {
                 5, 60, 15, 0, Integer.MAX_VALUE, 5, 25);
         spleef = new Spleef("冰雪掘战", SPLEEF_ID, spleefMapName, 3, true, "MCEConfig/Spleef.cfg",
                 5, 55, 15, 5, 180, 15, 25);
+        hyperSpleef = new HyperSpleef("冰雪乱斗", HYPER_SPLEEF_ID, hyperSpleefMapName, 2, true,
+                "MCEConfig/HyperSpleef.cfg",
+                5, 55, 15, 15, 240, 15, 25);
         survivalGame = new SurvivalGame("饥饿游戏", SURVIVAL_GAME_ID, survivalGameMapName, 2, true,
                 "MCEConfig/SurvivalGame.cfg",
                 5, 55, 15, 15, 450, 25, 25);
         votingSystem = new VotingSystem("投票系统", VOTING_SYSTEM_ID, votingMapName, 1, false, "MCEConfig/VotingSystem.cfg",
                 2, 0, 0, 0, 30, 0, 3);
 
-        // 初始化游戏列表
-        gameList.add(pkt);
-        gameList.add(discoFever);
-        gameList.add(musicDodge);
-        gameList.add(sandRun);
-        gameList.add(captureCenter);
-        gameList.add(football);
-        gameList.add(crazyMiner);
-        gameList.add(extractOwn);
-        gameList.add(tnttag);
-        gameList.add(spleef);
-        gameList.add(survivalGame);
-        gameList.add(votingSystem);
+        // 初始化游戏列表（确保索引与ID一致）
+        gameList.add(pkt); // ID 0
+        gameList.add(discoFever); // ID 1
+        gameList.add(musicDodge); // ID 2
+        gameList.add(sandRun); // ID 3
+        gameList.add(captureCenter); // ID 4
+        gameList.add(football); // ID 5
+        gameList.add(crazyMiner); // ID 6
+        gameList.add(extractOwn); // ID 7
+        gameList.add(tnttag); // ID 8
+        gameList.add(spleef); // ID 9
+        gameList.add(survivalGame); // ID 10
+        gameList.add(votingSystem); // ID 11
+        gameList.add(hyperSpleef); // ID 12
 
         // 全面清理所有玩家状态（在线和离线）
         cleanupAllPlayersOnStartup();
@@ -212,6 +218,7 @@ public final class MCEMainController extends JavaPlugin {
         commandManager.registerCommand(new TogglePVP()); // togglepvp
         commandManager.registerCommand(new ToggleFriendlyFire()); // togglefriendlyfire
         commandManager.registerCommand(new GiveSpecialItem()); // giveSpecialItem
+        commandManager.registerCommand(new SummonGhost()); // summonGhost
 
         getLogger().info("合合启动了");
 

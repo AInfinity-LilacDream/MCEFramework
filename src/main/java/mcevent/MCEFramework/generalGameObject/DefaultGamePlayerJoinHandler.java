@@ -52,20 +52,31 @@ public class DefaultGamePlayerJoinHandler implements GamePlayerJoinHandler {
                 }
             }.runTaskLater(plugin, 10L);
         } else {
-            // 非参与者：成为旁观
+            // 非参与者或已死亡的参与者：成为旁观
             // 若玩家无队伍，则不在任何队伍；若在队伍但已淘汰，保留队伍但不加入游戏
             if (currentTeam == null || !inActiveTeam) {
                 removePlayerFromTeam(player);
             }
             player.removeScoreboardTag("Active");
+            
+            // 非参与者或已死亡的参与者：设置为旁观模式
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    if (player.isOnline() && !isGameParticipant(player)) {
-                        player.setGameMode(getDefaultJoinGameMode());
-                        player.removeScoreboardTag("Active");
-                        player.sendMessage("§c游戏正在进行中，你已设置为观察者模式。");
-                        plugin.getLogger().info("已将玩家 " + player.getName() + " 设置为观察者模式");
+                    if (player.isOnline()) {
+                        // 检查玩家是否已死亡（延迟检查以确保标签已正确设置）
+                        boolean isDead = player.getScoreboardTags().contains("dead");
+                        // 如果玩家已死亡，无论是否是参与者，都设置为旁观模式
+                        // 或者如果玩家不是游戏参与者，也设置为旁观模式
+                        if (isDead || !isGameParticipant(player)) {
+                            player.setGameMode(getDefaultJoinGameMode());
+                            player.removeScoreboardTag("Active");
+                            if (isDead) {
+                                plugin.getLogger().info("已将已死亡的玩家 " + player.getName() + " 设置为观察者模式");
+                            } else {
+                                plugin.getLogger().info("已将玩家 " + player.getName() + " 设置为观察者模式");
+                            }
+                        }
                     }
                 }
             }.runTaskLater(plugin, 10L);

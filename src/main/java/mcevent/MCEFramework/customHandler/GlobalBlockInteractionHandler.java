@@ -3,6 +3,7 @@ package mcevent.MCEFramework.customHandler;
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
 import mcevent.MCEFramework.games.spleef.Spleef;
+import mcevent.MCEFramework.games.hyperSpleef.HyperSpleef;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl;
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
@@ -30,6 +31,7 @@ GlobalBlockInteractionHandler: 全局生存模式方块交互限制
   * SurvivalGame：允许放置（记录替换方块以便回溯），禁止破坏
   * CrazyMiner：允许破坏，禁止放置
   * Spleef：允许破坏，禁止放置
+  * HyperSpleef：允许破坏，禁止放置
 */
 public class GlobalBlockInteractionHandler extends MCEResumableEventHandler implements Listener {
 
@@ -107,6 +109,20 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
             if (game instanceof Spleef sp) {
                 try {
                     if (!sp.getSnowBreakHandler().isSuspended()) {
+                        return; // 回合中，允许破坏
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            event.setCancelled(true);
+            return;
+        }
+        // HyperSpleef 仅在回合正式开始时允许破坏（依据 SnowBreakHandler 是否激活）
+        if (isCurrentGame(HyperSpleef.class)) {
+            var game = MCEMainController.getCurrentRunningGame();
+            if (game instanceof HyperSpleef hs) {
+                try {
+                    if (!hs.getSnowBreakHandler().isSuspended()) {
                         return; // 回合中，允许破坏
                     }
                 } catch (Throwable ignored) {
@@ -202,6 +218,21 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
             if (game instanceof Spleef sp) {
                 try {
                     if (!sp.getSnowBreakHandler().isSuspended()) {
+                        return; // 回合中允许放置
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            event.setCancelled(true);
+            return;
+        }
+
+        // HyperSpleef 仅在回合正式开始时允许放置
+        if (isCurrentGame(HyperSpleef.class)) {
+            var game = MCEMainController.getCurrentRunningGame();
+            if (game instanceof HyperSpleef hs) {
+                try {
+                    if (!hs.getSnowBreakHandler().isSuspended()) {
                         return; // 回合中允许放置
                     }
                 } catch (Throwable ignored) {

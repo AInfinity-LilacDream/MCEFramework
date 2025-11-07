@@ -8,6 +8,7 @@ import mcevent.MCEFramework.games.crazyMiner.customHandler.BorderDistanceHandler
 import mcevent.MCEFramework.games.crazyMiner.gameObject.CrazyMinerGameBoard;
 import mcevent.MCEFramework.games.crazyMiner.customHandler.ExplosionDropHandler;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
+import mcevent.MCEFramework.generalGameObject.MCEGameQuitHandler;
 import mcevent.MCEFramework.tools.*;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -200,6 +201,25 @@ public class CrazyMiner extends MCEGame {
         this.getGameBoard().setStateTitle("<green><bold> 正在生成地图...</bold></green>");
         // Generate random blocks during preparation phase start
         generateRandomBlocks(this);
+    }
+
+    @Override
+    public void handlePlayerQuitDuringGame(org.bukkit.entity.Player player) {
+        // 使用统一的退出处理逻辑
+        String playerName = player.getName();
+        Team playerTeam = MCETeamUtils.getTeam(player);
+
+        MCEGameQuitHandler.handlePlayerQuit(this, player, () -> {
+            // CrazyMiner 使用 teamDeathOrder 而不是 teamEliminationOrder
+            // 检查队伍淘汰
+            if (MCEGameQuitHandler.checkTeamElimination(playerName, playerTeam, teamDeathOrder)) {
+                // 队伍淘汰已在 checkTeamElimination 中处理
+            }
+
+            // 更新游戏板并检查游戏是否应该结束（与正常死亡处理保持一致）
+            // MCEGameQuitHandler.handlePlayerQuit 已经使用了延迟任务，所以这里直接调用即可
+            CrazyMinerFuncImpl.updateGameBoardOnPlayerDeath(this, player);
+        });
     }
 
     @Override

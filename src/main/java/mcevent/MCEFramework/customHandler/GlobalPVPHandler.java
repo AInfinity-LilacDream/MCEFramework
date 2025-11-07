@@ -1,10 +1,13 @@
 package mcevent.MCEFramework.customHandler;
 
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
+import mcevent.MCEFramework.MCEMainController;
+import mcevent.MCEFramework.games.hyperSpleef.HyperSpleef;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 
-import mcevent.MCEFramework.tools.MCEMessenger;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -30,8 +33,16 @@ public class GlobalPVPHandler extends MCEResumableEventHandler implements Listen
             isPlayerVsPlayer = true;
         }
         // 检查投射物攻击（如雪球）
-        else if (event.getDamager() instanceof org.bukkit.entity.Projectile projectile && event.getEntity() instanceof Player) {
+        else if (event.getDamager() instanceof Projectile projectile && event.getEntity() instanceof Player) {
             if (projectile.getShooter() instanceof Player) {
+                // 检查是否是HyperSpleef游戏中的雪球伤害，如果是则允许
+                if (projectile instanceof Snowball && MCEMainController.isRunningGame()) {
+                    var currentGame = MCEMainController.getCurrentRunningGame();
+                    if (currentGame instanceof HyperSpleef) {
+                        // HyperSpleef游戏中允许雪球造成伤害
+                        return;
+                    }
+                }
                 // 检查是否是Spleef游戏中的雪球伤害，如果是则不干扰
                 if (event.getEntity().hasMetadata("spleef_snowball_damage")) {
                     return;

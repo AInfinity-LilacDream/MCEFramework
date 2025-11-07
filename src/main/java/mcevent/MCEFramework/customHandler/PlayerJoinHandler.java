@@ -3,20 +3,17 @@ package mcevent.MCEFramework.customHandler;
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
-import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCEGlowingEffectManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
 
@@ -48,15 +45,19 @@ public class PlayerJoinHandler extends MCEResumableEventHandler implements Liste
             MCEGame currentGame = MCEMainController.getCurrentRunningGame();
             
             if (currentGame != null) {
+                // 传送到游戏世界
+                teleportToGameWorld(player);
+                
                 // 检查玩家是否是游戏参与者
                 if (currentGame.isGameParticipant(player)) {
-                    // 如果是游戏参与者，传送到游戏世界出生点
-                    teleportToGameWorld(player);
+                    // 如果是游戏参与者，检查是否已经死亡
+                    if (player.getScoreboardTags().contains("dead")) {
+                        // 已死亡的参与者：使用游戏的处理器设置为旁观模式
+                        currentGame.handlePlayerJoinDuringGame(player);
+                    }
+                    // 如果参与者未死亡，保持原有逻辑（不调用 handlePlayerJoinDuringGame）
                 } else {
-                    // 如果不是游戏参与者，传送到游戏世界并使用游戏的处理器处理
-                    teleportToGameWorld(player);
-                    
-                    // 使用游戏的统一处理器处理新加入的玩家
+                    // 如果不是游戏参与者，使用游戏的处理器处理新加入的玩家
                     currentGame.handlePlayerJoinDuringGame(player);
                 }
             } else {

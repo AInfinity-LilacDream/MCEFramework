@@ -8,6 +8,7 @@ import mcevent.MCEFramework.games.extractOwn.customHandler.CrossbowAttackHandler
 import mcevent.MCEFramework.games.extractOwn.customHandler.PlayerDeathHandler;
 import mcevent.MCEFramework.games.extractOwn.gameObject.ExtractOwnGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
+import mcevent.MCEFramework.generalGameObject.MCEGameQuitHandler;
 import mcevent.MCEFramework.tools.*;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import org.bukkit.*;
@@ -78,8 +79,11 @@ public class ExtractOwn extends MCEGame {
 
     @Override
     public void handlePlayerQuitDuringGame(org.bukkit.entity.Player player) {
-        // 检查游戏结束条件
-        checkGameEndCondition();
+        // 使用统一的退出处理逻辑
+        MCEGameQuitHandler.handlePlayerQuit(this, player, () -> {
+            // 检查游戏结束条件
+            checkGameEndCondition();
+        });
     }
 
     @Override

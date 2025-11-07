@@ -49,11 +49,22 @@ public class SandRunGameBoard extends MCEGameBoard {
 
     @Override
     public void globalDisplay() {
-        int seconds = sandRun.getTimeline().getCounter();
-
-        int minute = seconds / 60;
-        int second = seconds % 60;
-        String time = String.format("%02d:%02d", minute, second);
+        String stateTitle = getStateTitle() != null ? getStateTitle() : "";
+        
+        // 如果状态标题已经包含倒计时（比如"游戏结束： MM:SS"），就不再添加时间线的时间
+        String stateDisplay;
+        if (stateTitle.contains("游戏结束") && stateTitle.matches(".*\\d{2}:\\d{2}.*")) {
+            // 状态标题已经包含倒计时，直接使用
+            stateDisplay = stateTitle;
+        } else {
+            // 否则添加时间线的时间
+            int seconds = sandRun.getTimeline().getCounter();
+            int minute = seconds / 60;
+            int second = seconds % 60;
+            String time = String.format("%02d:%02d", minute, second);
+            stateDisplay = stateTitle + time;
+        }
+        
         for (Player player : Bukkit.getOnlinePlayers()) {
             FastBoard board = new FastBoard(player);
             board.updateTitle(MiniMessage.miniMessage().deserialize(getMainTitle()));
@@ -61,7 +72,7 @@ public class SandRunGameBoard extends MCEGameBoard {
                     MiniMessage.miniMessage().deserialize(" "),
                     MiniMessage.miniMessage().deserialize(getGameTitle()),
                     MiniMessage.miniMessage().deserialize(getMapTitle()),
-                    MiniMessage.miniMessage().deserialize(getStateTitle() + time),
+                    MiniMessage.miniMessage().deserialize(stateDisplay),
                     MiniMessage.miniMessage().deserialize(getPlayerRemainTitle()),
                     MiniMessage.miniMessage().deserialize(getTeamRemainTitle()));
         }

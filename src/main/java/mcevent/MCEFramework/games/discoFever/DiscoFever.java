@@ -7,6 +7,7 @@ import mcevent.MCEFramework.games.discoFever.customHandler.ActionBarMessageHandl
 import mcevent.MCEFramework.games.discoFever.customHandler.PlayerFallHandler;
 import mcevent.MCEFramework.games.discoFever.gameObject.DiscoFeverGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
+import mcevent.MCEFramework.generalGameObject.MCEGameQuitHandler;
 import mcevent.MCEFramework.tools.*;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -47,6 +48,10 @@ public class DiscoFever extends MCEGame {
     private List<Material> materialList = new ArrayList<>();
     private int currentState = 0;
     private int maxState = 0;
+    
+    // 游戏状态追踪
+    private List<String> deathOrder = new ArrayList<>();
+    private List<Team> teamEliminationOrder = new ArrayList<>();
 
     private Location currentPlatformLocation;
     private BossBar bossBar = Bukkit.createBossBar(
@@ -155,11 +160,52 @@ public class DiscoFever extends MCEGame {
     }
 
     @Override
+    public void handlePlayerQuitDuringGame(org.bukkit.entity.Player player) {
+        // 使用统一的退出处理逻辑
+        String playerName = player.getName();
+        Team playerTeam = MCETeamUtils.getTeam(player);
+        
+        MCEGameQuitHandler.handlePlayerQuit(this, player, () -> {
+            // 添加到死亡顺序
+            if (!deathOrder.contains(playerName)) {
+                deathOrder.add(playerName);
+            }
+            
+            // 检查队伍淘汰
+            MCEGameQuitHandler.checkTeamElimination(playerName, playerTeam, teamEliminationOrder);
+            
+            // 检查游戏结束条件：当所有玩家都退出或死亡时，提前结束游戏
+            // 使用与 PlayerFallHandler 相同的逻辑
+            int alivePlayers = 0;
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (!p.getWorld().getName().equals(this.getWorldName()))
+                    continue;
+                if (!p.getScoreboardTags().contains("Active") || p.getScoreboardTags().contains("dead"))
+                    continue;
+                if (p.getGameMode() == GameMode.SPECTATOR)
+                    continue;
+                alivePlayers++;
+            }
+            if (alivePlayers == 0) {
+                try {
+                    // 停止后续平台调度
+                    clearBossBarTask();
+                } catch (Throwable ignored) {
+                }
+                // 跳转到时间线下一阶段（onEnd）
+                if (this.getTimeline() != null) {
+                    this.getTimeline().nextState();
+                }
+            }
+        });
+    }
+
+    @Override
     public void onEnd() {
         sendWinningMessage();
         // 不在结束阶段修改玩家游戏模式
 
-        // 进入结束阶段：停止音乐、停止BossBar与倒计时、清理平台任务、暂停消息与坠落处理器，并显示“游戏结束”标题
+        // 进入结束阶段：停止音乐、停止BossBar与倒计时、清理平台任务、暂停消息与坠落处理器，并显示"游戏结束"标题
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
         MCEPlayerUtils.globalStopMusic();
         if (bossBar != null) {

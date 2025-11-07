@@ -31,6 +31,7 @@ public class CaptureCenterFuncImpl {
     private static BukkitRunnable actionBarTask;
     private static BukkitRunnable boardUpdateTask;
     private static final Set<Integer> shrunkLayers = new HashSet<>();
+    private static final List<BukkitRunnable> flashTasks = new ArrayList<>(); // 跟踪所有闪烁任务
     private static int currentKnockbackLevel = 3; // 保留字段以兼容旧调用
 
     // 常量定义
@@ -492,7 +493,7 @@ public class CaptureCenterFuncImpl {
             }
         }
 
-        new BukkitRunnable() {
+        BukkitRunnable flashTask = new BukkitRunnable() {
             private int flashes = 0;
 
             @Override
@@ -513,6 +514,7 @@ public class CaptureCenterFuncImpl {
                 flashes++;
                 if (flashes >= 10) {
                     this.cancel();
+                    flashTasks.remove(this);
                     game.setDelayedTask(0.05, () -> {
                         removeLayer(world, layerY);
                         shrunkLayers.add(layerY);
@@ -520,7 +522,9 @@ public class CaptureCenterFuncImpl {
                     });
                 }
             }
-        }.runTaskTimer(plugin, 0L, 10L);
+        };
+        flashTasks.add(flashTask);
+        flashTask.runTaskTimer(plugin, 0L, 10L);
     }
 
     /** 移除指定层级的方块 */
@@ -554,6 +558,14 @@ public class CaptureCenterFuncImpl {
             boardUpdateTask.cancel();
             boardUpdateTask = null;
         }
+
+        // 停止所有闪烁任务
+        for (BukkitRunnable flashTask : flashTasks) {
+            if (flashTask != null && !flashTask.isCancelled()) {
+                flashTask.cancel();
+            }
+        }
+        flashTasks.clear();
 
         scoringEnabled = false;
     }

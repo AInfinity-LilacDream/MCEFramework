@@ -35,9 +35,9 @@ public class VotingSystemFuncImpl {
     // 是否跳过Intro
     private static boolean skipIntro = false;
 
-    // 游戏名称映射
+    // 游戏名称映射（包括ID 12）
     private static final String[] gameNames = {
-            "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏"
+            "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏", "", "冰雪乱斗"
     };
 
     /**
@@ -63,9 +63,11 @@ public class VotingSystemFuncImpl {
         votes.clear();
         playerVotes.clear();
 
-        // 初始化所有游戏的投票数为0
+        // 初始化所有游戏的投票数为0（包括ID 12）
         for (int i = 0; i < gameNames.length; i++) {
-            votes.put(i, 0);
+            if (i != 11 && !gameNames[i].isEmpty()) { // 跳过索引11（空位）和空名称
+                votes.put(i, 0);
+            }
         }
 
         // 清空所有玩家的投票记录
@@ -104,8 +106,8 @@ public class VotingSystemFuncImpl {
     public static boolean vote(Player player, int gameId) {
         String playerUUID = player.getUniqueId().toString();
 
-        // 检查游戏ID是否有效
-        if (gameId < 0 || gameId >= gameNames.length) {
+        // 检查游戏ID是否有效（包括ID 12）
+        if (gameId < 0 || gameId >= gameNames.length || gameNames[gameId].isEmpty()) {
             MCEMessenger.sendInfoToPlayer("<red>无效的游戏选择！", player);
             return false;
         }
@@ -162,6 +164,8 @@ public class VotingSystemFuncImpl {
         plugin.getLogger().info("各游戏得票情况:");
 
         for (int gameId = 0; gameId < gameNames.length; gameId++) {
+            if (gameNames[gameId].isEmpty())
+                continue; // 跳过空名称
             int voteCount = votes.getOrDefault(gameId, 0);
             double percentage = totalVotes > 0 ? (double) voteCount / totalVotes * 100 : 0;
             plugin.getLogger().info(String.format("  %d. %-12s: %2d票 (%.1f%%)",
@@ -171,7 +175,7 @@ public class VotingSystemFuncImpl {
         // 检查无效的游戏ID
         for (Map.Entry<Integer, Integer> entry : votes.entrySet()) {
             int gameId = entry.getKey();
-            if (gameId < 0 || gameId >= gameNames.length) {
+            if (gameId < 0 || gameId >= gameNames.length || gameNames[gameId].isEmpty()) {
                 plugin.getLogger().warning("发现无效的游戏ID: " + gameId + " 得票: " + entry.getValue());
             }
         }
@@ -236,7 +240,7 @@ public class VotingSystemFuncImpl {
             // 仅在平票的游戏中随机选择
             java.util.List<Integer> tieCandidates = new java.util.ArrayList<>();
             for (int i = 0; i < gameNames.length; i++) {
-                if (votes.getOrDefault(i, 0) == maxVotes) {
+                if (!gameNames[i].isEmpty() && votes.getOrDefault(i, 0) == maxVotes) {
                     tieCandidates.add(i);
                 }
             }
@@ -249,21 +253,37 @@ public class VotingSystemFuncImpl {
             } else {
                 // 理论上不会发生：降级为全局随机
                 Random random = new Random();
-                winningGameId = random.nextInt(gameNames.length);
-                MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>",
-                        "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
+                java.util.List<Integer> validGames = new java.util.ArrayList<>();
+                for (int i = 0; i < gameNames.length; i++) {
+                    if (!gameNames[i].isEmpty()) {
+                        validGames.add(i);
+                    }
+                }
+                if (!validGames.isEmpty()) {
+                    winningGameId = validGames.get(random.nextInt(validGames.size()));
+                    MCEMessenger.sendGlobalTitle("<gold><bold>平票！</bold></gold>",
+                            "<yellow>随机选择: " + gameNames[winningGameId] + "</yellow>");
+                }
             }
         } else {
             // 再次验证winningGameId有效性
-            if (winningGameId >= 0 && winningGameId < gameNames.length) {
+            if (winningGameId >= 0 && winningGameId < gameNames.length && !gameNames[winningGameId].isEmpty()) {
                 MCEMessenger.sendGlobalTitle("<gold><bold>投票结果</bold></gold>",
                         "<yellow>获胜游戏: " + gameNames[winningGameId] + "</yellow>");
             } else {
                 // 如果winningGameId无效，随机选择
                 Random random = new Random();
-                winningGameId = random.nextInt(gameNames.length);
-                MCEMessenger.sendGlobalTitle("<gold><bold>检测到错误，随机选择</bold></gold>",
-                        "<yellow>游戏: " + gameNames[winningGameId] + "</yellow>");
+                java.util.List<Integer> validGames = new java.util.ArrayList<>();
+                for (int i = 0; i < gameNames.length; i++) {
+                    if (!gameNames[i].isEmpty()) {
+                        validGames.add(i);
+                    }
+                }
+                if (!validGames.isEmpty()) {
+                    winningGameId = validGames.get(random.nextInt(validGames.size()));
+                    MCEMessenger.sendGlobalTitle("<gold><bold>检测到错误，随机选择</bold></gold>",
+                            "<yellow>游戏: " + gameNames[winningGameId] + "</yellow>");
+                }
             }
         }
 
@@ -306,8 +326,10 @@ public class VotingSystemFuncImpl {
     public static String getVotingStats() {
         StringBuilder stats = new StringBuilder("§6投票统计:\n");
         for (int i = 0; i < gameNames.length; i++) {
-            stats.append("§e").append(gameNames[i]).append(": §f")
-                    .append(votes.getOrDefault(i, 0)).append("票\n");
+            if (!gameNames[i].isEmpty()) {
+                stats.append("§e").append(gameNames[i]).append(": §f")
+                        .append(votes.getOrDefault(i, 0)).append("票\n");
+            }
         }
         return stats.toString();
     }
