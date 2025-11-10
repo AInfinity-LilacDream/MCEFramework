@@ -51,13 +51,13 @@ public class VotingSystem extends MCEGame {
         loadConfig();
         MCEPlayerUtils.globalClearPotionEffects();
 
-        // 传送非主城且非 duel 的玩家到主城，并清理发光效果
+        // 传送非主城的玩家到主城，并清理发光效果
         for (Player player : Bukkit.getOnlinePlayers()) {
             // 清理玩家的发光效果
             MCEGlowingEffectManager.clearPlayerGlowingEffect(player);
 
             String wn = player.getWorld().getName();
-            if (!"lobby".equals(wn) && !"duel".equals(wn)) {
+            if (!"lobby".equals(wn) ) {
                 player.teleport(Objects.requireNonNull(Bukkit.getWorld("lobby")).getSpawnLocation());
             }
         }
@@ -90,7 +90,7 @@ public class VotingSystem extends MCEGame {
         // 播放背景音乐
         MCEPlayerUtils.globalPlaySound("minecraft:vote");
 
-        // 给所有玩家投票卡（排除 duel 世界玩家）
+        // 给所有玩家投票卡
         giveVotingCards();
 
         // 启动投票系统
@@ -138,9 +138,6 @@ public class VotingSystem extends MCEGame {
         ItemStack votingCard = createVotingCard();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            // duel 世界玩家不参与投票：不发卡
-            if (player.getWorld() != null && "duel".equals(player.getWorld().getName()))
-                continue;
             // 保存或准备恢复烈焰棒（风弹发射器）
             ItemStack blazeRod = null;
             Component blazeName = MiniMessage.miniMessage().deserialize("<red><bold>风弹发射器</bold></red>");
