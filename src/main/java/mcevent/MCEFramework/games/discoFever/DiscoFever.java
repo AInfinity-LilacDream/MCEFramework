@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import mcevent.MCEFramework.MCEMainController;
 import mcevent.MCEFramework.games.discoFever.customHandler.ActionBarMessageHandler;
+import mcevent.MCEFramework.games.discoFever.customHandler.InventoryHandler;
 import mcevent.MCEFramework.games.discoFever.customHandler.PlayerFallHandler;
 import mcevent.MCEFramework.games.discoFever.gameObject.DiscoFeverGameBoard;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
@@ -39,6 +40,7 @@ DiscoFever: disco fever的完整实现
 public class DiscoFever extends MCEGame {
 
     private ActionBarMessageHandler actionBarMessageHandler = new ActionBarMessageHandler();
+    private InventoryHandler inventoryHandler = new InventoryHandler();
     private PlayerFallHandler playerFallHandler = new PlayerFallHandler();
     private DiscoFeverConfigParser discoFeverConfigParser = new DiscoFeverConfigParser();
     private List<BukkitRunnable> bossBarTasks = new ArrayList<>();
@@ -61,6 +63,7 @@ public class DiscoFever extends MCEGame {
                 launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration,
                 cycleEndDuration, endDuration);
         MCETimerUtils.setFramedTask(() -> actionBarMessageHandler.showMessage());
+        inventoryHandler.register(this);
         playerFallHandler.register(this);
     }
 
@@ -91,6 +94,8 @@ public class DiscoFever extends MCEGame {
         grantGlobalPotionEffect(saturation);
 
         MCEPlayerUtils.clearGlobalTags();
+        // 启动监听器，防止玩家丢弃靴子
+        inventoryHandler.start();
         // 启动监听器并设为准备期（Y<=3 回出生点）
         playerFallHandler.setPreparationPhase(true);
         playerFallHandler.start();
@@ -113,6 +118,7 @@ public class DiscoFever extends MCEGame {
         currentPlatformLocation = getDiscoFeverPlatformLocation(this.getWorldName());
         actionBarMessageHandler.start();
 
+        inventoryHandler.start();
         // 进行阶段：切换为淘汰模式
         playerFallHandler.setPreparationPhase(false);
         playerFallHandler.start();
@@ -167,6 +173,7 @@ public class DiscoFever extends MCEGame {
         }
         clearBossBarTask();
         actionBarMessageHandler.suspend();
+        inventoryHandler.suspend();
         playerFallHandler.suspend();
 
         // onEnd结束后立即清理展示板和资源，然后启动投票系统
@@ -192,6 +199,7 @@ public class DiscoFever extends MCEGame {
         bossBar.removeAll();
         clearBossBarTask();
         actionBarMessageHandler.suspend();
+        inventoryHandler.suspend();
         playerFallHandler.suspend();
 
         // 恢复玩家间碰撞到开启
