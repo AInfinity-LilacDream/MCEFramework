@@ -6,6 +6,7 @@ import mcevent.MCEFramework.games.spleef.Spleef;
 import mcevent.MCEFramework.games.hyperSpleef.HyperSpleef;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGameFuncImpl;
+import mcevent.MCEFramework.games.underworldGame.UnderworldGame;
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
 import mcevent.MCEFramework.tools.MCEBlockRestoreUtils;
 import org.bukkit.GameMode;
@@ -32,6 +33,7 @@ GlobalBlockInteractionHandler: 全局生存模式方块交互限制
   * CrazyMiner：允许破坏，禁止放置
   * Spleef：允许破坏，禁止放置
   * HyperSpleef：允许破坏，禁止放置
+  * UnderworldGame：允许破坏和放置（正常生存模式行为）
 */
 public class GlobalBlockInteractionHandler extends MCEResumableEventHandler implements Listener {
 
@@ -130,6 +132,10 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
             }
             event.setCancelled(true);
             return;
+        }
+        // UnderworldGame 允许破坏和放置（正常生存模式行为）
+        if (isCurrentGame(UnderworldGame.class)) {
+            return; // 允许破坏
         }
 
         // 默认禁止：取消并不改变世界
@@ -240,6 +246,10 @@ public class GlobalBlockInteractionHandler extends MCEResumableEventHandler impl
             }
             event.setCancelled(true);
             return;
+        }
+        // UnderworldGame 允许破坏和放置（正常生存模式行为）
+        if (isCurrentGame(UnderworldGame.class)) {
+            return; // 允许放置
         }
 
         // 默认禁止放置

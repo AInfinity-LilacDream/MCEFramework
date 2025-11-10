@@ -11,6 +11,7 @@ import mcevent.MCEFramework.games.hyperSpleef.HyperSpleef;
 import mcevent.MCEFramework.games.spleef.Spleef;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.tntTag.TNTTag;
+import mcevent.MCEFramework.games.underworldGame.UnderworldGame;
 import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -37,6 +38,7 @@ public class Constants {
         public static final int HYPER_SPLEEF_ID = 12;
         public static final int SURVIVAL_GAME_ID = 10;
         public static final int VOTING_SYSTEM_ID = 11;
+        public static final int UNDERWORLD_GAME_ID = 13;
 
         public static final TeamWithDetails[] teams = {
                         new TeamWithDetails("<red>红色山楂</red>", "红色山楂", "红队", NamedTextColor.RED, "<red>", "</red>"),
@@ -95,6 +97,7 @@ public class Constants {
         public static HyperSpleef hyperSpleef;
         public static SurvivalGame survivalGame;
         public static VotingSystem votingSystem;
+        public static UnderworldGame underworldGame;
 
         // ParkourTag位置现在从配置文件动态获取，不再使用硬编码
 

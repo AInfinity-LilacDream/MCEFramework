@@ -47,6 +47,9 @@ public class MCEPausableTimer {
                     gameBoard.globalDisplay();
                 }
                 if (counter == 0) {
+                    // 调试日志：计时器到期触发状态转换
+                    Constants.plugin.getLogger().info(
+                        "MCEPausableTimer: 计时器到期 (maxDuration=" + maxDurationSeconds + "秒)，触发时间线状态转换");
                     counter = maxDurationSeconds;
                     parentTimeline.nextState();
                 }

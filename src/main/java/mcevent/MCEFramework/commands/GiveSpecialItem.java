@@ -2,6 +2,7 @@ package mcevent.MCEFramework.commands;
 
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
+import mcevent.MCEFramework.customHandler.GameSettingsHandler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -51,5 +52,12 @@ public class GiveSpecialItem extends BaseCommand {
         }
         player.getInventory().addItem(blazeRod);
         player.sendMessage(Component.text("已获得风弹发射器！").color(NamedTextColor.GREEN));
+    }
+
+    @Subcommand("game_option")
+    public void onGameOption(Player player) {
+        ItemStack settingsItem = GameSettingsHandler.createSettingsItem();
+        player.getInventory().addItem(settingsItem);
+        player.sendMessage(Component.text("已获得游戏设置物品！").color(NamedTextColor.GREEN));
     }
 }

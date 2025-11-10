@@ -236,6 +236,24 @@ public class Launch extends BaseCommand {
             MCEMainController.immediateLaunchGame(hyperSpleef.getId(), false);
     }
 
+    @Subcommand("swapGame")
+    public void launchSwapGame(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        } else
+            MCEMainController.immediateLaunchGame(underworldGame.getId(), true);
+    }
+
+    @Subcommand("swapGameNoIntro")
+    public void launchSwapGameNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        } else
+            MCEMainController.immediateLaunchGame(underworldGame.getId(), false);
+    }
+
     @Subcommand("vote")
     public void launchVoting(CommandSender sender) {
         if (checkGameRunning()) {

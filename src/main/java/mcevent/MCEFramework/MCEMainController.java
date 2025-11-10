@@ -28,6 +28,7 @@ import mcevent.MCEFramework.games.spleef.Spleef;
 import mcevent.MCEFramework.games.hyperSpleef.HyperSpleef;
 import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.tntTag.TNTTag;
+import mcevent.MCEFramework.games.underworldGame.UnderworldGame;
 import mcevent.MCEFramework.games.votingSystem.VotingSystem;
 import mcevent.MCEFramework.generalGameObject.MCEGame;
 import mcevent.MCEFramework.generalGameObject.MCETimeline;
@@ -112,6 +113,7 @@ public final class MCEMainController extends JavaPlugin {
         String spleefMapName = readMapNameFromConfig("MCEConfig/Spleef.cfg", mapNames[9]);
         String survivalGameMapName = readMapNameFromConfig("MCEConfig/SurvivalGame.cfg", mapNames[10]);
         String hyperSpleefMapName = readMapNameFromConfig("MCEConfig/HyperSpleef.cfg", mapNames[12]);
+        String underworldGameMapName = "world"; // 阴间游戏动态生成世界，使用默认世界名作为占位符
         String votingMapName = mapNames[11]; // 投票系统直接使用lobby
 
         // 使用配置文件中的地图名称创建游戏实例
@@ -143,6 +145,8 @@ public final class MCEMainController extends JavaPlugin {
                 5, 55, 15, 15, 450, 25, 25);
         votingSystem = new VotingSystem("投票系统", VOTING_SYSTEM_ID, votingMapName, 1, false, "MCEConfig/VotingSystem.cfg",
                 2, 0, 0, 0, 30, 0, 3);
+        underworldGame = new UnderworldGame("阴间游戏", UNDERWORLD_GAME_ID, underworldGameMapName, false, "MCEConfig/UnderworldGame.cfg",
+                5, 55, 15, 0, Integer.MAX_VALUE, 25, 25);
 
         // 初始化游戏列表（确保索引与ID一致）
         gameList.add(pkt); // ID 0
@@ -158,6 +162,7 @@ public final class MCEMainController extends JavaPlugin {
         gameList.add(survivalGame); // ID 10
         gameList.add(votingSystem); // ID 11
         gameList.add(hyperSpleef); // ID 12
+        gameList.add(underworldGame); // ID 13
 
         // 全面清理所有玩家状态（在线和离线）
         cleanupAllPlayersOnStartup();
@@ -355,7 +360,53 @@ public final class MCEMainController extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        getLogger().info("合合卸载了");
+        getLogger().info("插件正在卸载，开始清理所有资源...");
+        
+        // 停止欢迎标语动画（会清理lobbyBossBar）
+        if (WelcomeMessageHandler.isWelcomeMessageActive()) {
+            WelcomeMessageHandler.stopWelcomeMessage();
+        }
+        
+        // 停止当前运行的游戏（游戏会清理自己的bossbar）
+        if (isRunningGame() && getCurrentRunningGame() != null) {
+            getCurrentRunningGame().stop();
+        }
+        
+        // 清理所有玩家的Adventure BossBar（通过停止所有声音来间接清理）
+        // 注意：由于无法直接获取玩家显示的所有bossbar，我们通过停止游戏来清理已知的bossbar
+        // 对于其他未知的bossbar，使用stopAllSounds可能会有所帮助
+        
+        // 清理所有fastboard
+        mcevent.MCEFramework.tools.MCEPlayerUtils.globalClearFastBoard();
+        
+        // 停止BGM和所有声音
+        mcevent.MCEFramework.tools.MCEPlayerUtils.globalStopMusic();
+        mcevent.MCEFramework.tools.MCEPlayerUtils.globalStopAllSounds();
+        
+        // 重置所有玩家的移动速度和跳跃高度
+        for (org.bukkit.entity.Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+            try {
+                if (player.getAttribute(org.bukkit.attribute.Attribute.MOVEMENT_SPEED) != null) {
+                    player.getAttribute(org.bukkit.attribute.Attribute.MOVEMENT_SPEED).setBaseValue(0.1);
+                }
+                if (player.getAttribute(org.bukkit.attribute.Attribute.JUMP_STRENGTH) != null) {
+                    player.getAttribute(org.bukkit.attribute.Attribute.JUMP_STRENGTH).setBaseValue(0.42);
+                }
+            } catch (Throwable e) {
+                getLogger().warning("重置玩家 " + player.getName() + " 的移动属性时出错: " + e.getMessage());
+            }
+        }
+        
+        // 清空所有玩家的药水效果
+        mcevent.MCEFramework.tools.MCEPlayerUtils.globalClearPotionEffects();
+        
+        // 清空所有玩家的tag
+        mcevent.MCEFramework.tools.MCEPlayerUtils.clearGlobalTags();
+        
+        // 清空所有玩家的物品栏
+        mcevent.MCEFramework.tools.MCEPlayerUtils.globalClearInventoryAllSlots();
+        
+        getLogger().info("插件卸载完成，所有资源已清理");
     }
 
     public static void resetTimeline() {

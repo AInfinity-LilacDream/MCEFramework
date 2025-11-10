@@ -35,9 +35,9 @@ public class VotingSystemFuncImpl {
     // 是否跳过Intro
     private static boolean skipIntro = false;
 
-    // 游戏名称映射（包括ID 12）
+    // 游戏名称映射（包括ID 12和13）
     private static final String[] gameNames = {
-            "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏", "", "冰雪乱斗"
+            "瓮中捉鳖", "色盲狂热", "跃动音律", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏", "", "冰雪乱斗", "阴间游戏"
     };
 
     /**
@@ -63,7 +63,7 @@ public class VotingSystemFuncImpl {
         votes.clear();
         playerVotes.clear();
 
-        // 初始化所有游戏的投票数为0（包括ID 12）
+        // 初始化所有游戏的投票数为0（包括ID 12和13）
         for (int i = 0; i < gameNames.length; i++) {
             if (i != 11 && !gameNames[i].isEmpty()) { // 跳过索引11（空位）和空名称
                 votes.put(i, 0);
@@ -106,7 +106,7 @@ public class VotingSystemFuncImpl {
     public static boolean vote(Player player, int gameId) {
         String playerUUID = player.getUniqueId().toString();
 
-        // 检查游戏ID是否有效（包括ID 12）
+        // 检查游戏ID是否有效（包括ID 12和13）
         if (gameId < 0 || gameId >= gameNames.length || gameNames[gameId].isEmpty()) {
             MCEMessenger.sendInfoToPlayer("<red>无效的游戏选择！", player);
             return false;

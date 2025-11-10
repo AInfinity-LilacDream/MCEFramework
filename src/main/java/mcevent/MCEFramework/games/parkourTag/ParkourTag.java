@@ -40,6 +40,7 @@ public class ParkourTag extends MCEGame {
     protected boolean showSurvivePlayer = false;
 
     private BukkitRunnable pktSaturationTask;
+    private BukkitRunnable glowingTask;
 
     // 玩家被抓住事件监听器
     PlayerCaughtHandler playerCaughtHandler = new PlayerCaughtHandler();
@@ -54,7 +55,8 @@ public class ParkourTag extends MCEGame {
         super(title, id, mapName, isMultiGame, configFileName,
                 launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration,
                 cycleEndDuration, endDuration);
-        MCETimerUtils.setFramedTask(opponentTeamGlowingHandler::toggleGlowing);
+        // 保存任务引用以便后续管理
+        glowingTask = MCETimerUtils.setFramedTask(opponentTeamGlowingHandler::toggleGlowing);
     }
 
     @Override
@@ -76,14 +78,23 @@ public class ParkourTag extends MCEGame {
     protected void checkGameEndCondition() {
         // 检查是否有队伍的跑者全部出局
         int activeTeamCount = 0;
-        for (int survivePlayers : survivePlayerTot) {
+        StringBuilder debugInfo = new StringBuilder("ParkourTag: 检查游戏结束条件 - ");
+        debugInfo.append("存活玩家数统计: [");
+        for (int i = 0; i < survivePlayerTot.size(); i++) {
+            int survivePlayers = survivePlayerTot.get(i);
+            debugInfo.append("队伍").append(i).append("=").append(survivePlayers);
+            if (i < survivePlayerTot.size() - 1)
+                debugInfo.append(", ");
             if (survivePlayers > 0) {
                 activeTeamCount++;
             }
         }
+        debugInfo.append("], 活跃队伍数=").append(activeTeamCount);
+        plugin.getLogger().info(debugInfo.toString());
 
         if (activeTeamCount <= 1) {
             // 只剩一队或没队了，游戏应该结束
+            plugin.getLogger().info("ParkourTag: 检测到游戏结束条件（活跃队伍数 <= 1），但当前实现不主动干预时间线");
             // 让时间线自然过渡，不主动干预
         }
     }
@@ -146,6 +157,10 @@ public class ParkourTag extends MCEGame {
         playerCaughtHandler.start();
         MCEWorldUtils.enablePVP();
         opponentTeamGlowingHandler.start();
+        // 确保发光任务正在运行（如果被取消了，重新启动）
+        if (glowingTask == null || glowingTask.isCancelled()) {
+            glowingTask = MCETimerUtils.setFramedTask(opponentTeamGlowingHandler::toggleGlowing);
+        }
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
         resetChoiceRoom(parkourTagConfigParser);
         showSurvivePlayer = true;
@@ -174,6 +189,7 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onCycleEnd() {
+        plugin.getLogger().info("ParkourTag: onCycleEnd() 被调用 - 回合结束");
         opponentTeamGlowingHandler.suspend();
         showSurvivePlayer = false;
         // 结束回合时停止背景音乐
@@ -184,6 +200,7 @@ public class ParkourTag extends MCEGame {
 
     @Override
     public void onEnd() {
+        plugin.getLogger().info("ParkourTag: onEnd() 被调用 - 游戏完全结束");
         sendCurrentMatchState();
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
         // 不在结束阶段修改玩家游戏模式
@@ -211,6 +228,9 @@ public class ParkourTag extends MCEGame {
         if (pktSaturationTask != null) {
             pktSaturationTask.cancel();
             pktSaturationTask = null;
+        }
+        if (glowingTask != null && !glowingTask.isCancelled()) {
+            glowingTask.cancel();
         }
         MCEPlayerUtils.globalStopMusic();
         MCEPlayerUtils.globalShowNameTag();

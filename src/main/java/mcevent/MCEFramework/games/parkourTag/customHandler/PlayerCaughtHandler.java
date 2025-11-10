@@ -91,7 +91,12 @@ public class PlayerCaughtHandler extends MCEResumableEventHandler implements Lis
         }
 
         // 每个小局由两支队伍对抗，因此全部小局完成的数量应为 活跃队伍数/2
-        if (pkt.completeMatchesTot >= Math.max(1, pkt.getActiveTeams().size() / 2)) {
+        int requiredMatches = Math.max(1, pkt.getActiveTeams().size() / 2);
+        plugin.getLogger().info("ParkourTag: 检查小局完成情况 - completeMatchesTot=" + pkt.completeMatchesTot + 
+                ", 需要完成的小局数=" + requiredMatches + ", 活跃队伍数=" + pkt.getActiveTeams().size());
+        
+        if (pkt.completeMatchesTot >= requiredMatches) {
+            plugin.getLogger().info("ParkourTag: 所有小局已完成，触发时间线状态转换 (nextState)");
             pkt.completeMatchesTot = 0; // 防止重复触发nextState
             pkt.getTimeline().nextState();
         }

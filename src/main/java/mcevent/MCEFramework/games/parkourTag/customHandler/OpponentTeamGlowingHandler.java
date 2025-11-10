@@ -35,9 +35,7 @@ public class OpponentTeamGlowingHandler extends MCEResumableEventHandler {
                 new WrappedDataValue(
                         0,
                         WrappedDataWatcher.Registry.get(Byte.class),
-                        (byte) 0x40
-                )
-        );
+                        (byte) 0x40));
         packet.getDataValueCollectionModifier().write(0, dataValues);
 
         try {
@@ -48,22 +46,29 @@ public class OpponentTeamGlowingHandler extends MCEResumableEventHandler {
     }
 
     public void toggleGlowing() {
-        if (isSuspended()) return;
+        if (isSuspended())
+            return;
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             Team team = MCETeamUtils.getTeam(player);
+            if (team == null)
+                continue;
+
             Team opponentTeam = pkt.getOpponentTeam(team);
+            if (opponentTeam == null)
+                continue;
 
             if (player.getScoreboardTags().contains("runner")) {
                 for (Player runner : MCETeamUtils.getPlayers(team)) {
-                    if (runner.getGameMode() == GameMode.SPECTATOR) continue;
+                    if (runner == null || runner.getGameMode() == GameMode.SPECTATOR)
+                        continue;
                     if (runner.getScoreboardTags().contains("runner"))
                         setGlowing(runner, player);
                 }
-            }
-            else if (player.getScoreboardTags().contains("chaser")) {
+            } else if (player.getScoreboardTags().contains("chaser")) {
                 for (Player runner : MCETeamUtils.getPlayers(opponentTeam)) {
-                    if (runner.getGameMode() == GameMode.SPECTATOR) continue;
+                    if (runner == null || runner.getGameMode() == GameMode.SPECTATOR)
+                        continue;
                     if (runner.getScoreboardTags().contains("runner"))
                         setGlowing(runner, player);
                 }

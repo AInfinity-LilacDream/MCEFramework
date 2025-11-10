@@ -51,12 +51,22 @@ public class MCETimeline {
     }
 
     public void nextState() {
+        // 调试日志：记录时间线状态转换
+        mcevent.MCEFramework.miscellaneous.Constants.plugin.getLogger().info(
+            "MCETimeline: nextState() 被调用 - 从状态 " + currentState + " 转换到状态 " + 
+            (currentState < timelineState.size() - 1 ? (currentState + 1) : "结束") + 
+            " (总状态数: " + timelineState.size() + ")");
+        
         timelineState.get(currentState).stop();
         if (currentState < timelineState.size() - 1) {
             currentState++;
             timelineState.get(currentState).start();
         }
-        else hasStarted = false;
+        else {
+            hasStarted = false;
+            mcevent.MCEFramework.miscellaneous.Constants.plugin.getLogger().info(
+                "MCETimeline: 时间线已到达最后一个状态，游戏结束");
+        }
     }
 
     public int getCounter() {
