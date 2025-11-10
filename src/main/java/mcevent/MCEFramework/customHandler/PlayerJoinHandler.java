@@ -32,9 +32,9 @@ public class PlayerJoinHandler extends MCEResumableEventHandler implements Liste
     public void onPlayerJoin(PlayerJoinEvent event) {
         if (isSuspended()) return;
 
-        event.joinMessage(MiniMessage.miniMessage().deserialize(
-                "<gold><bold>欢迎来到</bold></gold><gradient:red:blue>Lilac Games</gradient><gold><bold>！</bold></gold>"
-        ));
+        // 迎新信息在 WelcomeMessageHandler 中发送
+        event.joinMessage(null);
+
         Player player = event.getPlayer();
         
         // 清理玩家的发光效果

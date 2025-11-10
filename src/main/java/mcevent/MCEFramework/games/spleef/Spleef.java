@@ -167,6 +167,11 @@ public class Spleef extends MCEGame {
         grantGlobalPotionEffect(saturation);
         MCEPlayerUtils.clearGlobalTags();
 
+        // 启动监听器并设为准备期
+        playerFallHandler.register(this);
+        playerFallHandler.setPreparationPhase(true);
+        playerFallHandler.start();
+
         // 重置游戏状态
         resetGameState();
 
@@ -180,7 +185,6 @@ public class Spleef extends MCEGame {
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
         // 启用事件处理器
-        playerFallHandler.register(this);
         snowBreakHandler.register(this);
         snowballThrowHandler.register(this);
         craftingDisableHandler.register(this);
@@ -239,6 +243,7 @@ public class Spleef extends MCEGame {
         // Active 标签由基类统一管理
 
         // 启动所有事件处理器
+        playerFallHandler.setPreparationPhase(false);
         playerFallHandler.start();
         snowBreakHandler.start();
         snowballThrowHandler.start();
@@ -261,7 +266,7 @@ public class Spleef extends MCEGame {
         cancelRingFlashTasks();
 
         // 暂停所有事件处理器（为下一回合准备）
-        playerFallHandler.suspend();
+        playerFallHandler.setPreparationPhase(true);
         snowBreakHandler.suspend();
         snowballThrowHandler.suspend();
         craftingDisableHandler.suspend();

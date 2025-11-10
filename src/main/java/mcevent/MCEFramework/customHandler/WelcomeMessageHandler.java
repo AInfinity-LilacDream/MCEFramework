@@ -34,7 +34,7 @@ public class WelcomeMessageHandler implements Listener {
     private static BossBar lobbyBossBar;
 
     // 欢迎标语内容
-    private static final String WELCOME_MESSAGE = "欢迎来到Lilac Games！游戏稍后开始...";
+    private static final String WELCOME_MESSAGE = "欢迎来到 Lilac Games ! 游戏稍后开始...";
 
     public WelcomeMessageHandler() {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -101,12 +101,17 @@ public class WelcomeMessageHandler implements Listener {
                 startPlayerAnimation(joinedPlayer);
                 showBossBar(joinedPlayer);
 
-                // 给其他在线玩家发送带新玩家名字的欢迎消息
-                Component welcomeMessage = MiniMessage.miniMessage().deserialize("<gold><bold>欢迎</bold></gold>")
-                        .append(MiniMessage.miniMessage()
-                                .deserialize("<yellow>" + joinedPlayer.getName() + "</yellow>"))
-                        .append(MiniMessage.miniMessage().deserialize(
-                                "<gold><bold>来到</bold></gold><gradient:red:blue>Lilac Games</gradient><gold><bold>！</bold></gold>"));
+                // 给新加入的玩家发送不含名字的欢迎消息
+                joinedPlayer.sendMessage(MiniMessage.miniMessage().deserialize(
+                        "<b><gold>欢迎来到</gold></b> <b><gradient:red:blue>Lilac Games</gradient><gold>！</gold></b>"
+                ));
+
+                // 给其他在线玩家发送含新玩家名字的欢迎消息
+                Component welcomeMessage = MiniMessage.miniMessage().deserialize(
+                        "<gold><b>欢迎</b></gold>" +
+                                " <yellow>" + joinedPlayer.getName() + "</yellow> " +
+                                "<b><gold>来到</gold></b> <b><gradient:red:blue>Lilac Games</gradient><gold>！</gold></b>"
+                );
 
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     // 不给新加入的玩家发送这个消息，只给其他玩家

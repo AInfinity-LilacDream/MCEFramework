@@ -5,15 +5,21 @@ import org.bukkit.entity.Player;
 
 import java.util.Objects;
 
+import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
+
 /*
 MCETeleporter: 进行玩家传送的工具类
  */
 public class MCETeleporter {
     public static void globalSwapWorld(String worldName) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            // Duel 世界内的玩家不参与任何游戏传送
-            if (player.getWorld() != null && "duel".equals(player.getWorld().getName()))
-                continue;
+            if (player.getWorld() != null && "duel".equals(player.getWorld().getName())){
+                // Duel 世界内的玩家清空物品栏之后再传送
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    player.getInventory().clear();
+                    player.updateInventory();
+                });
+            }
             player.teleport(Objects.requireNonNull(Bukkit.getWorld(worldName)).getSpawnLocation());
         }
     }
