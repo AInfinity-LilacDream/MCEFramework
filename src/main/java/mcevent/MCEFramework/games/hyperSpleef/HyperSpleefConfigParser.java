@@ -115,7 +115,7 @@ public class HyperSpleefConfigParser extends MCEConfigParser {
         defaultIntros.add(MiniMessage.miniMessage().deserialize("<gray>• 雪球触碰雪块后, 雪块变成浮冰, 1s后浮冰变成冰</gray>"));
         defaultIntros.add(MiniMessage.miniMessage().deserialize("<gray>• 右键 TNT 会抛出一个已激活的 TNT</gray>"));
         defaultIntros.add(MiniMessage.miniMessage().deserialize("<gray>• 游戏过程中会有随机事件发生</gray>"));
-        defaultIntros.add(MiniMessage.miniMessage().deserialize("<c>• 掉落到y < 26会被淘汰</c>"));
+        defaultIntros.add(MiniMessage.miniMessage().deserialize("<c>• 掉入虚空的玩家将会被淘汰</c>"));
         defaultIntros.add(MiniMessage.miniMessage().deserialize(" "));
         defaultIntros.add(MiniMessage.miniMessage().deserialize("<gold>目标: 成为最后存活的队伍！</gold>"));
         defaultIntros.add(MiniMessage.miniMessage().deserialize("<aqua>祝你好运！</aqua>"));

@@ -197,6 +197,10 @@ public class HyperSpleef extends MCEGame {
         grantGlobalPotionEffect(saturation);
         MCEPlayerUtils.clearGlobalTags();
 
+        playerFallHandler.register(this);
+        playerFallHandler.setPreparationPhase(true);
+        playerFallHandler.start();
+
         // 重置游戏状态
         resetGameState();
 
@@ -210,7 +214,6 @@ public class HyperSpleef extends MCEGame {
         this.getGameBoard().setStateTitle("<red><bold> 游戏开始：</bold></red>");
 
         // 启用事件处理器
-        playerFallHandler.register(this);
         snowBreakHandler.register(this);
         snowballThrowHandler.register(this);
         snowballHitHandler.register(this);
@@ -314,7 +317,7 @@ public class HyperSpleef extends MCEGame {
         specialItemHandler.start();
 
         // 启动所有事件处理器
-        playerFallHandler.start();
+        playerFallHandler.setPreparationPhase(false);
         snowBreakHandler.start();
         snowballThrowHandler.start();
         snowballHitHandler.start();
@@ -342,7 +345,7 @@ public class HyperSpleef extends MCEGame {
         clearEventTasks();
 
         // 暂停所有事件处理器（为下一回合准备）
-        playerFallHandler.suspend();
+        playerFallHandler.setPreparationPhase(true);
         snowBreakHandler.suspend();
         snowballThrowHandler.suspend();
         snowballHitHandler.suspend();

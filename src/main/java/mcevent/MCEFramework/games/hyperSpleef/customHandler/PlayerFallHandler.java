@@ -8,6 +8,7 @@ import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -24,10 +25,17 @@ public class PlayerFallHandler extends MCEResumableEventHandler implements Liste
 
     private HyperSpleef hyperSpleef;
 
+    // 阶段标志：true 准备期；false 进行期
+    private boolean preparationPhase = true;
+
     public void register(HyperSpleef game) {
         this.hyperSpleef = game;
         setSuspended(true); // 默认挂起，游戏开始时启动
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
+    }
+
+    public void setPreparationPhase(boolean preparation) {
+        this.preparationPhase = preparation;
     }
 
     @Override
@@ -71,6 +79,15 @@ public class PlayerFallHandler extends MCEResumableEventHandler implements Liste
                             ", Active=" + player.getScoreboardTags().contains("Active") +
                             ", dead=" + player.getScoreboardTags().contains("dead") +
                             ", 世界=" + player.getWorld().getName());
+        }
+
+        if (preparationPhase && y <= threshold + 20) {
+            // 准备期：将玩家传送回出生点
+            World world = Bukkit.getWorld(hyperSpleef.getWorldName());
+            if (world == null) return;
+            Location spawn = world.getSpawnLocation();
+            player.teleport(spawn);
+            return;
         }
 
         if (y > threshold)
