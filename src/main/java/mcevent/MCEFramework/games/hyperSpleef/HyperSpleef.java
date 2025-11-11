@@ -211,6 +211,9 @@ public class HyperSpleef extends MCEGame {
 
         // 启用事件处理器
         playerFallHandler.register(this);
+        playerFallHandler.setPreparationPhase(true);
+        playerFallHandler.start();
+
         snowBreakHandler.register(this);
         snowballThrowHandler.register(this);
         snowballHitHandler.register(this);
@@ -314,7 +317,7 @@ public class HyperSpleef extends MCEGame {
         specialItemHandler.start();
 
         // 启动所有事件处理器
-        playerFallHandler.start();
+        playerFallHandler.setPreparationPhase(false);
         snowBreakHandler.start();
         snowballThrowHandler.start();
         snowballHitHandler.start();
@@ -342,7 +345,7 @@ public class HyperSpleef extends MCEGame {
         clearEventTasks();
 
         // 暂停所有事件处理器（为下一回合准备）
-        playerFallHandler.suspend();
+        playerFallHandler.setPreparationPhase(true);
         snowBreakHandler.suspend();
         snowballThrowHandler.suspend();
         snowballHitHandler.suspend();
