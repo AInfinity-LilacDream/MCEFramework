@@ -41,10 +41,14 @@ public class ParkourTagFuncImpl {
     protected static void sendCurrentRoundMatchTitle() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Team team = MCETeamUtils.getTeam(player);
+            if (team == null) {
+                continue; // 跳过没有队伍的玩家
+            }
             Team opponentTeam = pkt.getOpponentTeam(team);
-            if (team != null)
+            if (opponentTeam != null) {
                 MCEMessenger.sendMatchTitleToPlayer(player, team.getName(), opponentTeam.getName(),
                         pkt.getCurrentRound());
+            }
         }
     }
 

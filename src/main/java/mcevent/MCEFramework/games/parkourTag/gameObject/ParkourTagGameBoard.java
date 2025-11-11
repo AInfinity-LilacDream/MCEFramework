@@ -35,18 +35,29 @@ public class ParkourTagGameBoard extends MCEGameBoard {
         int second = seconds % 60;
         String time = String.format("%02d:%02d", minute, second);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            Team opponentTeam = pkt.getOpponentTeam(MCETeamUtils.getTeam(player));
+            Team playerTeam = MCETeamUtils.getTeam(player);
+            Team opponentTeam = pkt.getOpponentTeam(playerTeam);
 
             FastBoard board = new FastBoard(player);
             board.updateTitle(MiniMessage.miniMessage().deserialize(getMainTitle()));
+            
+            // 构建剩余玩家显示行（仅在显示且对手队伍有效时）
+            net.kyori.adventure.text.Component survivePlayerLine = null;
+            if (pkt.isShowSurvivePlayer() && opponentTeam != null) {
+                int opponentTeamId = pkt.getTeamId(opponentTeam);
+                if (opponentTeamId >= 0 && opponentTeamId < pkt.getSurvivePlayerTot().size()) {
+                    survivePlayerLine = MiniMessage.miniMessage().deserialize("<green><bold> 剩余玩家: </bold></green>" +
+                            pkt.getSurvivePlayerTot().get(opponentTeamId));
+                }
+            }
+            
             board.updateLines(
                     MiniMessage.miniMessage().deserialize(" "),
                     MiniMessage.miniMessage().deserialize(getGameTitle()),
                     MiniMessage.miniMessage().deserialize(getMapTitle()),
                     MiniMessage.miniMessage().deserialize(getRoundTitle()),
                     MiniMessage.miniMessage().deserialize(getStateTitle() + time),
-                    pkt.isShowSurvivePlayer() ? MiniMessage.miniMessage().deserialize("<green><bold> 剩余玩家: </bold></green>" +
-                            pkt.getSurvivePlayerTot().get(pkt.getTeamId(opponentTeam))) : null
+                    survivePlayerLine
             );
         }
     }

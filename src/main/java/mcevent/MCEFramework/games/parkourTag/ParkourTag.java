@@ -138,7 +138,30 @@ public class ParkourTag extends MCEGame {
         getGameBoard().updateRoundTitle(getCurrentRound());
         resetSurvivePlayerTot();
 
-        // Active/Participant 由基类管理，不在此阶段清全局标签或统一改模式
+        // 重置所有被抓住的玩家状态：恢复生存模式，恢复Active标签，移除caught和dead标签
+        // 同时清理所有玩家的chaser和runner标签，允许重新选择抓捕者
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            // 只处理参与者
+            if (player.getScoreboardTags().contains("Participant")) {
+                // 清理上一回合的角色标签，允许重新选择
+                player.removeScoreboardTag("chaser");
+                player.removeScoreboardTag("runner");
+                
+                // 如果玩家有caught或dead标签，说明上一回合被抓住了
+                if (player.getScoreboardTags().contains("caught") || player.getScoreboardTags().contains("dead")) {
+                    // 恢复生存模式
+                    player.setGameMode(GameMode.SURVIVAL);
+                    // 恢复Active标签
+                    if (!player.getScoreboardTags().contains("Active")) {
+                        player.addScoreboardTag("Active");
+                    }
+                    // 移除caught和dead标签
+                    player.removeScoreboardTag("caught");
+                    player.removeScoreboardTag("dead");
+                }
+            }
+        }
+
         grantGlobalPotionEffect(saturation);
 
         // 开始回合背景音乐
@@ -248,7 +271,24 @@ public class ParkourTag extends MCEGame {
 
     // 获取当前回合的敌对队伍
     public Team getOpponentTeam(Team team) {
+        if (team == null) {
+            return null;
+        }
         int teamPos = getTeamId(team);
-        return teamPos % 2 == 0 ? pkt.getActiveTeams().get(teamPos + 1) : pkt.getActiveTeams().get(teamPos - 1);
+        // 如果队伍不在activeTeams中，返回null
+        if (teamPos < 0 || teamPos >= getActiveTeams().size()) {
+            return null;
+        }
+        // 确保有对手队伍（activeTeams大小至少为2）
+        if (getActiveTeams().size() < 2) {
+            return null;
+        }
+        // 计算对手队伍位置
+        int opponentPos = teamPos % 2 == 0 ? teamPos + 1 : teamPos - 1;
+        // 确保对手位置有效
+        if (opponentPos < 0 || opponentPos >= getActiveTeams().size()) {
+            return null;
+        }
+        return getActiveTeams().get(opponentPos);
     }
 }

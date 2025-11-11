@@ -19,6 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.NamespacedKey;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -343,6 +344,9 @@ public class HyperSpleef extends MCEGame {
         // 取消本回合所有延时任务
         clearDelayedTasks();
         clearEventTasks();
+
+        // 清除所有随机事件的药水效果
+        clearRandomEventEffects();
 
         // 暂停所有事件处理器（为下一回合准备）
         playerFallHandler.setPreparationPhase(true);
@@ -897,6 +901,19 @@ public class HyperSpleef extends MCEGame {
      */
     public void addEventTask(BukkitRunnable task) {
         eventTasks.add(task);
+    }
+
+    /**
+     * 清除所有随机事件的药水效果
+     */
+    private void clearRandomEventEffects() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            // 清除随机事件可能添加的药水效果
+            player.removePotionEffect(PotionEffectType.BLINDNESS); // 天黑请闭眼
+            player.removePotionEffect(PotionEffectType.LEVITATION); // 飘浮
+            player.removePotionEffect(PotionEffectType.SLOW_FALLING); // 失重
+            player.removePotionEffect(PotionEffectType.JUMP_BOOST); // 超绝弹射力
+        }
     }
 
     /**

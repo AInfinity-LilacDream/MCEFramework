@@ -112,9 +112,9 @@ public final class MCEMainController extends JavaPlugin {
         String tntTagMapName = readMapNameFromConfig("MCEConfig/TNTTag.cfg", mapNames[8]);
         String spleefMapName = readMapNameFromConfig("MCEConfig/Spleef.cfg", mapNames[9]);
         String survivalGameMapName = readMapNameFromConfig("MCEConfig/SurvivalGame.cfg", mapNames[10]);
-        String hyperSpleefMapName = readMapNameFromConfig("MCEConfig/HyperSpleef.cfg", mapNames[12]);
+        String hyperSpleefMapName = readMapNameFromConfig("MCEConfig/HyperSpleef.cfg", mapNames[11]);
         String underworldGameMapName = "world"; // 阴间游戏动态生成世界，使用默认世界名作为占位符
-        String votingMapName = mapNames[11]; // 投票系统直接使用lobby
+        String votingMapName = mapNames[12]; // 投票系统直接使用lobby
 
         // 使用配置文件中的地图名称创建游戏实例
         pkt = new ParkourTag("瓮中捉鳖", PARKOUR_TAG_ID, pktMapName, true, "MCEConfig/ParkourTag.cfg",

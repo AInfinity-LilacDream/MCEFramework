@@ -87,6 +87,11 @@ public class VotingSystem extends MCEGame {
 
     @Override
     public void onCycleStart() {
+        // 确保所有玩家都是生存模式，以便参与投票
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.setGameMode(GameMode.SURVIVAL);
+        }
+
         // 播放背景音乐
         MCEPlayerUtils.globalPlaySound("minecraft:vote");
 
@@ -269,5 +274,24 @@ public class VotingSystem extends MCEGame {
     @Override
     public void initGameBoard() {
         setGameBoard(new VotingSystemGameBoard(getTitle(), getWorldName(), getRound()));
+    }
+
+    /**
+     * 重写处理游戏进行中新加入的玩家
+     * 投票系统中，所有玩家都应该是生存模式，以便参与投票
+     */
+    @Override
+    public void handlePlayerJoinDuringGame(org.bukkit.entity.Player player) {
+        // 确保新加入的玩家是生存模式
+        player.setGameMode(GameMode.SURVIVAL);
+        // 清理玩家的发光效果
+        MCEGlowingEffectManager.clearPlayerGlowingEffect(player);
+        // 如果玩家不在主城，传送到主城
+        if (!"lobby".equals(player.getWorld().getName())) {
+            World lobbyWorld = Bukkit.getWorld("lobby");
+            if (lobbyWorld != null) {
+                player.teleport(lobbyWorld.getSpawnLocation());
+            }
+        }
     }
 }
