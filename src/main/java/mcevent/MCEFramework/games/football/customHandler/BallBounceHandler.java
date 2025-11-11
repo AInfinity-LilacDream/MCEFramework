@@ -155,17 +155,6 @@ public class BallBounceHandler {
         double entityWidth = 0.7; // 犰狳的宽度
         double entityHeight = 0.65; // 犰狳的高度
 
-        // 添加调试信息 - 只在有明显移动时输出
-        if (Math.abs(vx) > 0.05 || Math.abs(vz) > 0.05) {
-            plugin.getLogger().info(String.format("[反弹调试] 球心(%.2f,%.2f,%.2f) 速度(%.3f,%.3f,%.3f)",
-                    ballLocation.getX(), ballLocation.getY(), ballLocation.getZ(), vx, vy, vz));
-            plugin.getLogger().info(String.format("[反弹调试] 球边界: 西%.2f 东%.2f 北%.2f 南%.2f",
-                    ballLocation.getX() - entityWidth / 2, ballLocation.getX() + entityWidth / 2,
-                    ballLocation.getZ() - entityWidth / 2, ballLocation.getZ() + entityWidth / 2));
-            plugin.getLogger()
-                    .info(String.format("[反弹调试] 场地边界: X[%.1f到%.1f] Z[%.1f到%.1f]", MIN_X, MAX_X, MIN_Z, MAX_Z));
-        }
-
         // X轴边界碰撞 - 只有当球实际碰到墙壁且速度朝向墙壁时才反弹
         // 但在球门范围内不反弹，让球能够进门
         double ballWestEdge = ballLocation.getX() - entityWidth / 2;
@@ -184,26 +173,11 @@ public class BallBounceHandler {
         }
 
         if (ballWestEdge <= MIN_X && vx < -MIN_BOUNCE_VELOCITY && !inBlueGoalZRange) {
-            plugin.getLogger().info(String.format("[碰撞检测] 西墙反弹触发: 球西边缘%.3f <= 西墙%.1f, 朝向墙速度%.3f",
-                    ballWestEdge, MIN_X, vx));
             vx = -vx * WALL_DAMPING;
             bounced = true;
-            plugin.getLogger().info(String.format("[反弹结果] 西墙反弹完成: 速度%.3f->%.3f", ballVelocity.getX(), vx));
         } else if (ballEastEdge >= MAX_X && vx > MIN_BOUNCE_VELOCITY && !inRedGoalZRange) {
-            plugin.getLogger().info(String.format("[碰撞检测] 东墙反弹触发: 球东边缘%.3f >= 东墙%.1f, 朝向墙速度%.3f",
-                    ballEastEdge, MAX_X, vx));
             vx = -vx * WALL_DAMPING;
             bounced = true;
-            plugin.getLogger().info(String.format("[反弹结果] 东墙反弹完成: 速度%.3f->%.3f", ballVelocity.getX(), vx));
-        } else {
-            // 添加未触发反弹的调试信息
-            if ((ballWestEdge <= MIN_X && vx >= -MIN_BOUNCE_VELOCITY) ||
-                    (ballEastEdge >= MAX_X && vx <= MIN_BOUNCE_VELOCITY)) {
-                plugin.getLogger()
-                        .info(String.format("[反弹未触发] X轴: 西边缘%.3f(边界%.1f) 东边缘%.3f(边界%.1f) 速度%.3f(阈值±%.3f) 球门Z范围内:%s",
-                                ballWestEdge, MIN_X, ballEastEdge, MAX_X, vx, MIN_BOUNCE_VELOCITY,
-                                (inBlueGoalZRange || inRedGoalZRange)));
-            }
         }
 
         // Z轴边界碰撞
@@ -223,24 +197,11 @@ public class BallBounceHandler {
         }
 
         if (ballNorthEdge <= MIN_Z && vz < -MIN_BOUNCE_VELOCITY && !inBlueGoalXRange) {
-            plugin.getLogger().info(String.format("[碰撞检测] 北墙反弹触发: 球北边缘%.3f <= 北墙%.1f, 朝向墙速度%.3f",
-                    ballNorthEdge, MIN_Z, vz));
             vz = -vz * WALL_DAMPING;
             bounced = true;
-            plugin.getLogger().info(String.format("[反弹结果] 北墙反弹完成: 速度%.3f->%.3f", ballVelocity.getZ(), vz));
         } else if (ballSouthEdge >= MAX_Z && vz > MIN_BOUNCE_VELOCITY && !inRedGoalXRange) {
-            plugin.getLogger().info(String.format("[碰撞检测] 南墙反弹触发: 球南边缘%.3f >= 南墙%.1f, 朝向墙速度%.3f",
-                    ballSouthEdge, MAX_Z, vz));
             vz = -vz * WALL_DAMPING;
             bounced = true;
-            plugin.getLogger().info(String.format("[反弹结果] 南墙反弹完成: 速度%.3f->%.3f", ballVelocity.getZ(), vz));
-        } else {
-            // 添加未触发反弹的调试信息
-            if ((ballNorthEdge <= MIN_Z && vz >= -MIN_BOUNCE_VELOCITY) ||
-                    (ballSouthEdge >= MAX_Z && vz <= MIN_BOUNCE_VELOCITY)) {
-                plugin.getLogger().info(String.format("[反弹未触发] Z轴: 北边缘%.3f(边界%.1f) 南边缘%.3f(边界%.1f) 速度%.3f(阈值±%.3f)",
-                        ballNorthEdge, MIN_Z, ballSouthEdge, MAX_Z, vz, MIN_BOUNCE_VELOCITY));
-            }
         }
 
         // Y轴边界碰撞
@@ -250,33 +211,13 @@ public class BallBounceHandler {
         if (ballTopEdge >= MAX_Y && vy > MIN_BOUNCE_VELOCITY) {
             vy = -vy * WALL_DAMPING; // 天花板反弹
             bounced = true;
-            plugin.getLogger().info(String.format("天花板反弹: 球顶边缘%.2f >= 天花板%.1f, 速度%.3f->%.3f",
-                    ballTopEdge, MAX_Y, ballVelocity.getY(), vy));
         }
 
         // 地面碰撞 - 只有向下运动且速度足够大才反弹
         if (ballBottomEdge <= MIN_Y && vy < -MIN_BOUNCE_VELOCITY) {
             vy = -vy * GROUND_DAMPING; // 地面反弹衰减更多
             bounced = true;
-            plugin.getLogger().info(String.format("地面反弹: 球底边缘%.2f <= 地面%.1f, 速度%.3f->%.3f",
-                    ballBottomEdge, MIN_Y, ballVelocity.getY(), vy));
         }
-
-        // 暂时禁用方块碰撞检测，只使用边界碰撞
-        // TODO: 修复方块碰撞逻辑
-        /*
-         * // 检查方块碰撞
-         * if (!bounced) {
-         * Vector newVelocity = checkBlockCollision(ball, ballLocation, new Vector(vx,
-         * vy, vz), entityWidth, entityHeight);
-         * if (newVelocity != null) {
-         * vx = newVelocity.getX();
-         * vy = newVelocity.getY();
-         * vz = newVelocity.getZ();
-         * bounced = true;
-         * }
-         * }
-         */
 
         // 应用空气阻力/摩擦力
         boolean isNearGround = (ballLocation.getY() - entityHeight / 2) <= MIN_Y + GROUND_TOLERANCE;
@@ -296,9 +237,6 @@ public class BallBounceHandler {
             vx = 0;
             vy = 0;
             vz = 0;
-            if (ballVelocity.lengthSquared() > 0) {
-                plugin.getLogger().info("球已完全停止");
-            }
         }
 
         // 更新球的速度
@@ -423,19 +361,6 @@ public class BallBounceHandler {
 
                     Vector newNormalComponent = normalComponent.multiply(-WALL_DAMPING);
                     Vector newVelocity = tangentComponent.add(newNormalComponent);
-
-                    String face = switch (i) {
-                        case 0 -> "底面";
-                        case 1 -> "顶面";
-                        case 2 -> "东面";
-                        case 3 -> "西面";
-                        case 4 -> "南面";
-                        case 5 -> "北面";
-                        default -> "未知";
-                    };
-
-                    plugin.getLogger().info(String.format("方块%s碰撞: 法线速度%.2f -> %.2f",
-                            face, normalVelocity, newNormalComponent.length()));
 
                     return newVelocity;
                 }

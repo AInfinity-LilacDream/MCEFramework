@@ -201,7 +201,6 @@ public class Football extends MCEGame {
 
         // 检查队伍分配（根据设置为2队或4队）
         int teamSetting = mcevent.MCEFramework.games.settings.GameSettingsState.getFootballTeams();
-        plugin.getLogger().info("[Football] onLaunch: 队伍设置=" + teamSetting + " (2表示红蓝；4表示红蓝青黄)");
         ensureTwoTeamsSplit();
 
         MCETeleporter.globalSwapWorld(this.getWorldName());
@@ -254,7 +253,6 @@ public class Football extends MCEGame {
 
         // 再次校验队伍分配，确保在进入比赛前符合设置
         int teamSetting = mcevent.MCEFramework.games.settings.GameSettingsState.getFootballTeams();
-        plugin.getLogger().info("[Football] onCyclePreparation: 队伍设置=" + teamSetting);
         ensureTwoTeamsSplit();
 
         // 四队模式使用子对局对象驱动；两队模式保持原逻辑
@@ -309,6 +307,9 @@ public class Football extends MCEGame {
             }
             gb.updateRoundTitleRB(roundRB);
             gb.updateRoundTitleCY(roundCY);
+        } else {
+            // 两队模式：解除移动限制
+            removeMovementRestrictions();
         }
 
         // 启用友伤（允许队友间攻击）

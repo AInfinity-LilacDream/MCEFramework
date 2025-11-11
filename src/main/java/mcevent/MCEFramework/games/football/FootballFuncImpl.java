@@ -688,13 +688,6 @@ public class FootballFuncImpl {
 
         boolean isInGoal = x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
 
-        // 添加调试信息
-        if (Math.abs(x - minX) < 2 || Math.abs(x - maxX) < 2) { // 当球接近球门时输出调试信息
-            plugin.getLogger()
-                    .info(String.format("[进球检测] 球位置(%.2f,%.2f,%.2f) 球门范围X[%.1f-%.1f] Y[%.1f-%.1f] Z[%.1f-%.1f] 结果:%s",
-                            x, y, z, minX, maxX, minY, maxY, minZ, maxZ, isInGoal));
-        }
-
         return isInGoal;
     }
 }

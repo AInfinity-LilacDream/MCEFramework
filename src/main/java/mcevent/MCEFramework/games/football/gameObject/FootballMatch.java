@@ -70,22 +70,16 @@ public class FootballMatch {
         trackingHandler.suspend();
         bounceHandler.suspend();
         if (secondField) {
-            mcevent.MCEFramework.miscellaneous.Constants.plugin.getLogger().info("[Prepare-CY] begin round=" + round);
             mcevent.MCEFramework.games.football.FootballFuncImpl.teleportCYPlayersToSpawns();
             mcevent.MCEFramework.games.football.FootballFuncImpl.spawnBall2();
             this.ball = parent.getBall2();
-            mcevent.MCEFramework.miscellaneous.Constants.plugin.getLogger()
-                    .info("[Prepare-CY] ball=" + (ball == null ? "null" : ball.getUniqueId().toString()));
             trackingHandler.startSecond(this);
             bounceHandler.startSecond(parent, minX, maxX, minZ, maxZ, minY, maxY);
             mcevent.MCEFramework.games.football.FootballFuncImpl.applyPlayerEffectsCY();
         } else {
-            mcevent.MCEFramework.miscellaneous.Constants.plugin.getLogger().info("[Prepare-RB] begin round=" + round);
             mcevent.MCEFramework.games.football.FootballFuncImpl.teleportRBPlayersToSpawns();
             mcevent.MCEFramework.games.football.FootballFuncImpl.spawnBall();
             this.ball = parent.getBall();
-            mcevent.MCEFramework.miscellaneous.Constants.plugin.getLogger()
-                    .info("[Prepare-RB] ball=" + (ball == null ? "null" : ball.getUniqueId().toString()));
             trackingHandler.start(this);
             bounceHandler.start(parent);
             mcevent.MCEFramework.games.football.FootballFuncImpl.applyPlayerEffectsRB();

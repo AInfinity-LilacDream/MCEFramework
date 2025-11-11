@@ -72,19 +72,6 @@ public class BallTrackingHandler {
         trackingTask = new BukkitRunnable() {
             @Override
             public void run() {
-                long now = System.currentTimeMillis();
-                if (now % 1000 < 50) {
-                    boolean ballNull = (match.getBallEntity() == null);
-                    boolean dead = !ballNull && match.getBallEntity().isDead();
-                    if (!ballNull) {
-                        org.bukkit.Location l = match.getBallEntity().getLocation();
-                        plugin.getLogger().info("[Track-Match-RB] active=" + isActive + " ballNull=" + ballNull +
-                                " dead=" + dead + " loc="
-                                + String.format("%.2f,%.2f,%.2f", l.getX(), l.getY(), l.getZ()));
-                    } else {
-                        plugin.getLogger().info("[Track-Match-RB] active=" + isActive + " ballNull=true");
-                    }
-                }
                 if (match.getBallEntity() == null || match.getBallEntity().isDead())
                     return;
                 checkGoalForMatch();
@@ -104,19 +91,6 @@ public class BallTrackingHandler {
         trackingTask = new BukkitRunnable() {
             @Override
             public void run() {
-                long now = System.currentTimeMillis();
-                if (now % 1000 < 50) {
-                    boolean ballNull = (match.getBallEntity() == null);
-                    boolean dead = !ballNull && match.getBallEntity().isDead();
-                    if (!ballNull) {
-                        org.bukkit.Location l = match.getBallEntity().getLocation();
-                        plugin.getLogger().info("[Track-Match-CY] active=" + isActive + " ballNull=" + ballNull +
-                                " dead=" + dead + " loc="
-                                + String.format("%.2f,%.2f,%.2f", l.getX(), l.getY(), l.getZ()));
-                    } else {
-                        plugin.getLogger().info("[Track-Match-CY] active=" + isActive + " ballNull=true");
-                    }
-                }
                 if (match.getBallEntity() == null || match.getBallEntity().isDead())
                     return;
                 checkGoalSecondForMatch();
@@ -136,19 +110,9 @@ public class BallTrackingHandler {
         Armadillo ball = game.getBall();
         Location ballLocation = ball.getLocation();
 
-        // 调试信息：输出球的位置（每20tick输出一次，避免日志过多）
-        if (System.currentTimeMillis() % 1000 < 50) { // 大约每秒输出一次
-            plugin.getLogger().info("球的位置: " + String.format("%.2f, %.2f, %.2f",
-                    ballLocation.getX(), ballLocation.getY(), ballLocation.getZ()));
-            plugin.getLogger().info("红门范围: " + game.getRedGoalMin() + " 到 " + game.getRedGoalMax());
-            plugin.getLogger().info("蓝门范围: " + game.getBlueGoalMin() + " 到 " + game.getBlueGoalMax());
-        }
-
         // 检查红队球门
         if (FootballFuncImpl.isInGoal(ballLocation, game.getRedGoalMin(), game.getRedGoalMax())) {
             // 蓝队进球（球进入红队球门）
-            plugin.getLogger().info(
-                    "检测到蓝队进球！球位置: " + ballLocation.getX() + ", " + ballLocation.getY() + ", " + ballLocation.getZ());
             onGoalScored(false);
             return;
         }
@@ -156,8 +120,6 @@ public class BallTrackingHandler {
         // 检查蓝队球门
         if (FootballFuncImpl.isInGoal(ballLocation, game.getBlueGoalMin(), game.getBlueGoalMax())) {
             // 红队进球（球进入蓝队球门）
-            plugin.getLogger().info(
-                    "检测到红队进球！球位置: " + ballLocation.getX() + ", " + ballLocation.getY() + ", " + ballLocation.getZ());
             onGoalScored(true);
             return;
         }
@@ -221,14 +183,10 @@ public class BallTrackingHandler {
         Location loc = ball.getLocation();
         // 第二球场同理：以设定的门框范围判定
         if (FootballFuncImpl.isInGoal(loc, match.getGoalMinB(), match.getGoalMaxB())) {
-            plugin.getLogger().info("[Goal-Match-CY] A scores at "
-                    + String.format("%.2f,%.2f,%.2f", loc.getX(), loc.getY(), loc.getZ()));
             match.onGoalByA();
             return;
         }
         if (FootballFuncImpl.isInGoal(loc, match.getGoalMinA(), match.getGoalMaxA())) {
-            plugin.getLogger().info("[Goal-Match-CY] B scores at "
-                    + String.format("%.2f,%.2f,%.2f", loc.getX(), loc.getY(), loc.getZ()));
             match.onGoalByB();
         }
     }
