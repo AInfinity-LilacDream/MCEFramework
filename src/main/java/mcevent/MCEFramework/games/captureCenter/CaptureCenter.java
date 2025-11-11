@@ -29,14 +29,14 @@ public class CaptureCenter extends MCEGame {
     private PlayerFallHandler playerFallHandler = new PlayerFallHandler();
     private List<BukkitRunnable> gameTask = new ArrayList<>();
     private CaptureCenterConfigParser captureCenterConfigParser = new CaptureCenterConfigParser();
-    
+
     // 游戏状态追踪
     private List<String> deathOrder = new ArrayList<>();
     private List<Team> teamEliminationOrder = new ArrayList<>();
 
     public CaptureCenter(String title, int id, String mapName, int round, boolean isMultiGame, String configFileName,
-            int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
-            int cycleStartDuration, int cycleEndDuration, int endDuration) {
+                         int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
+                         int cycleStartDuration, int cycleEndDuration, int endDuration) {
         super(title, id, mapName, round, isMultiGame, configFileName,
                 launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration,
                 cycleEndDuration, endDuration);
@@ -118,16 +118,16 @@ public class CaptureCenter extends MCEGame {
         // 使用统一的退出处理逻辑
         String playerName = player.getName();
         Team playerTeam = MCETeamUtils.getTeam(player);
-        
+
         MCEGameQuitHandler.handlePlayerQuit(this, player, () -> {
             // 添加到死亡顺序
             if (!deathOrder.contains(playerName)) {
                 deathOrder.add(playerName);
             }
-            
+
             // 检查队伍淘汰
             MCEGameQuitHandler.checkTeamElimination(playerName, playerTeam, teamEliminationOrder);
-            
+
             // 检查游戏结束条件：当只剩一队或没有队伍时，提前结束游戏
             checkGameEndCondition();
         });
@@ -178,12 +178,35 @@ public class CaptureCenter extends MCEGame {
         // 停止背景音乐
         MCEPlayerUtils.globalStopMusic();
 
-        // onEnd结束后立即清理展示板和资源，然后启动投票系统
-        setDelayedTask(getEndDuration(), () -> {
-            MCEPlayerUtils.globalClearFastBoard();
-            this.stop(); // 停止所有游戏资源
-            MCEMainController.returnToLobbyOrLaunchVoting();
-        });
+        // 启动结束倒计时
+        startEndCountdown();
+    }
+
+    private void startEndCountdown() {
+        new BukkitRunnable() {
+            int remainingSeconds = getEndDuration();
+
+            @Override
+            public void run() {
+                if (remainingSeconds <= 0) {
+                    // 倒计时结束：根据全局设置返回主城或启动投票
+                    MCEPlayerUtils.globalClearFastBoard();
+                    CaptureCenter.this.stop();
+                    MCEMainController.returnToLobbyOrLaunchVoting();
+                    cancel();
+                    return;
+                }
+                // 更新状态标题显示倒计时
+                int minutes = remainingSeconds / 60;
+                int seconds = remainingSeconds % 60;
+                String timeDisplay = String.format(" %02d:%02d", minutes, seconds);
+                CaptureCenterGameBoard gameBoard = (CaptureCenterGameBoard) getGameBoard();
+                gameBoard.setStateTitle("<red><bold> 游戏结束：</bold></red>" + timeDisplay);
+                gameBoard.globalDisplay(); // 更新显示
+
+                remainingSeconds--;
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // 每秒更新一次
     }
 
     @Override
