@@ -17,7 +17,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.Objects;
+import java.util.*;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
@@ -47,6 +47,10 @@ public class Football extends MCEGame {
     private int maxScore = 3;
     private boolean rbFinished = false; // 红蓝对局是否结束
     private boolean cyFinished = false; // 青黄对局是否结束
+
+    // 记录击球者，以便判定进球的球员、助攻的球员
+    private Deque<UUID> hitQueue = new ArrayDeque<>();
+    private Deque<UUID> hitQueue2 = new ArrayDeque<>();
 
     // 分离的对局局数与推进标记（四队模式使用）
     private int roundRB = 1;
@@ -142,8 +146,8 @@ public class Football extends MCEGame {
     private BukkitRunnable musicLoopTask;
 
     public Football(String title, int id, String mapName, int round, boolean isMultiGame, String configFileName,
-            int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
-            int cycleStartDuration, int cycleEndDuration, int endDuration) {
+                    int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
+                    int cycleStartDuration, int cycleEndDuration, int endDuration) {
         super(title, id, mapName, round, isMultiGame, configFileName,
                 launchDuration, introDuration, preparationDuration, cyclePreparationDuration,
                 cycleStartDuration, cycleEndDuration, endDuration);
@@ -404,10 +408,40 @@ public class Football extends MCEGame {
             int requiredScore = Math.max(3, this.maxScore); // 四队模式下至少打到3分
             if (redTeamScored) {
                 redScore++;
-                MCEMessenger.sendGlobalInfo("<red>红队进球！当前比分 红队 " + redScore + " : " + blueScore + " 蓝队</red>");
+                String redName = teams[0].teamName();
+                String blueName = teams[7].teamName();
+                Player lastHit = Bukkit.getPlayer(hitQueue.pop());
+                Player assist = Bukkit.getPlayer(hitQueue.pop());
+                hitQueue.clear();
+                boolean own = blueName.equals(MCETeamUtils.getTeam(lastHit).getName());
+                if (own) {
+                    MCEMessenger.sendGlobalInfo("<red>乌龙球！进球队员：</red><blue>" + lastHit.getName() + "</blue>");
+                } else {
+                    if (redName.equals(MCETeamUtils.getTeam(assist).getName()) && lastHit != assist) {
+                        MCEMessenger.sendGlobalInfo("<red>红队进球！进球队员：" + lastHit.getName() + "，助攻：" + assist.getName() + "</red>");
+                    } else {
+                        MCEMessenger.sendGlobalInfo("<red>红队进球！进球队员：" + lastHit.getName() + "</red>");
+                    }
+                }
+                MCEMessenger.sendGlobalInfo("<red>当前比分 红队 " + redScore + " : " + blueScore + " 蓝队</red>");
             } else {
                 blueScore++;
-                MCEMessenger.sendGlobalInfo("<blue>蓝队进球！当前比分 红队 " + redScore + " : " + blueScore + " 蓝队</blue>");
+                String redName = teams[0].teamName();
+                String blueName = teams[7].teamName();
+                Player lastHit = Bukkit.getPlayer(hitQueue.pop());
+                Player assist = Bukkit.getPlayer(hitQueue.pop());
+                hitQueue.clear();
+                boolean own = redName.equals(MCETeamUtils.getTeam(lastHit).getName());
+                if (own) {
+                    MCEMessenger.sendGlobalInfo("<blue>乌龙球！进球队员：</blue><red>" + lastHit.getName() + "</red>");
+                } else {
+                    if (blueName.equals(MCETeamUtils.getTeam(assist).getName()) && lastHit != assist) {
+                        MCEMessenger.sendGlobalInfo("<blue>蓝队进球！进球队员：" + lastHit.getName() + "，助攻：" + assist.getName() + "</blue>");
+                    } else {
+                        MCEMessenger.sendGlobalInfo("<blue>蓝队进球！进球队员：" + lastHit.getName() + "</blue>");
+                    }
+                }
+                MCEMessenger.sendGlobalInfo("<blue>当前比分 红队 " + redScore + " : " + blueScore + " 蓝队</blue>");
             }
             updateScoreboard();
             // 进球后立刻移除红蓝球并暂停该场处理器，避免3秒等待期间重复判定
@@ -458,10 +492,40 @@ public class Football extends MCEGame {
         // 两队模式：沿用原逻辑
         if (redTeamScored) {
             redScore++;
-            MCEMessenger.sendGlobalInfo("<red>红队进球！当前比分 红队 " + redScore + " : " + blueScore + " 蓝队</red>");
+            String redName = teams[0].teamName();
+            String blueName = teams[7].teamName();
+            Player lastHit = Bukkit.getPlayer(hitQueue.pop());
+            Player assist = Bukkit.getPlayer(hitQueue.pop());
+            hitQueue.clear();
+            boolean own = blueName.equals(MCETeamUtils.getTeam(lastHit).getName());
+            if (own) {
+                MCEMessenger.sendGlobalInfo("<red>乌龙球！进球队员：</red><blue>" + lastHit.getName() + "</blue>");
+            } else {
+                if (redName.equals(MCETeamUtils.getTeam(assist).getName()) && lastHit != assist) {
+                    MCEMessenger.sendGlobalInfo("<red>红队进球！进球队员：" + lastHit.getName() + "，助攻：" + assist.getName() + "</red>");
+                } else {
+                    MCEMessenger.sendGlobalInfo("<red>红队进球！进球队员：" + lastHit.getName() + "</red>");
+                }
+            }
+            MCEMessenger.sendGlobalInfo("<red>当前比分 红队 " + redScore + " : " + blueScore + " 蓝队</red>");
         } else {
             blueScore++;
-            MCEMessenger.sendGlobalInfo("<blue>蓝队进球！当前比分 红队 " + redScore + " : " + blueScore + " 蓝队</blue>");
+            String redName = teams[0].teamName();
+            String blueName = teams[7].teamName();
+            Player lastHit = Bukkit.getPlayer(hitQueue.pop());
+            Player assist = Bukkit.getPlayer(hitQueue.pop());
+            hitQueue.clear();
+            boolean own = redName.equals(MCETeamUtils.getTeam(lastHit).getName());
+            if (own) {
+                MCEMessenger.sendGlobalInfo("<blue>乌龙球！进球队员：</blue><red>" + lastHit.getName() + "</red>");
+            } else {
+                if (blueName.equals(MCETeamUtils.getTeam(assist).getName()) && lastHit != assist) {
+                    MCEMessenger.sendGlobalInfo("<blue>蓝队进球！进球队员：" + lastHit.getName() + "，助攻：" + assist.getName() + "</blue>");
+                } else {
+                    MCEMessenger.sendGlobalInfo("<blue>蓝队进球！进球队员：" + lastHit.getName() + "</blue>");
+                }
+            }
+            MCEMessenger.sendGlobalInfo("<blue>当前比分 红队 " + redScore + " : " + blueScore + " 蓝队</blue>");
         }
         updateScoreboard();
         // 两队模式同样：进球后立刻移除红蓝球并暂停处理器，避免重复判定
@@ -478,10 +542,40 @@ public class Football extends MCEGame {
     public void onGoalSecond(boolean cyanTeamScored) {
         if (cyanTeamScored) {
             cyanScore++;
-            MCEMessenger.sendGlobalInfo("<dark_aqua>青队进球！当前比分 青 " + cyanScore + " : " + yellowScore + " 黄</dark_aqua>");
+            String cyanName = teams[5].teamName();
+            String yellowName = teams[2].teamName();
+            Player lastHit = Bukkit.getPlayer(hitQueue2.pop());
+            Player assist = Bukkit.getPlayer(hitQueue2.pop());
+            hitQueue2.clear();
+            boolean own = yellowName.equals(MCETeamUtils.getTeam(lastHit).getName());
+            if (own) {
+                MCEMessenger.sendGlobalInfo("<dark_aqua>乌龙球！进球队员：</dark_aqua><yellow>" + lastHit.getName() + "</yellow>");
+            } else {
+                if (cyanName.equals(MCETeamUtils.getTeam(assist).getName()) && lastHit != assist) {
+                    MCEMessenger.sendGlobalInfo("<dark_aqua>青队进球！进球队员：" + lastHit.getName() + "，助攻：" + assist.getName() + "</dark_aqua>");
+                } else {
+                    MCEMessenger.sendGlobalInfo("<dark_aqua>青队进球！进球队员：" + lastHit.getName() + "</dark_aqua>");
+                }
+            }
+            MCEMessenger.sendGlobalInfo("<dark_aqua>当前比分 青队 " + cyanScore + " : " + yellowScore + " 黄队</dark_aqua>");
         } else {
             yellowScore++;
-            MCEMessenger.sendGlobalInfo("<yellow>黄队进球！当前比分 青 " + cyanScore + " : " + yellowScore + " 黄</yellow>");
+            String cyanName = teams[5].teamName();
+            String yellowName = teams[2].teamName();
+            Player lastHit = Bukkit.getPlayer(hitQueue2.pop());
+            Player assist = Bukkit.getPlayer(hitQueue2.pop());
+            hitQueue2.clear();
+            boolean own = cyanName.equals(MCETeamUtils.getTeam(lastHit).getName());
+            if (own) {
+                MCEMessenger.sendGlobalInfo("<yellow>乌龙球！进球队员：</yellow><dark_aqua>" + lastHit.getName() + "</dark_aqua>");
+            } else {
+                if (yellowName.equals(MCETeamUtils.getTeam(assist).getName()) && lastHit != assist) {
+                    MCEMessenger.sendGlobalInfo("<yellow>黄队进球！进球队员：" + lastHit.getName() + "，助攻：" + assist.getName() + "</yellow>");
+                } else {
+                    MCEMessenger.sendGlobalInfo("<yellow>黄队进球！进球队员：" + lastHit.getName() + "</yellow>");
+                }
+            }
+            MCEMessenger.sendGlobalInfo("<yellow>当前比分 青队 " + cyanScore + " : " + yellowScore + " 黄队</yellow>");
         }
         mcevent.MCEFramework.games.football.gameObject.FootballGameBoard gb = (mcevent.MCEFramework.games.football.gameObject.FootballGameBoard) getGameBoard();
         gb.updateScoresSecond(cyanScore, yellowScore);

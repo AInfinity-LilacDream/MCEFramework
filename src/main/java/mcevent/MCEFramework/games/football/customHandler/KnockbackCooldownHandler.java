@@ -57,15 +57,24 @@ public class KnockbackCooldownHandler implements Listener {
         if (!player.getScoreboardTags().contains("Participant"))
             return;
 
+        Entity damaged = event.getEntity();
+        boolean isAttackingBall = (damaged == game.getBall() || damaged == game.getBall2());
+
+        // 记录击球者的 UUID
+        if (isAttackingBall) {
+            if (damaged == game.getBall()) {
+                game.getHitQueue().push(player.getUniqueId());
+            } else {
+                game.getHitQueue2().push(player.getUniqueId());
+            }
+        }
+
         ItemStack item = player.getInventory().getItemInMainHand();
         Material itemType = item.getType();
 
         // 只处理有冷却的武器：BLAZE_ROD（击退3）和 BREEZE_ROD（击退7）
         if (itemType != Material.BLAZE_ROD && itemType != Material.BREEZE_ROD)
             return;
-
-        Entity damaged = event.getEntity();
-        boolean isAttackingBall = (damaged == game.getBall());
 
         UUID playerId = player.getUniqueId();
         long currentTime = System.currentTimeMillis();

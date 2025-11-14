@@ -7,6 +7,8 @@ import mcevent.MCEFramework.tools.MCETimerUtils;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /*
 TNTTagFuncImpl: 封装TNTTag游戏逻辑函数
 */
@@ -53,12 +55,10 @@ public class TNTTagFuncImpl {
             }
             
             MCEMessenger.sendGlobalText("<newline><red><bold>💀 死亡顺序：</bold></red>");
-            for (int i = 0; i < tnttag.getDeathOrder().size(); i++) {
-                String playerName = tnttag.getDeathOrder().get(i);
-                int position = tnttag.getDeathOrder().size() - i + 1; // 倒序排名
-                MCEMessenger.sendGlobalText("<gray>" + position + ". " + playerName + "</gray>");
-            }
-            
+            var reverse = tnttag.getDeathOrder().reversed();
+            var rank = new AtomicInteger(reverse.size());
+            reverse.forEach(str-> MCEMessenger.sendGlobalText("<gray>" + rank.getAndDecrement() + ". " + str + "</gray>"));
+
             MCEMessenger.sendGlobalText("<newline><aqua><bold>📊 游戏统计：</bold></aqua>");
             MCEMessenger.sendGlobalText("<yellow>总阶段数：" + tnttag.getCurrentPhase() + "</yellow>");
             MCEMessenger.sendGlobalText("<yellow>参与玩家：" + (tnttag.getAlivePlayers().size() + tnttag.getDeathOrder().size()) + "</yellow>");
