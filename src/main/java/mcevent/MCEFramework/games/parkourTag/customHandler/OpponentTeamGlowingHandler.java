@@ -1,13 +1,5 @@
 package mcevent.MCEFramework.games.parkourTag.customHandler;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.WrappedDataValue;
-import com.comphenix.protocol.wrappers.WrappedDataWatcher;
-import lombok.Setter;
-import mcevent.MCEFramework.MCEMainController;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 
 import mcevent.MCEFramework.generalGameObject.MCEResumableEventHandler;
@@ -17,60 +9,87 @@ import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /*
-敌对队伍发光处理器
+敌对队伍发光处理器 - 使用 NMS 实现发光效果
  */
 public class OpponentTeamGlowingHandler extends MCEResumableEventHandler {
-    private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
 
-    private void setGlowing(Player target, Player viewer) {
-        PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA);
-        packet.getIntegers().write(0, target.getEntityId());
+    /**
+     * 在每个回合中，让抓捕者看到对方队伍的逃脱者发光
+     * 使用 MCETeamUtils 中的 NMS 发光方法
+     */
+    public void toggleGlowing() {
+        if (isSuspended()) {
+            return;
+        }
 
-        List<WrappedDataValue> dataValues = new ArrayList<>();
-        dataValues.add(
-                new WrappedDataValue(
-                        0,
-                        WrappedDataWatcher.Registry.get(Byte.class),
-                        (byte) 0x40));
-        packet.getDataValueCollectionModifier().write(0, dataValues);
+        // 遍历所有在线玩家
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            // 只处理抓捕者
+            if (!player.getScoreboardTags().contains("chaser")) {
+                continue;
+            }
 
-        try {
-            protocolManager.sendServerPacket(viewer, packet);
-        } catch (Exception e) {
-            e.printStackTrace();
+            // 获取抓捕者所在的队伍
+            Team chaserTeam = MCETeamUtils.getTeam(player);
+            if (chaserTeam == null) {
+                continue;
+            }
+
+            // 获取对手队伍
+            Team opponentTeam = pkt.getOpponentTeam(chaserTeam);
+            if (opponentTeam == null) {
+                continue;
+            }
+
+            // 获取对手队伍中的所有逃脱者
+            for (Player runner : MCETeamUtils.getPlayers(opponentTeam)) {
+                // 跳过无效玩家和旁观者
+                if (runner == null || runner.getGameMode() == GameMode.SPECTATOR) {
+                    continue;
+                }
+
+                // 只让逃脱者发光（排除对手队伍的抓捕者）
+                if (runner.getScoreboardTags().contains("runner")) {
+                    // 使用 MCETeamUtils 的 NMS 发光方法
+                    MCETeamUtils.setPlayerGlowingNMS(runner, player, true);
+                }
+            }
         }
     }
 
-    public void toggleGlowing() {
-        if (isSuspended())
-            return;
-
+    /**
+     * 清除所有发光效果（在回合结束时调用）
+     */
+    public void clearGlowing() {
+        // 遍历所有在线玩家
         for (Player player : Bukkit.getOnlinePlayers()) {
-            Team team = MCETeamUtils.getTeam(player);
-            if (team == null)
+            // 只处理抓捕者
+            if (!player.getScoreboardTags().contains("chaser")) {
                 continue;
+            }
 
-            Team opponentTeam = pkt.getOpponentTeam(team);
-            if (opponentTeam == null)
+            // 获取抓捕者所在的队伍
+            Team chaserTeam = MCETeamUtils.getTeam(player);
+            if (chaserTeam == null) {
                 continue;
+            }
 
-            if (player.getScoreboardTags().contains("runner")) {
-                for (Player runner : MCETeamUtils.getPlayers(team)) {
-                    if (runner == null || runner.getGameMode() == GameMode.SPECTATOR)
-                        continue;
-                    if (runner.getScoreboardTags().contains("runner"))
-                        setGlowing(runner, player);
+            // 获取对手队伍
+            Team opponentTeam = pkt.getOpponentTeam(chaserTeam);
+            if (opponentTeam == null) {
+                continue;
+            }
+
+            // 清除对手队伍中所有逃脱者的发光效果
+            for (Player runner : MCETeamUtils.getPlayers(opponentTeam)) {
+                if (runner == null || runner.getGameMode() == GameMode.SPECTATOR) {
+                    continue;
                 }
-            } else if (player.getScoreboardTags().contains("chaser")) {
-                for (Player runner : MCETeamUtils.getPlayers(opponentTeam)) {
-                    if (runner == null || runner.getGameMode() == GameMode.SPECTATOR)
-                        continue;
-                    if (runner.getScoreboardTags().contains("runner"))
-                        setGlowing(runner, player);
+
+                if (runner.getScoreboardTags().contains("runner")) {
+                    // 清除发光效果
+                    MCETeamUtils.setPlayerGlowingNMS(runner, player, false);
                 }
             }
         }

@@ -41,13 +41,24 @@ public class ParkourTagGameBoard extends MCEGameBoard {
             FastBoard board = new FastBoard(player);
             board.updateTitle(MiniMessage.miniMessage().deserialize(getMainTitle()));
             
-            // 构建剩余玩家显示行（仅在显示且对手队伍有效时）
+            // 构建剩余玩家显示行（仅在显示时）
             net.kyori.adventure.text.Component survivePlayerLine = null;
-            if (pkt.isShowSurvivePlayer() && opponentTeam != null) {
-                int opponentTeamId = pkt.getTeamId(opponentTeam);
-                if (opponentTeamId >= 0 && opponentTeamId < pkt.getSurvivePlayerTot().size()) {
+            if (pkt.isShowSurvivePlayer() && playerTeam != null) {
+                boolean isChaser = player.getScoreboardTags().contains("chaser");
+                boolean isRunner = player.getScoreboardTags().contains("runner");
+                
+                int teamId = -1;
+                if (isChaser && opponentTeam != null) {
+                    // 抓捕者显示对手队伍的剩余玩家数
+                    teamId = pkt.getTeamId(opponentTeam);
+                } else if (isRunner) {
+                    // 逃脱者显示自己队伍的剩余玩家数
+                    teamId = pkt.getTeamId(playerTeam);
+                }
+                
+                if (teamId >= 0 && teamId < pkt.getSurvivePlayerTot().size()) {
                     survivePlayerLine = MiniMessage.miniMessage().deserialize("<green><bold> 剩余玩家: </bold></green>" +
-                            pkt.getSurvivePlayerTot().get(opponentTeamId));
+                            pkt.getSurvivePlayerTot().get(teamId));
                 }
             }
             

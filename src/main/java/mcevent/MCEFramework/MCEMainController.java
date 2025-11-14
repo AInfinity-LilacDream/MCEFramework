@@ -224,6 +224,7 @@ public final class MCEMainController extends JavaPlugin {
         commandManager.registerCommand(new ToggleFriendlyFire()); // togglefriendlyfire
         commandManager.registerCommand(new GiveSpecialItem()); // giveSpecialItem
         commandManager.registerCommand(new SummonGhost()); // summonGhost
+        commandManager.registerCommand(new Test()); // test
 
         getLogger().info("合合启动了");
 

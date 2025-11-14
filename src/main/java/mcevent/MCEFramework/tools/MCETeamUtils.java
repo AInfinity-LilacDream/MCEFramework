@@ -3,6 +3,7 @@ package mcevent.MCEFramework.tools;
 import mcevent.MCEFramework.miscellaneous.Constants;
 import mcevent.MCEFramework.miscellaneous.TeamWithDetails;
 import org.bukkit.Bukkit;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -10,7 +11,15 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /*
@@ -135,5 +144,87 @@ public class MCETeamUtils {
 
     public static boolean isFriendlyFireEnabled() {
         return mcevent.MCEFramework.MCEMainController.getFriendlyFireHandler().isSuspended(); // suspended=true 代表友伤启用
+    }
+
+    // ========== 队伍发光效果工具方法（使用 NMS） ==========
+    
+    /**
+     * 使用 NMS 为指定玩家设置发光效果（对特定观察者可见）
+     * 根据 SpigotMC 论坛的正确实现方式
+     * @param target 目标玩家（要发光的玩家）
+     * @param viewer 观察者（能看到发光的玩家）
+     * @param glowing 是否发光
+     */
+    public static void setPlayerGlowingNMS(Player target, Player viewer, boolean glowing) {
+        if (target == null || viewer == null) {
+            return;
+        }
+        
+        try {
+            // 获取 NMS 玩家对象
+            CraftPlayer craftTarget = (CraftPlayer) target;
+            CraftPlayer craftViewer = (CraftPlayer) viewer;
+            ServerPlayer nmsTarget = craftTarget.getHandle();
+            ServerPlayer nmsViewer = craftViewer.getHandle();
+            
+            // 设置发光字节值（0x40 = 第6位，表示发光）
+            byte glowingByte = glowing ? (byte) 0x40 : (byte) 0x00;
+            
+            // 创建数据值列表
+            List<SynchedEntityData.DataValue<?>> eData = new ArrayList<>();
+            
+            // 使用 DataValue.create() 方法创建数据值
+            // 实体标志在索引 0，使用 BYTE 序列化器
+            eData.add(SynchedEntityData.DataValue.create(
+                new EntityDataAccessor<>(0, EntityDataSerializers.BYTE),
+                glowingByte
+            ));
+            
+            // 创建并发送实体元数据包
+            ClientboundSetEntityDataPacket metadata = new ClientboundSetEntityDataPacket(
+                nmsTarget.getId(),
+                eData
+            );
+            
+            // 检查连接是否有效
+            if (nmsViewer.connection == null) {
+                return;
+            }
+            
+            // 发送数据包给观察者
+            nmsViewer.connection.send(metadata);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 为队伍设置发光效果（队伍内的玩家可以看到队友发光）
+     * @param team 目标队伍
+     * @param glowing 是否发光
+     */
+    public static void setTeamGlowing(Team team, boolean glowing) {
+        if (team == null) return;
+        
+        List<Player> teamPlayers = getPlayers(team);
+        
+        // 为队伍内的每个玩家设置发光效果
+        // 让队伍内的每个玩家都能看到其他队友发光
+        for (Player target : teamPlayers) {
+            for (Player viewer : teamPlayers) {
+                if (!target.equals(viewer)) {
+                    setPlayerGlowingNMS(target, viewer, glowing);
+                }
+            }
+        }
+    }
+    
+    /**
+     * 清除所有队伍的发光效果
+     */
+    public static void clearAllTeamGlowing() {
+        for (Team team : Bukkit.getScoreboardManager().getMainScoreboard().getTeams()) {
+            setTeamGlowing(team, false);
+        }
     }
 }

@@ -180,10 +180,12 @@ public class ParkourTag extends MCEGame {
         playerCaughtHandler.start();
         MCEWorldUtils.enablePVP();
         opponentTeamGlowingHandler.start();
+        
         // 确保发光任务正在运行（如果被取消了，重新启动）
         if (glowingTask == null || glowingTask.isCancelled()) {
             glowingTask = MCETimerUtils.setFramedTask(opponentTeamGlowingHandler::toggleGlowing);
         }
+        
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
         resetChoiceRoom(parkourTagConfigParser);
         showSurvivePlayer = true;
@@ -214,6 +216,8 @@ public class ParkourTag extends MCEGame {
     public void onCycleEnd() {
         plugin.getLogger().info("ParkourTag: onCycleEnd() 被调用 - 回合结束");
         opponentTeamGlowingHandler.suspend();
+        // 清除所有发光效果
+        opponentTeamGlowingHandler.clearGlowing();
         showSurvivePlayer = false;
         // 结束回合时停止背景音乐
         MCEPlayerUtils.globalStopMusic();
@@ -246,6 +250,8 @@ public class ParkourTag extends MCEGame {
     public void stop() {
         super.stop();
         opponentTeamGlowingHandler.suspend();
+        // 清除所有发光效果
+        opponentTeamGlowingHandler.clearGlowing();
         playerCaughtHandler.suspend();
         showSurvivePlayer = false;
         if (pktSaturationTask != null) {

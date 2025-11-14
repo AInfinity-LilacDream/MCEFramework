@@ -131,6 +131,7 @@ public class ParkourTagFuncImpl {
     }
 
     // 确保每个队伍有且只有一个抓捕者；若无则随机指定，并提示双方队伍
+    // 同时给所有非抓捕者设置 runner 标签
     protected static void ensureChasersSelectedAndNotify() {
         int teamTotal = MCETeamUtils.getActiveTeamCount();
         for (int i = 0; i < teamTotal; i += 2) {
@@ -156,6 +157,7 @@ public class ParkourTagFuncImpl {
                             "你们未选择抓捕者，系统已随机指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
                     MCEMessenger.sendInfoToTeam(team2,
                             team1.getName() + " 未选择抓捕者，系统已指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
+                    team1Chaser = selected; // 更新 team1Chaser 引用
                 }
             }
 
@@ -173,6 +175,44 @@ public class ParkourTagFuncImpl {
                             "你们未选择抓捕者，系统已随机指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
                     MCEMessenger.sendInfoToTeam(team1,
                             team2.getName() + " 未选择抓捕者，系统已指派 " + MCEPlayerUtils.getColoredPlayerName(selected));
+                    team2Chaser = selected; // 更新 team2Chaser 引用
+                }
+            }
+
+            // 给所有非抓捕者设置 runner 标签
+            // 处理 team1
+            if (team1Chaser != null) {
+                ArrayList<Player> t1Players = MCETeamUtils.getPlayers(team1);
+                for (Player player : t1Players) {
+                    // 只处理参与者
+                    if (player.getScoreboardTags().contains("Participant")) {
+                        if (player.equals(team1Chaser)) {
+                            // 确保抓捕者没有 runner 标签
+                            player.removeScoreboardTag("runner");
+                        } else {
+                            // 给非抓捕者设置 runner 标签
+                            player.removeScoreboardTag("chaser"); // 确保不是抓捕者
+                            player.addScoreboardTag("runner");
+                        }
+                    }
+                }
+            }
+
+            // 处理 team2
+            if (team2Chaser != null) {
+                ArrayList<Player> t2Players = MCETeamUtils.getPlayers(team2);
+                for (Player player : t2Players) {
+                    // 只处理参与者
+                    if (player.getScoreboardTags().contains("Participant")) {
+                        if (player.equals(team2Chaser)) {
+                            // 确保抓捕者没有 runner 标签
+                            player.removeScoreboardTag("runner");
+                        } else {
+                            // 给非抓捕者设置 runner 标签
+                            player.removeScoreboardTag("chaser"); // 确保不是抓捕者
+                            player.addScoreboardTag("runner");
+                        }
+                    }
                 }
             }
         }
