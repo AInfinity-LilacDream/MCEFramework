@@ -24,7 +24,7 @@ public class VotingGUI {
 
     // GUI布局配置
     private static final int GUI_SIZE = 27; // 3行
-    private static final int[] GAME_SLOTS = { 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15 }; // 游戏ID 0-10, 12, 13 对应的槽位，不包括投票系统
+    private static final int[] GAME_SLOTS = { 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 19 }; // 游戏ID 0-10、12、13、14 对应的槽位
     private static final int SKIP_INTRO_SLOT = 16; // 跳过Intro选项的槽位
 
     // 游戏对应的物品（按照Constants中的游戏ID顺序，ID 12和13在最后）
@@ -41,18 +41,19 @@ public class VotingGUI {
             Material.SNOWBALL, // ID 9: 冰雪掘战 - 雪球
             Material.COOKED_BEEF, // ID 10: 饥饿游戏 - 牛排
             Material.SNOW_BLOCK, // ID 12: 冰雪乱斗 - 雪块
-            Material.ENDER_PEARL // ID 13: 阴间游戏 - 末影珍珠
+            Material.ENDER_PEARL, // ID 13: 阴间游戏 - 末影珍珠
+            Material.BRICKS // ID 14: 墙洞洞墙 - 砖块
     };
 
     // 游戏名称（按照Constants中的游戏ID顺序，ID 12和13在最后）
     private static final String[] GAME_NAMES = {
-            "瓮中捉鳖", "色盲狂热", "Coming soon...", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏", "冰雪乱斗", "阴间游戏"
+            "瓮中捉鳖", "色盲狂热", "Coming soon...", "落沙漫步", "占山为王", "少林足球", "惊天矿工团", "暗矢狂潮", "丢锅大战", "冰雪掘战", "饥饿游戏", "冰雪乱斗", "阴间游戏", "墙洞洞墙"
     };
 
     // 游戏描述
     private static final String[] GAME_DESCRIPTIONS = {
             "跑酷追逐游戏", "彩色平台生存", "暂不可用", "沙子下落生存", "占点竞技", "足球竞技", "挖掘生存大逃杀", "弩箭战斗竞技", "TNT传递生存", "雪球战斗竞技", "生存大逃杀",
-            "超级掘一死战", "随机交换位置生存"
+            "超级掘一死战", "随机交换位置生存", "推墙闯关生存"
     };
 
     // 游戏ID到数组索引的映射（因为ID 12和13不在连续序列中）
@@ -62,6 +63,9 @@ public class VotingGUI {
         }
         if (gameId == 13) {
             return 12; // ID 13映射到数组索引12
+        }
+        if (gameId == 14) {
+            return 13; // ID 14映射到数组索引13
         }
         if (gameId >= 0 && gameId <= 10) {
             return gameId; // ID 0-10直接映射
@@ -142,13 +146,15 @@ public class VotingGUI {
         if (slotIndex < 0 || slotIndex >= GAME_SLOTS.length) {
             return -1;
         }
-        // 前11个槽位对应ID 0-10，第12个槽位对应ID 12，第13个槽位对应ID 13
+        // 前11个槽位对应ID 0-10，第12个槽位对应ID 12，第13个槽位对应ID 13，第14个槽位对应ID 14
         if (slotIndex < 11) {
             return slotIndex;
         } else if (slotIndex == 11) {
             return 12; // hyperSpleef
         } else if (slotIndex == 12) {
             return 13; // underworldGame
+        } else if (slotIndex == 13) {
+            return 14; // 墙洞洞墙
         }
         return -1;
     }

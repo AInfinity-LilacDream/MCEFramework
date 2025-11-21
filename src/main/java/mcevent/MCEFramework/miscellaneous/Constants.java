@@ -13,6 +13,7 @@ import mcevent.MCEFramework.games.survivalGame.SurvivalGame;
 import mcevent.MCEFramework.games.tntTag.TNTTag;
 import mcevent.MCEFramework.games.underworldGame.UnderworldGame;
 import mcevent.MCEFramework.games.votingSystem.VotingSystem;
+import mcevent.MCEFramework.games.hitWall.HitWall;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -39,6 +40,7 @@ public class Constants {
         public static final int SURVIVAL_GAME_ID = 10;
         public static final int VOTING_SYSTEM_ID = 11;
         public static final int UNDERWORLD_GAME_ID = 13;
+        public static final int HIT_WALL_ID = 14;
 
         public static final TeamWithDetails[] teams = {
                         new TeamWithDetails("<red>红色山楂</red>", "红色山楂", "红队", NamedTextColor.RED, "<red>", "</red>"),
@@ -81,6 +83,7 @@ public class Constants {
                         "sg_fdu",
                         "spleef_new",
                         "lobby", // 投票系统使用主城
+                        "hitwall_classic",
         };
 
         // 全局的游戏单例
@@ -98,6 +101,7 @@ public class Constants {
         public static SurvivalGame survivalGame;
         public static VotingSystem votingSystem;
         public static UnderworldGame underworldGame;
+        public static HitWall hitWall;
 
         // ParkourTag位置现在从配置文件动态获取，不再使用硬编码
 

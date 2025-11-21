@@ -72,6 +72,9 @@ public class MCEConfigParser {
 
         for (String line : allLines) {
             String trimmedLine = line.trim();
+            if (trimmedLine.startsWith("\uFEFF")) {
+                trimmedLine = trimmedLine.substring(1);
+            }
 
             // 检查是否进入 [Intro] 部分
             if (trimmedLine.equals("[Intro]")) {
@@ -79,7 +82,11 @@ public class MCEConfigParser {
                 continue;
             }
 
-            if (line.startsWith("[")) {
+            String rawForSectionCheck = line.trim();
+            if (rawForSectionCheck.startsWith("\uFEFF")) {
+                rawForSectionCheck = rawForSectionCheck.substring(1);
+            }
+            if (rawForSectionCheck.startsWith("[")) {
                 inIntroSection = false;
                 if (inQuote) {
                     inQuote = false;

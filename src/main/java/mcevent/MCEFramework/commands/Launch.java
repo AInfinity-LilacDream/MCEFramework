@@ -254,6 +254,24 @@ public class Launch extends BaseCommand {
             MCEMainController.immediateLaunchGame(underworldGame.getId(), false);
     }
 
+    @Subcommand("hitWall")
+    public void launchHitWall(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        } else
+            MCEMainController.immediateLaunchGame(hitWall.getId(), true);
+    }
+
+    @Subcommand("hitWallNoIntro")
+    public void launchHitWallNoIntro(CommandSender sender) {
+        if (checkGameRunning()) {
+            if (sender instanceof Player)
+                MCEMessenger.sendInfoToPlayer("当前有游戏正在运行中！", (Player) sender);
+        } else
+            MCEMainController.immediateLaunchGame(hitWall.getId(), false);
+    }
+
     @Subcommand("vote")
     public void launchVoting(CommandSender sender) {
         if (checkGameRunning()) {

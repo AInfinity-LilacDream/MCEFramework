@@ -21,6 +21,7 @@ import mcevent.MCEFramework.games.crazyMiner.CrazyMiner;
 import mcevent.MCEFramework.games.discoFever.DiscoFever;
 import mcevent.MCEFramework.games.extractOwn.ExtractOwn;
 import mcevent.MCEFramework.games.football.Football;
+import mcevent.MCEFramework.games.hitWall.HitWall;
 import mcevent.MCEFramework.games.musicDodge.MusicDodge;
 import mcevent.MCEFramework.games.parkourTag.ParkourTag;
 import mcevent.MCEFramework.games.sandRun.SandRun;
@@ -36,6 +37,8 @@ import mcevent.MCEFramework.tools.MCEGlowingEffectManager;
 import mcevent.MCEFramework.games.settings.GameSettingsState;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -115,6 +118,7 @@ public final class MCEMainController extends JavaPlugin {
         String hyperSpleefMapName = readMapNameFromConfig("MCEConfig/HyperSpleef.cfg", mapNames[11]);
         String underworldGameMapName = "world"; // 阴间游戏动态生成世界，使用默认世界名作为占位符
         String votingMapName = mapNames[12]; // 投票系统直接使用lobby
+        String hitWallMapName = readMapNameFromConfig("MCEConfig/HitWall.cfg", mapNames[13]);
 
         // 使用配置文件中的地图名称创建游戏实例
         pkt = new ParkourTag("瓮中捉鳖", PARKOUR_TAG_ID, pktMapName, true, "MCEConfig/ParkourTag.cfg",
@@ -147,6 +151,8 @@ public final class MCEMainController extends JavaPlugin {
                 2, 0, 0, 0, 30, 0, 3);
         underworldGame = new UnderworldGame("阴间游戏", UNDERWORLD_GAME_ID, underworldGameMapName, false, "MCEConfig/UnderworldGame.cfg",
                 5, 55, 15, 0, Integer.MAX_VALUE, 25, 25);
+        hitWall = new HitWall("墙洞洞墙", HIT_WALL_ID, hitWallMapName, 1, false, "MCEConfig/HitWall.cfg",
+                5, 45, 15, 5, 150, 15, 25);
 
         // 初始化游戏列表（确保索引与ID一致）
         gameList.add(pkt); // ID 0
@@ -163,6 +169,7 @@ public final class MCEMainController extends JavaPlugin {
         gameList.add(votingSystem); // ID 11
         gameList.add(hyperSpleef); // ID 12
         gameList.add(underworldGame); // ID 13
+        gameList.add(hitWall); // ID 14
 
         // 全面清理所有玩家状态（在线和离线）
         cleanupAllPlayersOnStartup();
@@ -549,7 +556,9 @@ public final class MCEMainController extends JavaPlugin {
         // 重置食物和生命值
         player.setFoodLevel(20);
         player.setSaturation(20);
-        player.setHealth(player.getMaxHealth());
+        AttributeInstance maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
+        double targetHealth = maxHealth != null ? maxHealth.getValue() : 20.0;
+        player.setHealth(targetHealth);
     }
 
     /**

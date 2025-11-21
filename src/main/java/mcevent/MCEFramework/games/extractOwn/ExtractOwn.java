@@ -13,6 +13,7 @@ import mcevent.MCEFramework.tools.*;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
@@ -204,7 +205,7 @@ public class ExtractOwn extends MCEGame {
                     && this.getWorldName().equals(player.getWorld().getName())) {
                 player.removeScoreboardTag("dead");
                 player.setGameMode(GameMode.SURVIVAL);
-                player.setHealth(player.getMaxHealth());
+                player.setHealth(resolveMaxHealth(player));
                 player.getInventory().clear();
             } else {
                 player.setGameMode(GameMode.SPECTATOR);
@@ -411,7 +412,7 @@ public class ExtractOwn extends MCEGame {
             player.setGameMode(GameMode.SURVIVAL);
 
             // 回满血
-            player.setHealth(player.getMaxHealth());
+            player.setHealth(resolveMaxHealth(player));
 
             // 清空背包
             player.getInventory().clear();
@@ -772,5 +773,13 @@ public class ExtractOwn extends MCEGame {
             autoHealingTask = null;
             plugin.getLogger().info("=== 暗矢狂潮：自动回血功能已停止 ===");
         }
+    }
+
+    private static double resolveMaxHealth(Player player) {
+        if (player == null) {
+            return 20.0;
+        }
+        AttributeInstance attribute = player.getAttribute(Attribute.MAX_HEALTH);
+        return attribute != null ? attribute.getValue() : 20.0;
     }
 }
