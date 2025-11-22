@@ -151,8 +151,8 @@ public class SandFallHandler implements Listener {
                     event.setCancelled(true);
 
                     // 统一淘汰处理
-                    mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(player);
                     sandRun.getDeathOrder().put(player.getUniqueId(), System.currentTimeMillis());
+                    mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(player);
 
                     // SandRun 特有：更新游戏计分板
                     SandRunFuncImpl.updateGameBoardOnPlayerDeath(player);

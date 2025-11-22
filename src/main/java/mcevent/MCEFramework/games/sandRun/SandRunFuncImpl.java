@@ -153,7 +153,7 @@ public class SandRunFuncImpl {
                     var dieTime = sandRun.getDeathOrder().remove(uuid);
                     var surviveTime = dieTime - sandRun.getStartTime();
                     Duration duration = Duration.ofSeconds(surviveTime / 1000);
-                    var time = String.format("%d:%02d%n", duration.toMinutesPart(), duration.toSecondsPart());
+                    var time = String.format("%d:%02d", duration.toMinutesPart(), duration.toSecondsPart());
                     String coloredName = MCEPlayerUtils.getColoredPlayerName(player);
                     String ordinal = number2OrdinalString(rank);
                     MCEMessenger.sendGlobalText("<red>" + ordinal + " </red>" + coloredName + "<red> 淘汰于 " + time + "</red>");
