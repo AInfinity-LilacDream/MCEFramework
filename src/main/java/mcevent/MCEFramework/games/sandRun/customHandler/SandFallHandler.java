@@ -17,8 +17,7 @@ import org.bukkit.scoreboard.Team;
 import java.util.HashMap;
 import java.util.Map;
 
-import static mcevent.MCEFramework.miscellaneous.Constants.teams;
-import static mcevent.MCEFramework.miscellaneous.Constants.plugin;
+import static mcevent.MCEFramework.miscellaneous.Constants.*;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 
 public class SandFallHandler implements Listener {
@@ -152,6 +151,7 @@ public class SandFallHandler implements Listener {
                     event.setCancelled(true);
 
                     // 统一淘汰处理
+                    sandRun.getDeathOrder().put(player.getUniqueId(), System.currentTimeMillis());
                     mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(player);
 
                     // SandRun 特有：更新游戏计分板

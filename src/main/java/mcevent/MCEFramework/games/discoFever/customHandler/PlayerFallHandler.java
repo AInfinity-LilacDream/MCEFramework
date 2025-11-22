@@ -90,6 +90,8 @@ public class PlayerFallHandler extends MCEResumableEventHandler implements Liste
         MCEMessenger.sendGlobalInfo(pname + " <gray>已被淘汰！</gray>");
         MCEPlayerUtils.globalPlaySound("minecraft:player_eliminated");
 
+        discoFever.getDeathOrder().put(player.getUniqueId(), discoFever.getPlatform().get());
+
         // 更新展示板：玩家与队伍剩余
         if (discoFever.getGameBoard() instanceof DiscoFeverGameBoard board) {
             Team team = MCETeamUtils.getTeam(player);

@@ -115,8 +115,8 @@ public class CaptureCenterFuncImpl {
      * 复制世界区域
      */
     private static void copyWorldRegion(World sourceWorld, World targetWorld,
-            int minX, int minY, int minZ,
-            int maxX, int maxY, int maxZ) {
+                                        int minX, int minY, int minZ,
+                                        int maxX, int maxY, int maxZ) {
         int blocksProcessed = 0;
         int totalBlocks = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
 
@@ -265,7 +265,9 @@ public class CaptureCenterFuncImpl {
         gameBoard.updateTeamScores(teamScores);
     }
 
-    /** 启用占点计分 */
+    /**
+     * 启用占点计分
+     */
     public static void enableScoring(CaptureCenter game) {
         scoringEnabled = true;
 
@@ -385,7 +387,9 @@ public class CaptureCenterFuncImpl {
         }
     }
 
-    /** 更新ActionBar显示 */
+    /**
+     * 更新ActionBar显示
+     */
     private static void updateActionBar() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             // 计算玩家当前加分速度并播放对应音效
@@ -399,7 +403,9 @@ public class CaptureCenterFuncImpl {
         }
     }
 
-    /** 计算玩家当前的加分速度 */
+    /**
+     * 计算玩家当前的加分速度
+     */
     private static int calculatePlayerScoringSpeed(Player player) {
         if (player.getGameMode() != GameMode.SURVIVAL)
             return 0;
@@ -412,7 +418,9 @@ public class CaptureCenterFuncImpl {
         return calculateCapturePoints(loc);
     }
 
-    /** 根据加分速度播放不同音调的提示音 */
+    /**
+     * 根据加分速度播放不同音调的提示音
+     */
     private static void playSpeedBasedSound(Player player, int scoringSpeed) {
         if (scoringSpeed <= 0)
             return; // 没有得分时不播放音效
@@ -430,7 +438,9 @@ public class CaptureCenterFuncImpl {
         }
     }
 
-    /** 计算队伍得分占比 */
+    /**
+     * 计算队伍得分占比
+     */
     private static String calculateTeamScorePercentage(Player player) {
         // 确保队伍分数已初始化
         if (teamScores.isEmpty() && captureCenter.getActiveTeams() != null) {
@@ -451,7 +461,9 @@ public class CaptureCenterFuncImpl {
         return String.format("%.1f%%", percentage);
     }
 
-    /** 开始平台收缩 */
+    /**
+     * 开始平台收缩
+     */
     public static void startPlatformShrinking(CaptureCenter game) {
         // 30秒后开始第一层收缩，之后每30秒收缩一层，直到剩余60秒时停止
         scheduleLayerShrinking(game, BOTTOM_LAYER_Y, 0); // 立即开始第一层
@@ -461,7 +473,9 @@ public class CaptureCenterFuncImpl {
         // 游戏剩余60秒时停止收缩（总时长180秒，所以120秒后不再收缩）
     }
 
-    /** 安排层级收缩 */
+    /**
+     * 安排层级收缩
+     */
     private static void scheduleLayerShrinking(CaptureCenter game, int layerY, int delaySeconds) {
         game.getGameTask().add(MCETimerUtils.setDelayedTask(delaySeconds, () -> {
             int layerNumber = layerY - BOTTOM_LAYER_Y + 1;
@@ -472,7 +486,9 @@ public class CaptureCenterFuncImpl {
         }));
     }
 
-    /** 收缩指定层级 */
+    /**
+     * 收缩指定层级
+     */
     private static void shrinkLayer(int layerY, CaptureCenter game) {
         World world = Bukkit.getWorld(captureCenter.getWorldName());
         if (world == null)
@@ -480,7 +496,9 @@ public class CaptureCenterFuncImpl {
         flashLayerWarning(world, layerY, game);
     }
 
-    /** 闪烁层级警告 */
+    /**
+     * 闪烁层级警告
+     */
     private static void flashLayerWarning(World world, int layerY, CaptureCenter game) {
         Map<Location, org.bukkit.block.data.BlockData> originalBlocks = new HashMap<>();
         for (int x = MAP_MIN_X; x <= MAP_MAX_X; x++) {
@@ -527,7 +545,9 @@ public class CaptureCenterFuncImpl {
         flashTask.runTaskTimer(plugin, 0L, 10L);
     }
 
-    /** 移除指定层级的方块 */
+    /**
+     * 移除指定层级的方块
+     */
     private static void removeLayer(World world, int layerY) {
         for (int x = MAP_MIN_X; x <= MAP_MAX_X; x++) {
             for (int z = MAP_MIN_Z; z <= MAP_MAX_Z; z++) {
@@ -537,7 +557,9 @@ public class CaptureCenterFuncImpl {
         }
     }
 
-    /** 清理游戏任务 */
+    /**
+     * 清理游戏任务
+     */
     public static void clearGameTasks(CaptureCenter game) {
         for (BukkitRunnable task : game.getGameTask()) {
             task.cancel();
@@ -570,57 +592,48 @@ public class CaptureCenterFuncImpl {
         scoringEnabled = false;
     }
 
-    /** 发送获胜消息 */
+    /**
+     * 发送获胜消息
+     */
     public static void sendWinningMessage() {
-        List<Player> survivingPlayers = new ArrayList<>();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() == GameMode.SURVIVAL) {
-                survivingPlayers.add(player);
-            }
-        }
-
-        if (!survivingPlayers.isEmpty()) {
-            StringBuilder survivorMessage = new StringBuilder();
-            for (int i = 0; i < survivingPlayers.size(); i++) {
-                survivorMessage.append(MCEPlayerUtils.getColoredPlayerName(survivingPlayers.get(i)));
-                if (i == survivingPlayers.size() - 2 && survivingPlayers.size() > 1) {
-                    survivorMessage.append("和");
-                } else if (i < survivingPlayers.size() - 1) {
-                    survivorMessage.append(", ");
-                }
-            }
-            survivorMessage.append(" <aqua>是最后存活的玩家！</aqua>");
-            MCEMessenger.sendGlobalInfo(survivorMessage.toString());
-        }
-
-        if (teamScores.isEmpty())
-            return;
-
+        if (teamScores.isEmpty()) return;
+        MCEMessenger.sendGlobalText("<newline><yellow><bold>=== 占山为王 结果统计 ===</bold></yellow>");
         List<Map.Entry<String, Integer>> sortedTeams = teamScores.entrySet().stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .toList();
-
-        StringBuilder message = new StringBuilder();
-        message.append("<gold><bold>最终排名：</bold></gold><newline>");
-
-        for (int i = 0; i < sortedTeams.size(); i++) {
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).toList();
+        MCEMessenger.sendGlobalText("<newline><red><bold>📊 排行榜：</bold></red><newline>");
+        for (int i = 0; i < 5 && i < sortedTeams.size(); i++) {
             Map.Entry<String, Integer> entry = sortedTeams.get(i);
             String teamName = entry.getKey();
             int score = entry.getValue();
-
-            message.append("<yellow>第").append(i + 1).append("名：</yellow>")
-                    .append("<aqua>").append(teamName).append("队</aqua>")
-                    .append("<white> - ").append(score).append("分</white>");
-
-            if (i < sortedTeams.size() - 1) {
-                message.append("<newline>");
-            }
+            MCEMessenger.sendGlobalText("<red>" + number2OrdinalString(i + 1) + "</red> " + teamName + " <gray>-</gray><red> " + score + " 分</red>");
         }
-
-        MCEMessenger.sendGlobalInfo(message.toString());
+        MCETeamUtils.getActiveTeams().forEach(team -> {
+            var name = team.getName();
+            for (int i = 0; i < sortedTeams.size(); i++) {
+                if (sortedTeams.get(i).getKey().equals(name)) {
+                    var rank = i + 1;
+                    MCETeamUtils.getPlayers(team).forEach(player -> {
+                        player.sendMessage(MiniMessage.miniMessage().deserialize("<newline><bold><red>🥇 您的名次是：</red><gold>第 " + rank + " 名</gold></bold><newline>"));
+                    });
+                }
+            }
+        });
     }
 
-    /** 处理玩家掉落虚空 */
+    private static String number2OrdinalString(int n) {
+        return switch (n) {
+            case 1 -> "①";
+            case 2 -> "②";
+            case 3 -> "③";
+            case 4 -> "④";
+            case 5 -> "⑤";
+            default -> "";
+        };
+    }
+
+    /**
+     * 处理玩家掉落虚空
+     */
     public static void handlePlayerFallIntoVoid(Player player) {
         mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(player);
 

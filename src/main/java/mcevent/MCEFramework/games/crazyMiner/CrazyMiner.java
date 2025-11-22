@@ -16,9 +16,12 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
+
 import org.bukkit.scoreboard.Team;
 
 import static mcevent.MCEFramework.games.crazyMiner.CrazyMinerFuncImpl.*;
@@ -64,8 +67,8 @@ public class CrazyMiner extends MCEGame {
     private BukkitRunnable musicLoopTask;
 
     public CrazyMiner(String title, int id, String mapName, int round, boolean isMultiGame, String configFileName,
-            int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
-            int cycleStartDuration, int cycleEndDuration, int endDuration) {
+                      int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
+                      int cycleStartDuration, int cycleEndDuration, int endDuration) {
         super(title, id, mapName, round, isMultiGame, configFileName,
                 launchDuration, introDuration, preparationDuration, cyclePreparationDuration,
                 cycleStartDuration, cycleEndDuration, endDuration);
@@ -91,6 +94,7 @@ public class CrazyMiner extends MCEGame {
     public void onLaunch() {
         loadConfig(this);
         MCEPlayerUtils.globalClearPotionEffects();
+        MCEPlayerUtils.grantGlobalPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, PotionEffect.INFINITE_DURATION, 1, false, false, true));
 
         World world = Bukkit.getWorld(this.getWorldName());
         if (world != null) {
@@ -231,6 +235,7 @@ public class CrazyMiner extends MCEGame {
     public void onEnd() {
         sendWinningMessage(this);
         // 不在结束阶段修改玩家游戏模式
+        MCEPlayerUtils.globalClearPotionEffects();
 
         // 设置结束阶段标题（让时间线计时继续推进，用于显示结束倒计时）
         this.getGameBoard().setStateTitle("<red><bold> 游戏结束：</bold></red>");
