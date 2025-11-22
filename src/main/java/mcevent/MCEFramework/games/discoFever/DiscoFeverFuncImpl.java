@@ -5,6 +5,7 @@ import mcevent.MCEFramework.games.discoFever.gameObject.DiscoFeverGameBoard;
 import mcevent.MCEFramework.tools.MCEMessenger;
 import mcevent.MCEFramework.tools.MCEPlayerUtils;
 import mcevent.MCEFramework.tools.MCETeamUtils;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -15,7 +16,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scoreboard.Team;
 
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 
 /*
@@ -160,24 +163,66 @@ public class DiscoFeverFuncImpl {
 
     // 发送获胜消息，并退出游戏
     protected static void sendWinningMessage() {
-        StringBuilder message = new StringBuilder();
-        boolean isFirst = true;
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() != GameMode.SPECTATOR) {
-                message.append(isFirst ? MCEPlayerUtils.getColoredPlayerName(player)
-                        : "<dark_aqua>, </dark_aqua>" +
-                                MCEPlayerUtils.getColoredPlayerName(player));
-                isFirst = false;
+        MCEMessenger.sendGlobalText("<newline><yellow><bold>=== 色盲狂热 结果统计 ===</bold></yellow>");
+        List<Player> survivors = Bukkit.getOnlinePlayers().stream()
+                .filter(pl -> pl.getGameMode() != GameMode.SPECTATOR)
+                .collect(Collectors.toList());
+        List<Player> rankList = new ArrayList<>(64);
+        Map<UUID, Integer> temp = new HashMap<>(discoFever.getDeathOrder());
+        while (!temp.isEmpty()) {
+            var uuid = Collections.max(temp.entrySet(), Map.Entry.comparingByValue()).getKey();
+            temp.remove(uuid);
+            rankList.add(Bukkit.getPlayer(uuid));
+        }
+        if (!survivors.isEmpty()) {
+            StringJoiner joiner = new StringJoiner("<green><bold>, </bold></green>");
+            survivors.stream()
+                    .map(MCEPlayerUtils::getColoredPlayerName)
+                    .forEach(joiner::add);
+            MCEMessenger.sendGlobalText("<newline><green><bold>🏆 胜利者：" + joiner + "</bold></green>");
+        }
+        MCEMessenger.sendGlobalText("<newline><red><bold>📊 排行榜：</bold></red><newline>");
+        survivors.stream()
+                .map(MCEPlayerUtils::getColoredPlayerName)
+                .forEach(name -> MCEMessenger.sendGlobalText("<red>① </red>" + name + "<green> 存活</green>"));
+        var size = survivors.size();
+        if (size < 5) {
+            int extra = 5 - size;
+            for (int i = 0; i < extra; i++) {
+                int rank = size + i + 1;
+                if (!discoFever.getDeathOrder().isEmpty()) {
+                    var uuid = Collections.max(discoFever.getDeathOrder().entrySet(), Map.Entry.comparingByValue()).getKey();
+                    var player = Bukkit.getPlayer(uuid);
+                    var id = discoFever.getDeathOrder().remove(uuid);
+                    String coloredName = MCEPlayerUtils.getColoredPlayerName(player);
+                    String ordinal = number2OrdinalString(rank);
+                    MCEMessenger.sendGlobalText("<red>" + ordinal + " </red>" + coloredName + "<red> 淘汰于第 " + id + " 个平台</red>");
+                } else {
+                    break;
+                }
             }
         }
-
-        if (isFirst)
-            message.append("<red>所有玩家已被团灭！</red>");
-        else
-            message.append("<dark_aqua>是最后存活的玩家！</dark_aqua>");
-        MCEMessenger.sendGlobalInfo(message.toString());
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            if (survivors.contains(player)) {
+                player.sendMessage(MiniMessage.miniMessage().deserialize("<newline><bold><red>🥇 您的名次是：</red><gold>第 1 名</gold></bold><newline>"));
+            } else {
+                if (!rankList.contains(player)) return;
+                int rank = survivors.size() + rankList.indexOf(player) + 1;
+                player.sendMessage(MiniMessage.miniMessage().deserialize("<newline><bold><red>🥇 您的名次是：</red><gold>第 " + rank + " 名</gold></bold><newline>"));
+            }
+        });
 
         MCEMainController.setRunningGame(false);
+    }
+
+    private static String number2OrdinalString(int n) {
+        return switch (n) {
+            case 1 -> "①";
+            case 2 -> "②";
+            case 3 -> "③";
+            case 4 -> "④";
+            case 5 -> "⑤";
+            default -> "";
+        };
     }
 }

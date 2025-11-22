@@ -24,10 +24,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.Color;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static mcevent.MCEFramework.games.discoFever.DiscoFeverFuncImpl.*;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
@@ -50,10 +48,10 @@ public class DiscoFever extends MCEGame {
     private List<Material> materialList = new ArrayList<>();
     private int currentState = 0;
     private int maxState = 0;
-    
+
     // 游戏状态追踪
-    private List<String> deathOrder = new ArrayList<>();
-    private List<Team> teamEliminationOrder = new ArrayList<>();
+    private AtomicInteger platform = new AtomicInteger(0);
+    private Map<UUID, Integer> deathOrder = new HashMap<>(256);
 
     private Location currentPlatformLocation;
     private BossBar bossBar = Bukkit.createBossBar(
@@ -62,8 +60,8 @@ public class DiscoFever extends MCEGame {
             BarStyle.SOLID);
 
     public DiscoFever(String title, int id, String mapName, int round, boolean isMultiGame, String configFileName,
-            int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
-            int cycleStartDuration, int cycleEndDuration, int endDuration) {
+                      int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
+                      int cycleStartDuration, int cycleEndDuration, int endDuration) {
         super(title, id, mapName, round, isMultiGame, configFileName,
                 launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration,
                 cycleEndDuration, endDuration);
@@ -114,6 +112,7 @@ public class DiscoFever extends MCEGame {
 
     @Override
     public void onCycleStart() {
+        deathOrder.clear();
         resetGameBoard();
         this.getGameBoard().setStateTitle("<red><bold> 剩余时间：</bold></red>");
 
@@ -143,6 +142,7 @@ public class DiscoFever extends MCEGame {
             Material material = materialList.get(rand.nextInt(materialList.size()));
             int id = i + 1;
             bossBarTasks.add(MCETimerUtils.setDelayedTask(time, () -> {
+                platform.set(id);
                 fillPlayerInventoryWithBlock(material);
                 MCETimerUtils.showGlobalDurationOnBossBar(bossBar, duration, false);
                 actionBarMessageHandler.setActionBarMessage("<dark_aqua>平台：</dark_aqua><aqua>" + id +
@@ -170,16 +170,13 @@ public class DiscoFever extends MCEGame {
         // 使用统一的退出处理逻辑
         String playerName = player.getName();
         Team playerTeam = MCETeamUtils.getTeam(player);
-        
+
         MCEGameQuitHandler.handlePlayerQuit(this, player, () -> {
             // 添加到死亡顺序
-            if (!deathOrder.contains(playerName)) {
-                deathOrder.add(playerName);
+            if (!deathOrder.containsKey(player.getUniqueId())) {
+                deathOrder.put(player.getUniqueId(), platform.get());
             }
-            
-            // 检查队伍淘汰
-            MCEGameQuitHandler.checkTeamElimination(playerName, playerTeam, teamEliminationOrder);
-            
+
             // 检查游戏结束条件：当所有玩家都退出或死亡时，提前结束游戏
             // 使用与 PlayerFallHandler 相同的逻辑
             int alivePlayers = 0;
