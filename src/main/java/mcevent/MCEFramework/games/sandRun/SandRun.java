@@ -13,8 +13,7 @@ import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
 import static mcevent.MCEFramework.tools.MCEPlayerUtils.grantGlobalPotionEffect;
@@ -29,14 +28,15 @@ public class SandRun extends MCEGame {
     private SandFallHandler sandFallHandler = new SandFallHandler();
     private List<BukkitRunnable> gameTask = new ArrayList<>();
     private SandRunConfigParser sandRunConfigParser = new SandRunConfigParser();
-    
+
     // 游戏状态追踪
-    private List<String> deathOrder = new ArrayList<>();
+    private long startTime = 0L;
+    private Map<UUID, Long> deathOrder = new HashMap<>(256);
     private List<Team> teamEliminationOrder = new ArrayList<>();
 
     public SandRun(String title, int id, String mapName, int round, boolean isMultiGame, String configFileName,
-            int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
-            int cycleStartDuration, int cycleEndDuration, int endDuration) {
+                   int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
+                   int cycleStartDuration, int cycleEndDuration, int endDuration) {
         super(title, id, mapName, round, isMultiGame, configFileName,
                 launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration,
                 cycleEndDuration, endDuration);
@@ -74,21 +74,21 @@ public class SandRun extends MCEGame {
         // 使用统一的退出处理逻辑
         String playerName = player.getName();
         Team playerTeam = MCETeamUtils.getTeam(player);
-        
+
         MCEGameQuitHandler.handlePlayerQuit(this, player, () -> {
             // 添加到死亡顺序
-            if (!deathOrder.contains(playerName)) {
-                deathOrder.add(playerName);
+            if (!deathOrder.containsKey(player.getUniqueId())) {
+                deathOrder.put(player.getUniqueId(), System.currentTimeMillis());
             }
-            
+
             // 检查队伍淘汰
             boolean teamEliminated = MCEGameQuitHandler.checkTeamElimination(playerName, playerTeam, teamEliminationOrder);
-            
+
             // 更新游戏板（类似 updateGameBoardOnPlayerDeath 的逻辑）
             SandRunGameBoard gameBoard = (SandRunGameBoard) getGameBoard();
             if (playerTeam != null) {
                 gameBoard.updateTeamRemainTitle(playerTeam);
-                
+
                 // 如果队伍被团灭，发送消息（checkTeamElimination 已经发送了消息，这里只是确保游戏板更新）
                 int teamId = getTeamId(playerTeam);
                 if (teamId >= 0 && teamId < gameBoard.getTeamRemain().length &&
@@ -96,7 +96,7 @@ public class SandRun extends MCEGame {
                     // 消息已经在 checkTeamElimination 中发送，这里只需要确保游戏板已更新
                 }
             }
-            
+
             // 更新剩余玩家数
             int alivePlayerCount = 0;
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -108,7 +108,7 @@ public class SandRun extends MCEGame {
                 }
             }
             gameBoard.updatePlayerRemainTitle(alivePlayerCount);
-            
+
             // 检查游戏结束条件：当所有玩家都退出或死亡时，提前结束游戏
             if (alivePlayerCount == 0) {
                 // 停止落沙任务
@@ -125,6 +125,7 @@ public class SandRun extends MCEGame {
 
     @Override
     public void onCycleStart() {
+        startTime = System.currentTimeMillis();
         SandRunFuncImpl.resetGameBoard();
         this.getGameBoard().setStateTitle("<yellow><bold> 游戏进行中：</bold></yellow>");
 
