@@ -24,10 +24,7 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 
 // import static mcevent.MCEFramework.games.tntTag.TNTTagFuncImpl.*;
 import static mcevent.MCEFramework.miscellaneous.Constants.*;
@@ -46,7 +43,7 @@ public class TNTTag extends MCEGame {
 
     private List<Player> tntCarriers = new ArrayList<>();
     private List<Player> alivePlayers = new ArrayList<>();
-    private List<String> deathOrder = new ArrayList<>();
+    private Map<UUID, Integer> deathOrder = new HashMap<>(64);
     private int currentPhase = 0;
     private boolean inTransition = false;
 
@@ -56,8 +53,8 @@ public class TNTTag extends MCEGame {
             BarStyle.SOLID);
 
     public TNTTag(String title, int id, String mapName, boolean isMultiGame, String configFileName,
-            int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
-            int cycleStartDuration, int cycleEndDuration, int endDuration) {
+                  int launchDuration, int introDuration, int preparationDuration, int cyclePreparationDuration,
+                  int cycleStartDuration, int cycleEndDuration, int endDuration) {
         super(title, id, mapName, isMultiGame, configFileName,
                 launchDuration, introDuration, preparationDuration, cyclePreparationDuration, cycleStartDuration,
                 cycleEndDuration, endDuration);
@@ -366,7 +363,7 @@ public class TNTTag extends MCEGame {
             return;
 
         alivePlayers.remove(player);
-        deathOrder.add(player.getName());
+        deathOrder.put(player.getUniqueId(), currentPhase);
 
         // 交给全局淘汰处理器统一处理（包含消息与音效）
         mcevent.MCEFramework.customHandler.GlobalEliminationHandler.eliminateNow(player);
